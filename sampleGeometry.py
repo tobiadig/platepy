@@ -10,7 +10,7 @@ import numpy as np
 from createModel import *
 
 def importModel():
-    supportCondition = Support(np.array([1, 0, 0]))
+    supportCondition = Support(np.array([1, 1, 0]))
 
     ConcreteDict = {}
     ConcreteDict["eModule"] = 10920 #kN/m2

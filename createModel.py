@@ -28,8 +28,7 @@ class PlateModel:
         self.isInitialized = False
         self.mesh = None
         self.results = None
-        self.geometryInterface = None
-        self.resultsInterface = None
+        self.axes = {}
 
     def addPlate(self, newPlate):  
         '''
