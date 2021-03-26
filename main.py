@@ -11,8 +11,8 @@ sampleModel=sampleGeometry.importModel()
 
 # create mesh
 from generateMesh import *
-meshInput1=MeshInput(showGmshMesh=False, elementType='QUAD', nEdgeNodes=16)
-# meshInput1=MeshInput(showGmshMesh=True, elementType='QUAD', meshSize=5e-2)
+# meshInput1=MeshInput(showGmshMesh=True, elementType='TRI', nEdgeNodes=11)
+meshInput1=MeshInput(showGmshMesh=True, elementType='QUAD', meshSize=5e-2)
 generateMesh(sampleModel, meshInput1)
 
 # compute
@@ -24,8 +24,8 @@ solveModel(sampleModel)
 #     sampleModel.geometryInterface.text(coord[0], coord[1], '{:.2f}'.format(wVert[i]*1000))
 
 # display results
-plotResults(sampleModel, verticalDisplacement=False, bendingMomentsToPlot=['x', 'y', 'xy'])
-plt.show()
+# plotResults(sampleModel)
+# plt.show()
 
 
 #%%

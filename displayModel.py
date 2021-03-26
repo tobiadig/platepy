@@ -59,7 +59,7 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
             marginWidth = 0.1
             axVertDisp.set_xlim(xLim[0]-marginWidth*a, xLim[1]+marginWidth*a)
             axVertDisp.set_ylim(yLim[0]-marginWidth*b, yLim[1]+marginWidth*b)
-            zMaxString = '{:.2f}'.format(self.results.wMax[2])
+            zMaxString = '{:.3f}'.format(self.results.wMax[2])
             axVertDisp.text(self.results.wMax[0],self.results.wMax[1], zMaxString,color='r', bbox=dict(facecolor='none', edgecolor='red'))
         elif displacementPlot == '3d':
             fig = plt.figure()

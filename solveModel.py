@@ -317,10 +317,7 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
         N[1, 1:N.shape[1]:3]=Nval
         N[2, 2:N.shape[1]:3]=Nval
 
-        # Jacobian matrix
-        J = np.array([[xi[0]-xi[2] , yi[0]-yi[2] ],
-            [ xi[1]-xi[2] , yi[1]-yi[2] ]])
-        detJ = np.linalg.det(J)
+
 
         # Define shape function derivatives, derive deformation matrix
         N1r = lambda r, s: 1
@@ -333,8 +330,12 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
 
         NrsFun = lambda r,s: np.array([[N1r(r, s), N1s(r, s)], [N2r(r, s), N2s(r, s)], [N3r(r, s), N3s(r, s)]])
         NrsVal=NrsFun(ri,si)
-        Bf=np.zeros((3,3*3))
 
+        # Jacobian matrix
+        J=np.matmul(nodeCoordinates.transpose(), NrsVal)
+        detJ = np.linalg.det(J)
+
+        Bf=np.zeros((3,3*3))
         NrsVal = np.matmul(NrsVal,np.linalg.inv(J))
         Bf[0,1::3]=NrsVal[:,0]
         Bf[1,2::3]=NrsVal[:,1]
