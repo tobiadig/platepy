@@ -11,7 +11,7 @@ sampleModel=sampleGeometry.importModel()
 
 # create mesh
 from generateMesh import *
-meshInput1=MeshInput(showGmshMesh=False, elementType='QUAD', nEdgeNodes=51)
+meshInput1=MeshInput(showGmshMesh=False, elementType='QUAD', nEdgeNodes=16)
 # meshInput1=MeshInput(showGmshMesh=True, elementType='QUAD', meshSize=5e-2)
 generateMesh(sampleModel, meshInput1)
 
@@ -24,42 +24,8 @@ solveModel(sampleModel)
 #     sampleModel.geometryInterface.text(coord[0], coord[1], '{:.2f}'.format(wVert[i]*1000))
 
 # display results
-plotResults(sampleModel)
+plotResults(sampleModel, verticalDisplacement=False, bendingMomentsToPlot=['x', 'y', 'xy'])
 plt.show()
 
 
 #%%
-# coords = sampleModel.results.bendingMomentsPositions
-# z = sampleModel.results.bendingMoments[:,0]
-# nEdge = int(np.sqrt(z.size))
-# e = 1/nEdge/2
-# numC = z.size-(nEdge-1)*4
-# # print('nedge ',nEdge)
-# # print('zsize ', z.size)
-# # print('numc: ', numC)
-
-
-# Llow = e*1.2
-# Lup = (1-e)*0.98
-
-# # print('lLow: ', Llow)
-# # print('Lup: ', Lup)
-# newCoords = np.zeros((numC, 2))
-# newZ = np.zeros(numC)
-# k=0
-
-# # print('e ', e)
-# for i, c in enumerate(coords):
-#     # print(1,c[0], c[1])
-#     if (c[0]>Llow and c[0]<Lup) and (c[1]>Llow and c[1]<Lup):
-#         # print(2,c[0], c[1])
-#         newCoords[k, :]=c
-#         newZ[k]=z[i]
-#         k+=1
-# # print('k ',k)
-# # print(newZ)
-
-# # %matplotlib
-# fig=plt.figure()
-# ax = fig.gca(projection='3d')
-# ax.plot_trisurf(newCoords[:,0],newCoords[:,1],newZ,cmap=cm.jet)
