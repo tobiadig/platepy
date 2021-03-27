@@ -45,12 +45,12 @@ def generateMesh(self,meshInput):
         raise
 
 
-    gmsh.model.geo.removeAllDuplicates()
-    gmsh.model.geo.synchronize()
-    
     # mesh generation
     try:
-        gmsh.model.mesh.generate() 
+        gmsh.model.mesh.generate()
+        gmsh.model.geo.synchronize()
+        gmsh.model.mesh.removeDuplicateNodes()
+        gmsh.model.geo.synchronize()
     except:
         print('gmsh mesh generation failed')
         raise

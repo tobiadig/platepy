@@ -36,6 +36,7 @@ class PlateModel:
         '''
         if not(self.isInitialized):
             gmsh.initialize()
+            gmsh.option.setNumber("General.Verbosity",0)
             gmsh.model.add(self.name)
             self.isInitialized =True
         
@@ -132,6 +133,16 @@ class PlateModel:
         gmsh.model.geo.removeAllDuplicates()
         gmsh.model.geo.synchronize()
         entities = np.array(gmsh.model.getEntities(1))
+        print('pointTag: ', pointTags)
+
+        xmin = newColumn.outlineCoords[0,0]
+        ymin = newColumn.outlineCoords[0,1]
+        print('xmin', xmin)
+        print('ymin', ymin)
+        # parentDim, parentTag = gmsh.model.getParent(0, 5)
+        # print('BELONGSTOWALL: ', parentDim, parentTag)
+
+        # gmsh.model.mesh.embed(0, pointTags, 1, 4)
         gmsh.model.mesh.embed(0, pointTags, 2, 1) 
         
         gmsh.model.geo.synchronize()

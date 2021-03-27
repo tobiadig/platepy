@@ -59,15 +59,31 @@ def importModel():
     columnDict["support"] = Support(np.array([1, 0, 0]))
     columnDict["crossSection"] = None
     columnDict["width"] = 0.05
+
+    columnDict["outlineCoords"] = np.array([[0.5*a,b*0.5]])
     col1 = Column(columnDict)
 
+    columnDict["outlineCoords"] = np.array([[a,b*0]])
+    col2 = Column(columnDict)
+
+    columnDict["outlineCoords"] = np.array([[a,b]])
+    col3 = Column(columnDict)
+
+    columnDict["outlineCoords"] = np.array([[0*a,b]])
+    col4 = Column(columnDict)
+    
+
     firstModel = PlateModel("plateModel1")
+    
     firstModel.addPlate(plate1)
     firstModel.addWall(wall1)
     firstModel.addWall(wall2)
-
-    firstModel.addLoad(distributedLoad)
     firstModel.addColumn(col1)
+    # firstModel.addColumn(col2)
+    # firstModel.addColumn(col3)
+    # firstModel.addColumn(col4)
+    firstModel.addLoad(distributedLoad)
+    
 
     return firstModel
 

@@ -7,7 +7,7 @@ pd.set_option("display.max_rows", None, "display.max_columns", None)
 import sampleGeometry
 from displayModel import *
 sampleModel=sampleGeometry.importModel()
-# plotInputGeometry(sampleModel)
+plotInputGeometry(sampleModel)
 
 # create mesh
 from generateMesh import *
