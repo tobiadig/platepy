@@ -7,12 +7,12 @@ pd.set_option("display.max_rows", None, "display.max_columns", None)
 import sampleGeometry
 from displayModel import *
 sampleModel=sampleGeometry.importModel()
-plotInputGeometry(sampleModel)
+# plotInputGeometry(sampleModel)
 
 # create mesh
 from generateMesh import *
 # meshInput1=MeshInput(showGmshMesh=True, elementType='TRI', nEdgeNodes=11)
-meshInput1=MeshInput(showGmshMesh=True, elementType='TRI', meshSize=5e-2)
+meshInput1=MeshInput(showGmshMesh=True, elementType='QUAD', meshSize=5e-2)
 generateMesh(sampleModel, meshInput1)
 
 # compute

@@ -135,10 +135,11 @@ class PlateModel:
         entities = np.array(gmsh.model.getEntities(1))
         print('pointTag: ', pointTags)
 
-        xmin = newColumn.outlineCoords[0,0]
-        ymin = newColumn.outlineCoords[0,1]
-        print('xmin', xmin)
-        print('ymin', ymin)
+        # up, down = gmsh.model.getAdjacencies(0, pointTags)
+        # if len(up):
+        #     print(" - Upward adjacencies: " + str(up))
+        # if len(down):
+        #     print(" - Downward adjacencies: " + str(down))
         # parentDim, parentTag = gmsh.model.getParent(0, 5)
         # print('BELONGSTOWALL: ', parentDim, parentTag)
 
