@@ -12,7 +12,7 @@ sampleModel=sampleGeometry.importModel()
 # create mesh
 from generateMesh import *
 # meshInput1=MeshInput(showGmshMesh=True, elementType='TRI', nEdgeNodes=11)
-meshInput1=MeshInput(showGmshMesh=True, elementType='QUAD', meshSize=5e-2)
+meshInput1=MeshInput(showGmshMesh=True, elementType='TRI', meshSize=5e-2)
 generateMesh(sampleModel, meshInput1)
 
 # compute
