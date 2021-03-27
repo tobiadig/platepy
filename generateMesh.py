@@ -6,6 +6,7 @@ Purpose of module: generates the mesh and stores it as attribute of the plateMod
 '''
 #%% Basic modules
 import numpy as np
+import pandas as pd
 
 import gmsh # To create CAD model and mesh
 

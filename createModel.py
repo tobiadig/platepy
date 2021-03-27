@@ -132,21 +132,10 @@ class PlateModel:
         gmsh.model.geo.synchronize()
         gmsh.model.geo.removeAllDuplicates()
         gmsh.model.geo.synchronize()
-        entities = np.array(gmsh.model.getEntities(1))
-        print('pointTag: ', pointTags)
 
-        # up, down = gmsh.model.getAdjacencies(0, pointTags)
-        # if len(up):
-        #     print(" - Upward adjacencies: " + str(up))
-        # if len(down):
-        #     print(" - Downward adjacencies: " + str(down))
-        # parentDim, parentTag = gmsh.model.getParent(0, 5)
-        # print('BELONGSTOWALL: ', parentDim, parentTag)
-
-        # gmsh.model.mesh.embed(0, pointTags, 1, 4)
-        gmsh.model.mesh.embed(0, pointTags, 2, 1) 
-        
-        gmsh.model.geo.synchronize()
+        if newColumn.isInPlate:
+            gmsh.model.mesh.embed(0, pointTags, 2, 1)
+            gmsh.model.geo.synchronize()
 
     def addLoad(self, newLoad):
         '''
@@ -221,7 +210,7 @@ class Wall:
             axGeometry.plot(l2[:,0],l2[:,1], color='g', linewidth = linWidth)
 
 class Column:
-    def __init__(self, inputDict):
+    def __init__(self, inputDict, isInPlate = False):
         self.outlineCoords = inputDict["outlineCoords"]
         self.high = inputDict["high"]
         self.body = inputDict["body"]
@@ -231,6 +220,7 @@ class Column:
         self.physicalGroup = None
         self.elementComposition = None
         self.nodeComposition = None
+        self.isInPlate = isInPlate
 
     def plot(self, ax):
         x = self.outlineCoords[0,0]
