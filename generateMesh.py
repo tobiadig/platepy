@@ -43,6 +43,10 @@ def generateMesh(self,meshInput):
     except:
         print('manual assignment of edge nodes failed')
         raise
+
+
+    gmsh.model.geo.removeAllDuplicates()
+    gmsh.model.geo.synchronize()
     
     # mesh generation
     try:
