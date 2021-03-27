@@ -12,6 +12,6 @@ nodes = np.array([[1,0,0,0],
 # nodes[4]=np.array([1,1,0])
 # nodes[5]=np.array([0,1,0])
 nodesPd = pd.DataFrame(nodes[:,1:], index=nodes[:,0])
-myNodes = np.array([1,2])
+myNodes = np.array([2,1])
 
 print(nodesPd.loc[myNodes].to_numpy())

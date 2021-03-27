@@ -60,8 +60,8 @@ def importModel():
     columnDict["crossSection"] = None
     columnDict["width"] = 0.05
 
-    columnDict["outlineCoords"] = np.array([[0.5*a,b*0.5]])
-    col1 = Column(columnDict,isInPlate = True)
+    columnDict["outlineCoords"] = np.array([[0.*a,b*0.5]])
+    col1 = Column(columnDict,isInPlate = False)
 
     columnDict["outlineCoords"] = np.array([[a,b*0]])
     col2 = Column(columnDict)

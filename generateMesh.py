@@ -61,8 +61,12 @@ def generateMesh(self,meshInput):
         gmsh.fltk.run()
 
     #generate nodes array
-    _ , nodeCoords, _ = gmsh.model.mesh.getNodes()
+    nodeTags , nodeCoords, _ = gmsh.model.mesh.getNodes()
+
     nodesArray = np.array(nodeCoords).reshape((-1,3))
+    # print('old: ', nodesArray)
+    nodesArrayPd = pd.DataFrame(nodesArray, index = nodeTags)
+
 
     # generate elements list of class Element
     # iterate over 2D surfaces and get nodeTags of each mesh-element
@@ -77,7 +81,11 @@ def generateMesh(self,meshInput):
 
         newElement.nNodes  = len(nodeTags)
         newElement.connectivity  = nodeTags
-        newElement.coordinates  = nodesArray[nodeTags-1,:]
+
+        # old = nodesArray[nodeTags-1,:]
+
+        newElement.coordinates = nodesArrayPd.loc[nodeTags].to_numpy()
+
         newElement.whichPlate  = 1  #TODO: implement more plates
         elementsList.append(newElement)
         k+=1
