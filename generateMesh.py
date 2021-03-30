@@ -61,11 +61,13 @@ def generateMesh(self,meshInput):
         gmsh.fltk.run()
 
     #generate nodes array
-    nodeTags , nodeCoords, _ = gmsh.model.mesh.getNodes()
+    nodeTagsModel , nodeCoords, _ = gmsh.model.mesh.getNodes()
 
     nodesArray = np.array(nodeCoords).reshape((-1,3))
     # print('old: ', nodesArray)
-    nodesArrayPd = pd.DataFrame(nodesArray, index = nodeTags)
+    nodesArrayPd = pd.DataFrame(nodesArray, index = nodeTagsModel)
+    nodesRotationsPd = pd.DataFrame(np.zeros(nodeTagsModel.size), index =nodeTagsModel)
+
 
 
     # generate elements list of class Element
@@ -91,7 +93,7 @@ def generateMesh(self,meshInput):
         k+=1
 
     #generate BCs and nodes directions by iterating over wall segments
-    nodesRotations = np.zeros(nodesArray.shape[0])
+    
     BCsDic = {}
     for wall in self.walls:
         dim = wall.physicalGroup[0]
@@ -116,8 +118,8 @@ def generateMesh(self,meshInput):
                 lineRot = np.pi/2*3
             else:
                 lineRot = np.arctan(lineDirection[1]/lineDirection[0])
-
-            nodesRotations[nodeTags[:-2]-1] = lineRot
+            
+            nodesRotationsPd.loc[nodeTags[:-2]] = lineRot
 
             for node in nodeTags[:-2]:
                 BCsDic[node] = wall.support.supportCondition
@@ -146,7 +148,7 @@ def generateMesh(self,meshInput):
     #     BCsTemp[:,0]=nodeTags
     #     BCsTemp[:,1]=np.ones(len(nodeTags))*wall.support.supportCondition[0]
     #     BCsTemp[:,2]=np.ones(len(nodeTags))*wall.support.supportCondition[1]
-    #     BCsTemp[:,3]=np.ones(len(nodeTags))*wall.support.supportCondition[2]  #TODO: it works, but could be implemented nicer
+    #     BCsTemp[:,3]=np.ones(len(nodeTags))*wall.support.supportCondition[2]  
 
     #     if not(isBCSinitiated):
     #         isBCSinitiated=True
@@ -157,7 +159,7 @@ def generateMesh(self,meshInput):
 
     
     # store result in a mesh class and then in plateModel
-    self.mesh = Mesh(nodesArray,nodesRotations, elementsList, BCs)
+    self.mesh = Mesh(nodesArray,nodesRotationsPd, elementsList, BCs)
 
 class MeshInput:
     '''

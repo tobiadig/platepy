@@ -69,7 +69,6 @@ class PlateModel:
         '''
             add a plate element of class "Plate" to the model
         '''
-        #TODO: implement different color with setColor for walls, downstandbeams, different material zones...
         if not(self.isInitialized):
             gmsh.initialize()
             gmsh.model.add(self.name)
@@ -134,9 +133,11 @@ class PlateModel:
         gmsh.model.geo.synchronize()
 
         if newColumn.isInPlate:
-            gmsh.model.mesh.embed(0, pointTags, 2, 1)
+            gmsh.model.mesh.embed(0, pointTags, 2, 1)#TODO: column should recognize to which plate it belongs. temporarly just plate 1
             gmsh.model.geo.synchronize()
-
+        else:
+            gmsh.model.mesh.embed(0, pointTags, 1, 3)#TODO: column should recognize to which plate it belongs. temporarly just plate 1
+            gmsh.model.geo.synchronize()
     def addLoad(self, newLoad):
         '''
             add a load to the model

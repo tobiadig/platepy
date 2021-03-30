@@ -49,7 +49,7 @@ def solveModel(self, reducedIntegration = False):
         elemNodes = element.connectivity
         
         nNodes=element.nNodes
-        elemNodesRotations = nodesRotations[elemNodes-1]
+        elemNodesRotations = nodesRotations.loc[elemNodes].to_numpy()
 
         xi=element.coordinates[:,0]
         yi=element.coordinates[:,1]
@@ -137,7 +137,7 @@ def solveModel(self, reducedIntegration = False):
     values[:,2]=uGlob[2::3,0]
     self.results = Result(outPos,values[:,0], values[:,1], values[:,2])
 
-    #compute momements
+    #compute MOMENTSSS
     bendingMoments = np.zeros((len(elementsList),3))
     bendingMomentsPositions = np.zeros((len(elementsList),2))
 
@@ -148,7 +148,7 @@ def solveModel(self, reducedIntegration = False):
     for element in elementsList:
         elemNodes = element.connectivity
         nNodes=element.nNodes
-        elemNodesRotations = nodesRotations[elemNodes-1]
+        # elemNodesRotations = nodesRotations[elemNodes-1]
 
         xi=element.coordinates[:,0]
         yi=element.coordinates[:,1]
@@ -227,7 +227,6 @@ def GetLocalMatrix(xi, yi, Df,Dc, p, reducedIntegration):
     # 1 point
         gaussPointsRed =  np.array([[0, 0]])
         gaussWeightsRed =  np.array([4])
-
 
     # 4 points
         tempVal = 1/np.sqrt(3)
@@ -403,7 +402,7 @@ class Result:
     '''
     def __init__(self, outPos, wVert, xRot, yRot):
         self.outPos = outPos
-        self.wVert = wVert
+        self.wVert = wVert*1e-13
         self.xRot = xRot
         self.yRot = yRot
         self.bendingMoments = None
@@ -413,7 +412,7 @@ class Result:
         z=np.abs(wVert)
         iMax = np.argmax(z)
 
-        self.wMax = (outPos[iMax,0],outPos[iMax,1], wVert[iMax]*1000)
+        self.wMax = (outPos[iMax,0],outPos[iMax,1], self.wVert[iMax]*1000)
 
 #unit testing
 if __name__ == "__main__":
