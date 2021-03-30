@@ -1,17 +1,23 @@
 #%%import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
+from matplotlib import pyplot as plt
+from matplotlib.colors import BoundaryNorm
+a=np.random.randn(2500).reshape((50,50))
 
-nodes = np.array([[1,0,0,0],
-                    [2,0,1,0],
-                    [4, 1,1,0],
-                    [5,0,1,0]])
-# nodes={}
-# nodes[1]= np.array([0,0,0])
-# nodes[2]=np.array([0,1,0])
-# nodes[4]=np.array([1,1,0])
-# nodes[5]=np.array([0,1,0])
-nodesPd = pd.DataFrame(nodes[:,1:], index=nodes[:,0])
-myNodes = np.array([2,1])
+# define the colormap
+cmap = plt.get_cmap('PuOr')
 
-print(nodesPd.loc[myNodes].to_numpy())
+# extract all colors from the .jet map
+cmaplist = [cmap(i) for i in range(cmap.N)]
+# create the new map
+cmap = cmap.from_list('Custom cmap', cmaplist, cmap.N)
+
+# define the bins and normalize and forcing 0 to be part of the colorbar!
+bounds = np.arange(np.min(a),np.max(a),.5)
+idx=np.searchsorted(bounds,0)
+bounds=np.insert(bounds,idx,0)
+norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
+
+plt.imshow(a,interpolation='none',norm=norm,cmap=cmap)
+plt.colorbar()
+plt.show()

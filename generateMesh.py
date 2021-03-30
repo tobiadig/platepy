@@ -192,3 +192,4 @@ class Element:
         self.coordinates  = None
         self.whichPlate  = None
         self.BbMat = None
+        self.rotationMatrix = None

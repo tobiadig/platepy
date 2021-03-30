@@ -10,7 +10,6 @@ import numpy as np
 from createModel import *
 
 def importModel():
-    supportCondition = Support(np.array([1, 1, 0]))
 
     ConcreteDict = {}
     ConcreteDict["eModule"] = 10920 #kN/m2
@@ -41,7 +40,7 @@ def importModel():
     
     wallDict["high"] = 3 # m
     wallDict["body"] = C25_30
-    wallDict["support"] = supportCondition
+    wallDict["support"] = Support(np.array([1, 1, 0]))
     wallDict["thickness"] = 0.05 # m
     wall1 = Wall(wallDict)
 

@@ -17,7 +17,7 @@ from scipy.linalg import block_diag # to create the rotation matrix
 import time
 from tqdm import tqdm
 
-def solveModel(self, reducedIntegration = False):
+def solveModel(self, reducedIntegration = False, resultsScaleIntForces = 1, resultsScaleVertDisp = 1):
     ''' Input/Output descriptions
         self: PlateModel class, where the geometry and the mesh are initialized
         reducedIntegration: to manage the number of Gauss integration points
@@ -69,9 +69,11 @@ def solveModel(self, reducedIntegration = False):
             else:
                 R = block_diag(R, rotMatrix(dofRot))
 
+        element.rotationMatrix = R
         #rotate stiffness matrix
         kTemp = np.matmul(kLocalNotRotated, R)
         kLocal = np.matmul(R.transpose(), kTemp)
+        # kLocal = kLocalNotRotated
 
         # coefficients of the DOFs and assignment of the stiffness matrix / force vector
         kCoeff = np.zeros((3*nNodes),dtype=int)
@@ -135,14 +137,14 @@ def solveModel(self, reducedIntegration = False):
     values[:,0]=uGlob[0::3,0]
     values[:,1]=uGlob[1::3,0]
     values[:,2]=uGlob[2::3,0]
-    self.results = Result(outPos,values[:,0], values[:,1], values[:,2])
+    self.results = Result(outPos,values[:,0], values[:,1], values[:,2],resultsScale=(resultsScaleVertDisp,resultsScaleIntForces))
 
+    ###################################################################3!!!
     #compute MOMENTSSS
     bendingMoments = np.zeros((len(elementsList),3))
-    bendingMomentsPositions = np.zeros((len(elementsList),2))
+    internalForcesPositions = np.zeros((len(elementsList),2))
 
-    shearForce = np.zeros((len(elementsList),2))
-    shearPositions = np.zeros((len(elementsList),2))
+    shearForces = np.zeros((len(elementsList),2))
 
     k=0
     for element in elementsList:
@@ -154,11 +156,9 @@ def solveModel(self, reducedIntegration = False):
         yi=element.coordinates[:,1]
         xm = np.average(xi)
         ym = np.average(yi)
-        bendingMomentsPositions[k,0]=xm
-        bendingMomentsPositions[k,1]=ym
+        internalForcesPositions[k,0]=xm
+        internalForcesPositions[k,1]=ym
 
-        shearPositions[k,0] = xm
-        shearPositions[k,1] = ym
 
         Df = self.plates[0].Df   #TODO: the elements should know to which plate it belongs and take the right material param.
         Dc = self.plates[0].Dc
@@ -171,17 +171,19 @@ def solveModel(self, reducedIntegration = False):
         kCoeff = np.zeros((3*nNodes),dtype=int)
         for i in range(0,3):
             kCoeff[0+i::3]=elemNodes*3-3+i
+        # uLoc = R*uGlob
+        # print('R shape: ', element.rotationMatrix.shape)
+        # print('uGlob shape: ',uGlob[kCoeff].shape )
 
-        vLoc = uGlob[kCoeff]
+        vLoc = np.matmul(element.rotationMatrix, uGlob[kCoeff])
 
         bendingMoments[k,:] = np.matmul(Df,np.matmul(Bf, vLoc))[:,0]
-        shearForce[k,:]=np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]
+        shearForces[k,:]=np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]
         k+=1
-    self.results.bendingMoments=bendingMoments
-    self.results.bendingMomentsPositions=bendingMomentsPositions
+    self.results.bendingMoments=bendingMoments*resultsScaleIntForces
+    self.results.internalForcesPositions=internalForcesPositions
     
-    self.results.shearForce = shearForce
-    self.results.shearPositions = shearPositions
+    self.results.shearForces = shearForces*resultsScaleIntForces
 
     return outPos, values
 
@@ -400,18 +402,18 @@ class Result:
         class which stores all model output
 
     '''
-    def __init__(self, outPos, wVert, xRot, yRot):
+    def __init__(self, outPos, wVert, xRot, yRot, resultsScale = (1,1)):
         self.outPos = outPos
-        self.wVert = wVert*1e-13
+        self.wVert = wVert*resultsScale[0]
         self.xRot = xRot
         self.yRot = yRot
         self.bendingMoments = None
-        self.bendingMomentsPositions = None
-        self.shearForce = None
-        self.shearForcePositions = None
+        self.internalForcesPositions = None
+        self.shearForces = None
+        self.resultsScale = resultsScale
+
         z=np.abs(wVert)
         iMax = np.argmax(z)
-
         self.wMax = (outPos[iMax,0],outPos[iMax,1], self.wVert[iMax]*1000)
 
 #unit testing
@@ -488,7 +490,3 @@ if __name__ == "__main__":
     # plt.show()
 
 
-
-
-
-# %%

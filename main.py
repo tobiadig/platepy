@@ -11,13 +11,13 @@ sampleModel=sampleGeometry.importModel()
 
 # create mesh
 from generateMesh import *
-meshInput1=MeshInput(showGmshMesh=False, elementType='QUAD', nEdgeNodes=121)
+meshInput1=MeshInput(showGmshMesh=False, elementType='QUAD', nEdgeNodes=21)
 # meshInput1=MeshInput(showGmshMesh=True, elementType='TRI', meshSize=8e-2)
 generateMesh(sampleModel, meshInput1)
 
 # compute
 from solveModel import *
-solveModel(sampleModel)
+solveModel(sampleModel, resultsScaleIntForces = 1e-3, resultsScaleVertDisp = 1e-13)
 # wVert = values[:,0]
 
 # for i, coord in enumerate(outPos):
@@ -27,15 +27,14 @@ solveModel(sampleModel)
 # plotResults(sampleModel)
 # plt.show()
 
-
-
 #%% max moment
 
+plotResults(sampleModel, verticalDisplacement=True, bendingMomentsToPlot=['x', 'y', 'xy'],shearForcesToPlot=['x', 'y'])
 
 M = sampleModel.results.bendingMoments[:,0]
 
-print('Moments: ',np.max(np.abs(M))*1e-7)
-
+print('Moments: ',np.min(M)*1e-5)
+plt.show()
 from AnalyticPlateSolutions import *
 
 # analythical vetical displacement, rectangular, simply supported distributed
@@ -72,4 +71,4 @@ sOpts.nTerms = 40
 inPos=np.array([[0,0]])
 
 quantities, values, outPos = AnalyticPlateSolutions(pOpts, lOpts, sOpts, inPos)
-print('Maximum moment, analythical: {:.2f}'.format(values[0,2]*1000)) 
+# print('Maximum moment, analythical: {:.2f}'.format(values[0,2]*1000)) 
