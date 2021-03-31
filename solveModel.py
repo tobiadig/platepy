@@ -53,7 +53,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 
         xi=element.coordinates[:,0]
         yi=element.coordinates[:,1]
-
+        
         Df = self.plates[0].Df   #TODO: the elements should know to which plate it belongs and take the right material param.
         Dc = self.plates[0].Dc
 
@@ -109,6 +109,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     for constraint in BCs:
         node=int(constraint[0])
         rDofsBool[node*3-3:node*3] = constraint[1:].astype(bool)
+    
     allDofs =np.arange(0,nGDofs)
     fDofsBool = np.invert(rDofsBool)
     fDofsInt = allDofs[fDofsBool]
@@ -139,18 +140,16 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     values[:,2]=uGlob[2::3,0]
     self.results = Result(outPos,values[:,0], values[:,1], values[:,2],resultsScale=(resultsScaleVertDisp,resultsScaleIntForces))
 
-    ###################################################################3!!!
-    #compute MOMENTSSS
+    #compute MOMENTS
     bendingMoments = np.zeros((len(elementsList),3))
     internalForcesPositions = np.zeros((len(elementsList),2))
 
     shearForces = np.zeros((len(elementsList),2))
 
-    k=0
+
     for element in elementsList:
         elemNodes = element.connectivity
         nNodes=element.nNodes
-        # elemNodesRotations = nodesRotations[elemNodes-1]
 
         xi=element.coordinates[:,0]
         yi=element.coordinates[:,1]
@@ -159,11 +158,9 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         internalForcesPositions[k,0]=xm
         internalForcesPositions[k,1]=ym
 
-
         Df = self.plates[0].Df   #TODO: the elements should know to which plate it belongs and take the right material param.
         Dc = self.plates[0].Dc
 
-        #Bb at the center for later moment calculation
         elemType = len(xi)
         N, Bf,Bc, detJ = GetShapeFunction(elemType,0, 0, xi, yi)
         element.BbMat = Bf
@@ -177,7 +174,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 
         bendingMoments[k,:] = np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*-1
         shearForces[k,:]=np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*-1  # !!!! WHY -1?????????????????
-        k+=1
+
     self.results.bendingMoments=bendingMoments*resultsScaleIntForces[0]
     self.results.internalForcesPositions=internalForcesPositions
     
