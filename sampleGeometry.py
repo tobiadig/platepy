@@ -10,7 +10,6 @@ import numpy as np
 from createModel import *
 
 def importModel():
-
     ConcreteDict = {}
     ConcreteDict["eModule"] = 10920 #kN/m2
     ConcreteDict["gModule"] =  10920/(2*(1+0.3))#kN/m2

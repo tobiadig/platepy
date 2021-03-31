@@ -26,7 +26,7 @@ def generateMesh(self,meshInput):
     elif meshInput.elementType != 'TRI':
         raise TypeError(meshInput.elementType, "not recognised")
     
-    gmsh.option.setNumber("Mesh.Algorithm", 6)  # (1: MeshAdapt, 2: Automatic, 3: Initial mesh only, 5: Delaunay, 6: Frontal-Delaunay (default), 7: BAMG, 8: Frontal-Delaunay for Quads, 9: Packing of Parallelograms)
+    gmsh.option.setNumber("Mesh.Algorithm", 8)  # (1: MeshAdapt, 2: Automatic, 3: Initial mesh only, 5: Delaunay, 6: Frontal-Delaunay (default), 7: BAMG, 8: Frontal-Delaunay for Quads, 9: Packing of Parallelograms)
     gmsh.model.geo.synchronize()
 
     # manual assignment of edge nodes

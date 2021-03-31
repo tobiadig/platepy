@@ -44,7 +44,7 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
     if outVal[0]: #plot vertical displacements
         x= self.results.outPos[:,0]
         y = self.results.outPos[:,1]
-        z= self.results.wVert*1000
+        z= self.results.wVert
 
         if displacementPlot == 'isolines':
             axVertDisp = myIsoPlot(self,x,y,z, theTitle='Vertical Displacements')
@@ -54,6 +54,10 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
             fig = plt.figure()
             axVertDisp = fig.gca(projection='3d')
             axVertDisp.plot_trisurf(self.results.outPos[:,0],self.results.outPos[:,1],self.results.wVert,cmap=cm.jet)
+
+        # elif displacementPlot == 'table':
+            # for i, coord in enumerate(outPos):
+                # sampleModel.geometryInterface.text(coord[0], coord[1], '{:.2f}'.format(wVert[i]*1000))
         else:
             raise TypeError('type of plot does not exist')
 
@@ -181,13 +185,13 @@ def myIsoPlot(self,x,y,z, theTitle = ''):
     iMMax = np.argmax(z)
     iMMin = np.argmin(z)
 
-    zMinString = '{:.3f}'.format(z[iMMin])
+    zMinString = '{:.2f}'.format(z[iMMin])
     if np.abs(z[iMMin])>0.1:
-        outAx.text(x[iMMin],y[iMMin], zMinString,color='r', bbox=dict(facecolor='w', edgecolor='red'))
+        outAx.text(x[iMMin],y[iMMin], zMinString,color='r', bbox=dict(facecolor='w', edgecolor='red'), zorder=1000)
 
-    zMaxString = '{:.3f}'.format(z[iMMax])
+    zMaxString = '{:.2f}'.format(z[iMMax])
     if np.abs(z[iMMax])>0.1:
-        outAx.text(x[iMMax],y[iMMax], zMaxString,color='b', bbox=dict(facecolor='w', edgecolor='blue'))
+        outAx.text(x[iMMax],y[iMMax], zMaxString,color='b', bbox=dict(facecolor='w', edgecolor='blue'), zorder=1000)
 
     outAx.set_title(theTitle)
     return outAx

@@ -17,7 +17,7 @@ from scipy.linalg import block_diag # to create the rotation matrix
 import time
 from tqdm import tqdm
 
-def solveModel(self, reducedIntegration = False, resultsScaleIntForces = 1, resultsScaleVertDisp = 1):
+def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1):
     ''' Input/Output descriptions
         self: PlateModel class, where the geometry and the mesh are initialized
         reducedIntegration: to manage the number of Gauss integration points
@@ -172,18 +172,16 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = 1, resu
         for i in range(0,3):
             kCoeff[0+i::3]=elemNodes*3-3+i
         # uLoc = R*uGlob
-        # print('R shape: ', element.rotationMatrix.shape)
-        # print('uGlob shape: ',uGlob[kCoeff].shape )
 
         vLoc = np.matmul(element.rotationMatrix, uGlob[kCoeff])
 
-        bendingMoments[k,:] = np.matmul(Df,np.matmul(Bf, vLoc))[:,0]
-        shearForces[k,:]=np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]
+        bendingMoments[k,:] = np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*-1
+        shearForces[k,:]=np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*-1  # !!!! WHY -1?????????????????
         k+=1
-    self.results.bendingMoments=bendingMoments*resultsScaleIntForces
+    self.results.bendingMoments=bendingMoments*resultsScaleIntForces[0]
     self.results.internalForcesPositions=internalForcesPositions
     
-    self.results.shearForces = shearForces*resultsScaleIntForces
+    self.results.shearForces = shearForces*resultsScaleIntForces[1]
 
     return outPos, values
 
@@ -193,7 +191,8 @@ def rotMatrix(theta):
     '''
     A = np.array([[1., 0, 0],
                   [0, np.cos(theta), -np.sin(theta)],
-                  [0, np.sin(theta), np.cos(theta)]])
+                  [0, np.sin(theta), np.cos(theta)]], dtype=float)
+
     return A
 
 def GetLocalMatrix(xi, yi, Df,Dc, p, reducedIntegration):
@@ -414,7 +413,7 @@ class Result:
 
         z=np.abs(wVert)
         iMax = np.argmax(z)
-        self.wMax = (outPos[iMax,0],outPos[iMax,1], self.wVert[iMax]*1000)
+        self.wMax = (outPos[iMax,0],outPos[iMax,1], self.wVert[iMax])
 
 #unit testing
 if __name__ == "__main__":
