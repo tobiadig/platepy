@@ -146,7 +146,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 
     shearForces = np.zeros((len(elementsList),2))
 
-
+    k=0
     for element in elementsList:
         elemNodes = element.connectivity
         nNodes=element.nNodes
@@ -174,6 +174,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 
         bendingMoments[k,:] = np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*-1
         shearForces[k,:]=np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*-1  # !!!! WHY -1?????????????????
+        k+=1
 
     self.results.bendingMoments=bendingMoments*resultsScaleIntForces[0]
     self.results.internalForcesPositions=internalForcesPositions
