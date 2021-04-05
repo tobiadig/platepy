@@ -15,7 +15,7 @@ from matplotlib import cm   # contour plot
 def plotInputGeometry(self, figaspect = 1):
     w, h = plt.figaspect(1.)
     mult = 1.5
-    fig1, axGeometry = plt.subplots(figsize=(w*mult, h*mult))
+    fig, axGeometry = plt.subplots(figsize=(w*mult, h*mult))
 
     for plate in self.plates:
         plate.plot(axGeometry)  
@@ -27,9 +27,9 @@ def plotInputGeometry(self, figaspect = 1):
         column.plot(axGeometry)
 
     self.axes['InputGeometry'] = axGeometry
-    return axGeometry
+    return fig,axGeometry
 
-def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines', bendingMomentsToPlot = [], shearForcesToPlot = []):
+def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines', bendingMomentsToPlot = [], shearForcesToPlot = [], saveImage=False):
     outAxis = []
     valPoss = ['x', 'y', 'xy']
     
@@ -47,7 +47,10 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         z= self.results.wVert
 
         if displacementPlot == 'isolines':
-            axVertDisp = myIsoPlot(self,x,y,z, theTitle='Vertical Displacements')
+            fig,axVertDisp = myIsoPlot(self,x,y,z, theTitle='Vertical Displacements')
+            if saveImage:
+                plt.savefig('displacement.png')
+
 
 
         elif displacementPlot == '3d':
@@ -70,7 +73,7 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         y = self.results.internalForcesPositions[:,1]
         z = self.results.bendingMoments[:,0]
         if displacementPlot == 'isolines':
-            axMx = myIsoPlot(self,x,y,z, theTitle='M_x')
+            fig,axMx = myIsoPlot(self,x,y,z, theTitle='M_x')
 
         elif displacementPlot == '3d':
             fig=plt.figure()
@@ -88,7 +91,7 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         y = self.results.internalForcesPositions[:,1]
         z= self.results.bendingMoments[:,1]
         if displacementPlot == 'isolines':
-            axMy = myIsoPlot(self,x,y,z,theTitle='M_y')
+            fig,axMy = myIsoPlot(self,x,y,z,theTitle='M_y')
 
         elif displacementPlot == '3d':
             fig=plt.figure()
@@ -104,7 +107,7 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         y = self.results.internalForcesPositions[:,1]
         z= self.results.bendingMoments[:,2]
         if displacementPlot == 'isolines':
-            axMxy = myIsoPlot(self,x,y,z,theTitle='M_{xy}')
+            fig,axMxy = myIsoPlot(self,x,y,z,theTitle='M_{xy}')
            
         elif displacementPlot == '3d':
             fig=plt.figure()
@@ -120,7 +123,7 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         y = self.results.internalForcesPositions[:,1]
         z = self.results.shearForces[:,0]
         if displacementPlot == 'isolines':
-            axVx = myIsoPlot(self,x,y,z,theTitle='V_x')
+            fig,axVx = myIsoPlot(self,x,y,z,theTitle='V_x')
 
         elif displacementPlot == '3d':
             fig=plt.figure()
@@ -138,7 +141,7 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         y = self.results.internalForcesPositions[:,1]
         z = self.results.shearForces[:,1]
         if displacementPlot == 'isolines':
-            axVy = myIsoPlot(self,x,y,z,theTitle='V_y')
+            fig,axVy = myIsoPlot(self,x,y,z,theTitle='V_y')
 
         elif displacementPlot == '3d':
             fig=plt.figure()
@@ -153,7 +156,7 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
 
 
 def myIsoPlot(self,x,y,z, theTitle = ''):
-    outAx = plotInputGeometry(self)
+    fig,outAx = plotInputGeometry(self)
 
     red = np.array([255/256, 45/256, 0/256, 1])
     grey = np.array([128/256, 128/256, 128/256, 1])
@@ -194,7 +197,7 @@ def myIsoPlot(self,x,y,z, theTitle = ''):
         outAx.text(x[iMMax],y[iMMax], zMaxString,color='b', bbox=dict(facecolor='w', edgecolor='blue'), zorder=1000)
 
     outAx.set_title(theTitle)
-    return outAx
+    return fig,outAx
 
 
 
