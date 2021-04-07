@@ -136,7 +136,7 @@ class PlateModel:
             gmsh.model.mesh.embed(0, pointTags, 2, 1)#TODO: column should recognize to which plate it belongs. temporarly just plate 1
             gmsh.model.geo.synchronize()
         else:
-            gmsh.model.mesh.embed(0, pointTags, 1, 3)#TODO: column should recognize to which plate it belongs. temporarly just plate 1
+            gmsh.model.mesh.embed(0, pointTags, 1, 3)#TODO: column should recognize to which line it belongs
             gmsh.model.geo.synchronize()
     def addLoad(self, newLoad):
         '''

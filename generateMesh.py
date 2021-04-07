@@ -11,6 +11,7 @@ import pandas as pd
 import gmsh # To create CAD model and mesh
 
 def generateMesh(self,meshInput):
+
     ''' Input/Output descriptions
         self: PlateModel class, where the geometry is initialized
         meshInput: options for the creation of the mesh
@@ -67,6 +68,7 @@ def generateMesh(self,meshInput):
     # print('old: ', nodesArray)
     nodesArrayPd = pd.DataFrame(nodesArray, index = nodeTagsModel)
     nodesRotationsPd = pd.DataFrame(np.zeros(nodeTagsModel.size), index =nodeTagsModel)
+    gmshToCoherentNodesNumeration = pd.DataFrame(range(0,len(nodeTagsModel)), index = nodeTagsModel)
 
 
 
@@ -83,6 +85,7 @@ def generateMesh(self,meshInput):
 
         newElement.nNodes  = len(nodeTags)
         newElement.connectivity  = nodeTags
+        newElement.coherentConnectivity = gmshToCoherentNodesNumeration.loc[nodeTags]
 
         # old = nodesArray[nodeTags-1,:]
 
@@ -130,6 +133,7 @@ def generateMesh(self,meshInput):
 
         for node in nodeTags:
             BCsDic[node] = col.support.supportCondition
+            print('column nodes: ', node)
 
 
     
@@ -159,7 +163,7 @@ def generateMesh(self,meshInput):
 
     
     # store result in a mesh class and then in plateModel
-    self.mesh = Mesh(nodesArray,nodesRotationsPd, elementsList, BCs)
+    self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs)
 
 class MeshInput:
     '''
@@ -193,3 +197,4 @@ class Element:
         self.whichPlate  = None
         self.BbMat = None
         self.rotationMatrix = None
+        self.coherentConnectivity = None

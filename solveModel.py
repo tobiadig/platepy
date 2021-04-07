@@ -24,7 +24,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     '''
     # Loop over elements and assemble stiffness matrices
     nodes=self.mesh.nodesArray
-    nodesRotations = self.mesh.nodesRotations
+    nodesRotations = self.mesh.nodesRotations # both dataframes
     elementsList = self.mesh.elementsList
     BCs = self.mesh.BCs
     nGDofs = nodes.shape[0]*3
@@ -47,6 +47,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     for element in elementsList:
         # iterate over each element, get stiffness and creates basis for the creation of the global stiffness matrix
         elemNodes = element.connectivity
+        coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
         
         nNodes=element.nNodes
         elemNodesRotations = nodesRotations.loc[elemNodes].to_numpy()
@@ -76,10 +77,12 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         # kLocal = kLocalNotRotated
 
         # coefficients of the DOFs and assignment of the stiffness matrix / force vector
+
         kCoeff = np.zeros((3*nNodes),dtype=int)
         for i in range(0,3):
-            kCoeff[0+i::3]=elemNodes*3-3+i
-        
+
+            kCoeff[0+i::3]=coherentElemNodes*3+i
+
         rows = np.zeros(kLocal.size,dtype=int)
         columns = np.zeros(kLocal.size,dtype=int)
         c=0
@@ -127,11 +130,13 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     uGlob[fDofsInt]=Uf
 
     uGlobSparse = sparse.csr_matrix(uGlob)
+
     globalForce = np.matmul(sparseGlobalMatrix.toarray(),uGlob)
 
     # elaborate and store results
     reactionForces = globalForce[rDofsBool]
-    nodes = self.mesh.nodesArray
+    nodes = self.mesh.nodesArray.to_numpy()
+
     outPos = np.zeros((nodes.shape[0],2))
     values = np.zeros((nodes.shape[0],3))
     outPos[:,0:2]=nodes[:,0:2]
@@ -149,6 +154,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     k=0
     for element in elementsList:
         elemNodes = element.connectivity
+        coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
         nNodes=element.nNodes
 
         xi=element.coordinates[:,0]
@@ -167,7 +173,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 
         kCoeff = np.zeros((3*nNodes),dtype=int)
         for i in range(0,3):
-            kCoeff[0+i::3]=elemNodes*3-3+i
+            kCoeff[0+i::3]=coherentElemNodes*3+i
         # uLoc = R*uGlob
 
         vLoc = np.matmul(element.rotationMatrix, uGlob[kCoeff])

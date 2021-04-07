@@ -19,9 +19,9 @@ def importModel():
 
     distributedLoad = Load(np.array([-1, 0, 0]))
 
-    a=10000
-    b=10000
-    h=1
+    a=1
+    b=1
+    h=0.1
     plateDict = {}
     plateDict["outlineCoords"]=np.array([[0,0], [a,0], [a,b], [0,b], [0,0]])
 
@@ -34,24 +34,26 @@ def importModel():
     plate1 = Plate(plateDict)
 
     wallDict = {}
-    wallDict["outlineCoords"] = np.array([[0,0], [a,0], [a,b], [0,b], [0,0]])
+    # wallDict["outlineCoords"] = np.array([[0,0], [a,0], [a,b], [0,b], [0,0]])
+    wallDict["outlineCoords"] = np.array([[0.25,0.25], [0.75,0.25], [0.75,0.75], [0.25,0.75], [0.25,0.25]])
+    # wallDict["outlineCoords"] = np.array([[0,0], [a,0]])
     # wallDict["outlineCoords"] = np.array([[0,0], [a,0]])
     
     wallDict["high"] = 3 # m
     wallDict["body"] = C25_30
-    wallDict["support"] = Support(np.array([1, 1, 0]))
+    wallDict["support"] = Support(np.array([1, 1, 1]))
     wallDict["thickness"] = 0.05 # m
     wall1 = Wall(wallDict)
 
-    # wallDict["outlineCoords"] = np.array([[2*a,b], [2*a,2*b]])
-    # wall2 = Wall(wallDict)
+    wallDict["outlineCoords"] = np.array([[0,b], [a,b]])
+    wall2 = Wall(wallDict)
 
     # wallDict["outlineCoords"] = np.array([[0,b], [a,b], [a,2*b]])
     # wall1 = Wall(wallDict)
 
 
     columnDict = {}
-    columnDict["outlineCoords"] = np.array([[0.5*a,b*1]])
+    columnDict["outlineCoords"] = np.array([[0.5*a,b*0.55]])
     columnDict["high"] = 3
     columnDict["body"] = C25_30
     columnDict["support"] = Support(np.array([1, 0, 0]))
@@ -59,16 +61,19 @@ def importModel():
     columnDict["width"] = 0.05
 
     # columnDict["outlineCoords"] = np.array([[0.15*a,b*0.35]])
-    col1 = Column(columnDict,isInPlate = False)
+    col1 = Column(columnDict,isInPlate = True)
 
-    columnDict["outlineCoords"] = np.array([[a,b*0]])
+    columnDict["outlineCoords"] = np.array([[a*0.5,b]])
     col2 = Column(columnDict)
 
-    columnDict["outlineCoords"] = np.array([[a,b]])
+    columnDict["outlineCoords"] = np.array([[a,b*0.5]])
     col3 = Column(columnDict)
 
-    columnDict["outlineCoords"] = np.array([[0*a,b]])
+    columnDict["outlineCoords"] = np.array([[0.5*a,0]])
     col4 = Column(columnDict)
+    columnDict["outlineCoords"] = np.array([[0.5*a,0.5]])
+    col5 = Column(columnDict, isInPlate=True)
+
     
 
     firstModel = PlateModel("plateModel1")
@@ -80,6 +85,7 @@ def importModel():
     # firstModel.addColumn(col2)
     # firstModel.addColumn(col3)
     # firstModel.addColumn(col4)
+    # firstModel.addColumn(col5)
     firstModel.addLoad(distributedLoad)
     
 
