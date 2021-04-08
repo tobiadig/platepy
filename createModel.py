@@ -169,13 +169,6 @@ class Plate:
         coords = self.outlineCoords
         axGeometry.plot(coords[:,0],coords[:,1], color='gray')
 
-class Concrete:
-    def __init__(self, inputDict):
-        self.eModule = inputDict["eModule"]
-        self.gModule = inputDict["gModule"]
-        self.density = inputDict["density"]
-        self.nu = inputDict["nu"]
-
 class Wall:
     def __init__(self, inputDict):
         self.outlineCoords = inputDict["outlineCoords"]
@@ -237,6 +230,13 @@ class Column:
 
         ax.plot(xi,yi, color='b')
         ax.scatter(x,y,marker="D")
+
+class Concrete:
+    def __init__(self, inputDict):
+        self.eModule = inputDict["eModule"]
+        self.gModule = inputDict["gModule"]
+        self.density = inputDict["density"]
+        self.nu = inputDict["nu"]
 
 class Support:
     def __init__(self,supportCondition):

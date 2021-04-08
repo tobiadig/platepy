@@ -10,7 +10,7 @@ import pandas as pd
 
 import gmsh # To create CAD model and mesh
 
-def generateMesh(self,meshInput):
+def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, nEdgeNodes = 0):
 
     ''' Input/Output descriptions
         self: PlateModel class, where the geometry is initialized
@@ -21,10 +21,10 @@ def generateMesh(self,meshInput):
         following information are also generated and stored:
         nodes coordinates and orientation, element connectivity, boundary conditions
     '''
-    if meshInput.elementType == 'QUAD':
+    if elementType == 'QUAD':
         gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 1) #0: simple, 1: blossom (default), 2: simple full-quad, 3: blossom full-quad
         gmsh.model.geo.mesh.setRecombine(2, 1)
-    elif meshInput.elementType != 'TRI':
+    elif elementType != 'TRI':
         raise TypeError(meshInput.elementType, "not recognised")
     
     gmsh.option.setNumber("Mesh.Algorithm", 8)  # (1: MeshAdapt, 2: Automatic, 3: Initial mesh only, 5: Delaunay, 6: Frontal-Delaunay (default), 7: BAMG, 8: Frontal-Delaunay for Quads, 9: Packing of Parallelograms)
@@ -33,15 +33,15 @@ def generateMesh(self,meshInput):
     # manual assignment of edge nodes
     try:
         pointTags=gmsh.model.getEntities(0)
-        if meshInput.nEdgeNodes>0:
-            gmsh.model.geo.mesh.setTransfiniteCurve(1, meshInput.nEdgeNodes)
-            gmsh.model.geo.mesh.setTransfiniteCurve(2, meshInput.nEdgeNodes)
-            gmsh.model.geo.mesh.setTransfiniteCurve(3, meshInput.nEdgeNodes)
-            gmsh.model.geo.mesh.setTransfiniteCurve(4, meshInput.nEdgeNodes)
+        if nEdgeNodes>0:
+            gmsh.model.geo.mesh.setTransfiniteCurve(1, nEdgeNodes)
+            gmsh.model.geo.mesh.setTransfiniteCurve(2, nEdgeNodes)
+            gmsh.model.geo.mesh.setTransfiniteCurve(3, nEdgeNodes)
+            gmsh.model.geo.mesh.setTransfiniteCurve(4, nEdgeNodes)
             gmsh.model.geo.mesh.setTransfiniteSurface(1, "Left", [1, 2, 3, 4])
             gmsh.model.geo.synchronize()
         else:
-            gmsh.model.mesh.setSize(pointTags,meshInput.meshSize)
+            gmsh.model.mesh.setSize(pointTags,meshSize)
     except:
         print('manual assignment of edge nodes failed')
         raise
@@ -58,7 +58,7 @@ def generateMesh(self,meshInput):
         raise
     
     # eventually open fltk UI
-    if meshInput.showGmshMesh:
+    if showGmshMesh:
         gmsh.fltk.run()
 
     #generate nodes array
@@ -135,9 +135,6 @@ def generateMesh(self,meshInput):
             BCsDic[node] = col.support.supportCondition
             print('column nodes: ', node)
 
-
-    
-
     BCs = np.zeros((len(BCsDic), 4))
     for count, a in enumerate(BCsDic):
         BCs[count, 0] = a
@@ -160,20 +157,8 @@ def generateMesh(self,meshInput):
     #     else:
     #         BCs = np.append(BCs,BCsTemp, axis=0)
 
-
-    
     # store result in a mesh class and then in plateModel
     self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs)
-
-class MeshInput:
-    '''
-        options for the creation of the model mesh
-    '''
-    def __init__(self, showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, nEdgeNodes = 0):
-        self.showGmshMesh = showGmshMesh
-        self.elementType = elementType
-        self.meshSize = meshSize
-        self.nEdgeNodes = nEdgeNodes
 
 class Mesh:
     '''

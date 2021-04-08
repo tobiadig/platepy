@@ -22,10 +22,15 @@ plt.imshow(a,interpolation='none',norm=norm,cmap=cmap)
 plt.colorbar()
 plt.show()
 #%%
-import numpy as np
-a = '0,0,10,0,10,10,0,10,0,0'
-# a='1,2,3,4,5,6,7,8'
-a=a.split(',')
-a=np.array(a,dtype=float)
-a=a.reshape((-1,2))
-print(a)
+test = {}
+
+test['triangular']={}
+test['triangular'][1]={}
+test['triangular'][1]['points'] = [0,1,2]
+print(test['triangular'][1]['points'])
+#%%
+test={'triangular': {1: {'points': [0, 1, 2]}}, 
+        'quadrangular': 0
+}
+
+print(test)

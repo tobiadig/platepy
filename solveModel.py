@@ -174,7 +174,6 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         kCoeff = np.zeros((3*nNodes),dtype=int)
         for i in range(0,3):
             kCoeff[0+i::3]=coherentElemNodes*3+i
-        # uLoc = R*uGlob
 
         vLoc = np.matmul(element.rotationMatrix, uGlob[kCoeff])
 
@@ -211,49 +210,24 @@ def GetLocalMatrix(xi, yi, Df,Dc, p, reducedIntegration):
     '''
     elemType = len(xi)
 
+    gaussQuadrature = GetGaussQuadrature()
     if elemType==3:
     # 1 point
-        gaussPointsRed =  np.array([[1/3, 1/3]])
-        gaussWeightsRed =  np.array([1/2])
+        gaussPointsRed =  gaussQuadrature['triangular'][1]['points']
+        gaussWeightsRed =  gaussQuadrature['triangular'][1]['weights']
 
     # 3 points            
-        gaussPoints =  np.array([[1/6, 1/6],
-                                [2/3,   1/6],
-                                [1/6, 2/3]])
-        gaussWeights =  np.array([1/6, 1/6, 1/6])
-    # 4 points
-        # gaussPoints =  np.array([[1/3, 1/3],
-        #                         [1/5, 1/5],
-        #                         [3/5, 1/5],
-        #                         [1/5, 3/5]])
-        # gaussWeights =  np.array([-27/96, 25/96, 25/96, 25/96])
+        gaussPoints =  gaussQuadrature['triangular'][3]['points']
+        gaussWeights =  gaussQuadrature['triangular'][3]['weights']
 
     elif elemType == 4:
     # 1 point
-        gaussPointsRed =  np.array([[0, 0]])
-        gaussWeightsRed =  np.array([4])
+        gaussPointsRed =  gaussQuadrature['rectangular'][1]['points']
+        gaussWeightsRed =  gaussQuadrature['rectangular'][1]['weights']
 
     # 4 points
-        tempVal = 1/np.sqrt(3)
-        gaussPoints =  np.array([[-tempVal, -tempVal],
-                                [tempVal,   -tempVal],
-                                [tempVal,tempVal],
-                                [-tempVal, tempVal]])
-        gaussWeights =  np.array([1, 1, 1, 1])
-
-    # 9 points
-        # tempVal = np.sqrt(3/5)
-
-        # gaussPoints =  np.array([[-tempVal, -tempVal],
-        #                         [ 0      , -tempVal],
-        #                         [+tempVal, -tempVal],
-        #                         [-tempVal,    0    ],
-        #                         [   0    ,    0    ] ,
-        #                         [+tempVal,    0    ],
-        #                         [-tempVal, +tempVal],
-        #                         [   0    , +tempVal],
-        #                         [+tempVal, +tempVal]])
-        # gaussWeights =  np.array([25, 40, 25, 40, 64, 40, 25, 40, 25])/81
+        gaussPoints =  gaussQuadrature['rectangular'][4]['points']
+        gaussWeights =  gaussQuadrature['rectangular'][4]['weights']
 
     kLocal = np.zeros((3*elemType,3*elemType))
     fLocal = np.zeros(3*elemType)
@@ -270,7 +244,7 @@ def GetLocalMatrix(xi, yi, Df,Dc, p, reducedIntegration):
 
         kLocal += wi*m12*detJ
 
-    #Reduced integration for shear contribution
+    #Reduced integration for shear contribution and force
     for i in range(0,gaussPointsRed.shape[0]):
         ri = gaussPointsRed[i,0]
         si = gaussPointsRed[i,1]
@@ -400,6 +374,42 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
         Bc[1,2::3]=Nval
         return N, Bf,Bc, detJ
 
+def GetGaussQuadrature():
+    gaussQuadrature={'triangular': {1:{'points': np.array([[1/3, 1/3]]),
+                                    'weights': np.array([1/2])},
+
+                                    3:{'points': np.array([[1/6, 1/6],
+                                                            [2/3,   1/6],
+                                                            [1/6, 2/3]]),
+                                    'weights': np.array([1/6, 1/6, 1/6])},
+
+                                    4:{'points': np.array([[1/3, 1/3],
+                                                            [1/5, 1/5],
+                                                            [3/5, 1/5],
+                                                            [1/5, 3/5]]),
+                                    'weights': np.array([-27/96, 25/96, 25/96, 25/96])}},
+
+                    'rectangular':{1:{'points': np.array([[0, 0]]),
+                                    'weights': np.array([4])},
+
+                                    4:{'points': np.array([[-1/np.sqrt(3), -1/np.sqrt(3)],
+                                                            [1/np.sqrt(3),   -1/np.sqrt(3)],
+                                                            [1/np.sqrt(3),1/np.sqrt(3)],
+                                                            [-1/np.sqrt(3), 1/np.sqrt(3)]]),
+                                    'weights': np.array([1, 1, 1, 1])},
+
+                                    9:{'points': np.array([[-np.sqrt(3/5), -np.sqrt(3/5)],
+                                                            [ 0      , -np.sqrt(3/5)],
+                                                            [+np.sqrt(3/5), -np.sqrt(3/5)],
+                                                            [-np.sqrt(3/5),    0    ],
+                                                            [   0    ,    0    ] ,
+                                                            [+np.sqrt(3/5),    0    ],
+                                                            [-np.sqrt(3/5), +np.sqrt(3/5)],
+                                                            [   0    , +np.sqrt(3/5)],
+                                                            [+np.sqrt(3/5), +np.sqrt(3/5)]]),
+                                    'weights': np.array([25, 40, 25, 40, 64, 40, 25, 40, 25])/81}},}
+    return gaussQuadrature
+
 class Result:
     '''
         class which stores all model output
@@ -421,75 +431,76 @@ class Result:
 
 #unit testing
 if __name__ == "__main__":
+    pass
+
+
     # %matplotlib
-    import matplotlib.pyplot as plt
+    # import matplotlib.pyplot as plt
 
-    # import sample plate and show it
-    import sampleGeometry
-    from displayModel import *
-    sampleModel=sampleGeometry.importModel()
-    plotInputGeometry(sampleModel)
+    # # import sample plate and show it
+    # import sampleGeometry
+    # from displayModel import *
+    # sampleModel=sampleGeometry.importModel()
+    # plotInputGeometry(sampleModel)
 
-    # create mesh
-    from generateMesh import *
-    meshInput1=MeshInput(showGmshMesh=False, elementType='QUAD', nEdgeNodes=33)
-    #meshInput1=MeshInput(showGmshMesh=True, elementType='QUAD', meshSize=5e-2)
-    generateMesh(sampleModel, meshInput1)
+    # # create mesh
+    # from generateMesh import *
+    # meshInput1=MeshInput(showGmshMesh=False, elementType='QUAD', nEdgeNodes=33)
+    # #meshInput1=MeshInput(showGmshMesh=True, elementType='QUAD', meshSize=5e-2)
+    # generateMesh(sampleModel, meshInput1)
 
-    # compute
-    from solveModel import *
-    solveModel(sampleModel)
-    # display results
-    plotResults(sampleModel)
+    # # compute
+    # from solveModel import *
+    # solveModel(sampleModel)
+    # # display results
+    # plotResults(sampleModel)
 
-    coords = sampleModel.results.outPos
-    z = sampleModel.results.wVert
-    x = coords[:,0]
-    y=coords[:,1]
-    fig = plt.figure()
-
-    ax = fig.gca(projection='3d')
-    t=10
-    ax.plot_trisurf(x*10,y*10,z,cmap=cm.jet)
-
-
-    def axisEqual3D(ax):
-        extents = np.array([getattr(ax, 'get_{}lim'.format(dim))() for dim in 'xyz'])
-        sz = extents[:,1] - extents[:,0]
-        centers = np.mean(extents, axis=1)
-        # maxsize = max(abs(sz))
-        r = sz[2]/2*2.6
-        for ctr, dim in zip([centers[2]], 'z'):
-            getattr(ax, 'set_{}lim'.format(dim))(ctr - r, ctr + r)
-
-    # extents = np.array([getattr(ax, 'get_zlim'))
-    # sz = extents[:,1] - extents[:,0]
-    # centers = np.mean(extents, axis=1)
-    # getattr(ax, 'set_zlim')()
-    axisEqual3D(ax)
-    # Hide grid lines
-    ax.grid(False)
-
-    # Hide axes ticks
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.set_zticks([])
-
-    plt.show()
-
-    # from mpl_toolkits.mplot3d import Axes3D # 3D plot
-    # x= sampleModel.results.bendingMomentsPositions[:,0]
-    # y = sampleModel.results.bendingMomentsPositions[:,1]
-    # z= sampleModel.results.bendingMoments[:,0]
-    # #z= sampleModel.results.shearForce[:,0]
-
-    # # print('x, y: ',sampleModel.results.bendingMomentsPositions)
-    # # print(z[0::10])
-
-    # fig = plt.figure(
+    # coords = sampleModel.results.outPos
+    # z = sampleModel.results.wVert
+    # x = coords[:,0]
+    # y=coords[:,1]
+    # fig = plt.figure()
 
     # ax = fig.gca(projection='3d')
-    # ax.plot_trisurf(x,y,z,cmap=cm.jet)
+    # t=10
+    # ax.plot_trisurf(x*10,y*10,z,cmap=cm.jet)
+
+
+    # def axisEqual3D(ax):
+    #     extents = np.array([getattr(ax, 'get_{}lim'.format(dim))() for dim in 'xyz'])
+    #     sz = extents[:,1] - extents[:,0]
+    #     centers = np.mean(extents, axis=1)
+    #     # maxsize = max(abs(sz))
+    #     r = sz[2]/2*2.6
+    #     for ctr, dim in zip([centers[2]], 'z'):
+    #         getattr(ax, 'set_{}lim'.format(dim))(ctr - r, ctr + r)
+
+    # # extents = np.array([getattr(ax, 'get_zlim'))
+    # # sz = extents[:,1] - extents[:,0]
+    # # centers = np.mean(extents, axis=1)
+    # # getattr(ax, 'set_zlim')()
+    # axisEqual3D(ax)
+    # # Hide grid lines
+    # ax.grid(False)
+
+    # # Hide axes ticks
+    # ax.set_xticks([])
+    # ax.set_yticks([])
+    # ax.set_zticks([])
+
     # plt.show()
 
+    # # from mpl_toolkits.mplot3d import Axes3D # 3D plot
+    # # x= sampleModel.results.bendingMomentsPositions[:,0]
+    # # y = sampleModel.results.bendingMomentsPositions[:,1]
+    # # z= sampleModel.results.bendingMoments[:,0]
+    # # #z= sampleModel.results.shearForce[:,0]
 
+    # # # print('x, y: ',sampleModel.results.bendingMomentsPositions)
+    # # # print(z[0::10])
+
+    # # fig = plt.figure(
+
+    # # ax = fig.gca(projection='3d')
+    # # ax.plot_trisurf(x,y,z,cmap=cm.jet)
+    # # plt.show()

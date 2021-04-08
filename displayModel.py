@@ -92,7 +92,7 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         elif displacementPlot == '3d':
             fig=plt.figure()
             axMx = fig.gca(projection='3d')
-            axMx.plot_trisurf(newCoords[:,0],newCoords[:,1],newZ,cmap=cm.jet)
+            axMx.plot_trisurf(x,y,z,cmap=cm.jet)
 
         else:
             raise TypeError('type of plot does not exist')
@@ -116,7 +116,7 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         elif displacementPlot == '3d':
             fig=plt.figure()
             axMy = fig.gca(projection='3d')
-            axMy.plot_trisurf(newCoords[:,0],newCoords[:,1],newZ,cmap=cm.jet)
+            axMy.plot_trisurf(x,y,z,cmap=cm.jet)
         else:
             raise TypeError('type of plot does not exist')
         self.axes['My'] = axMy
@@ -138,7 +138,7 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         elif displacementPlot == '3d':
             fig=plt.figure()
             axMxy = fig.gca(projection='3d')
-            axMxy.plot_trisurf(newCoords[:,0],newCoords[:,1],newZ,cmap=cm.jet)
+            axMxy.plot_trisurf(x,y,z,cmap=cm.jet)
         else:
             raise TypeError('type of plot does not exist')
         self.axes['Mxy'] = axMxy
@@ -160,7 +160,7 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         elif displacementPlot == '3d':
             fig=plt.figure()
             axVx = fig.gca(projection='3d')
-            axVx.plot_trisurf(newCoords[:,0],newCoords[:,1],newZ,cmap=cm.jet)
+            axVx.plot_trisurf(x,y,z,cmap=cm.jet)
 
         else:
             raise TypeError('type of plot does not exist')
@@ -184,7 +184,7 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         elif displacementPlot == '3d':
             fig=plt.figure()
             axVy = fig.gca(projection='3d')
-            axVy.plot_trisurf(newCoords[:,0],newCoords[:,1],newZ,cmap=cm.jet)
+            axVy.plot_trisurf(x,y,z,cmap=cm.jet)
 
         else:
             raise TypeError('type of plot does not exist')
