@@ -23,7 +23,7 @@ def importModel():
     b=10
     h=0.1
     plateDict = {}
-    plateDict["outlineCoords"]=np.array([[0,0], [a,0], [a,b], [0,b], [0,0]])
+    plateDict["outlineCoords"]=np.array([[0,0], [a,0], [a,b], [2*a,b],[2*a,2*b],[0,2*b], [0,0]])
     plateDict["thickness"] = h
     plateDict["surfaceLevel"] = 0
     plateDict["body"]=C25_30
@@ -31,16 +31,31 @@ def importModel():
     plate1 = Plate(plateDict)
 
     wallDict = {}
-    wallDict["outlineCoords"] = np.array([[0,0], [a,0], [a,b], [0,b], [0,0]])
+    wallDict["outlineCoords"] = np.array([[0,0], [a,0]])
     wallDict["high"] = 3 # m
     wallDict["body"] = C25_30
     wallDict["support"] = Support(np.array([1, 1, 0]))
     wallDict["thickness"] = 0.5 # m
     wall1 = Wall(wallDict)
 
+    wallDict['outlineCoords'] = np.array([[2*a,b], [2*a,2*b]])
+    wall2 = Wall(wallDict)
+
+    columnDict = {}
+    columnDict["outlineCoords"] = np.array([[0,b*2]])
+    columnDict["high"] = 3
+    columnDict["body"] = C25_30
+    columnDict["support"] = Support(np.array([1, 0, 0]))
+    columnDict["crossSection"] = None
+    columnDict["width"] = 0.5
+
+    col1 = Column(columnDict,isInPlate = False)
+
     firstModel = PlateModel("plateModel1")
     firstModel.addPlate(plate1)
     firstModel.addWall(wall1)
+    firstModel.addWall(wall2)
+    firstModel.addColumn(col1)
     firstModel.addLoad(distributedLoad)
     
     return firstModel

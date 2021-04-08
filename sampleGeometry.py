@@ -23,7 +23,7 @@ def importModel():
     b=1
     h=0.1
     plateDict = {}
-    plateDict["outlineCoords"]=np.array([[0,0], [a,0], [a,b], [0,b], [0,0]])
+    plateDict["outlineCoords"]=np.array([[0,0],[0.5*a, 0], [a,0],[a, 0.5*b], [a,b], [0,b], [0,0]])
 
     # plateDict["outlineCoords"]=np.array([[0,0], [1,0], [1,1], [2,1], [2,2], [0, 2], [0,0]])
 
@@ -34,8 +34,9 @@ def importModel():
     plate1 = Plate(plateDict)
 
     wallDict = {}
-    # wallDict["outlineCoords"] = np.array([[0,0], [a,0], [a,b], [0,b], [0,0]])
-    wallDict["outlineCoords"] = np.array([[0.25,0.25], [0.75,0.25], [0.75,0.75], [0.25,0.75], [0.25,0.25]])
+    wallDict["outlineCoords"] = np.array([[0,0], [a,0], [a,b], [0,b], [0,0]])
+    wallDict["outlineCoords"] = np.array([[0,0], [a*0.5,0], [a*0.5,b*0.5]])
+    # wallDict["outlineCoords"] = np.array([[0.25,0.25], [0.75,0.25], [0.75,0.75], [0.25,0.75], [0.25,0.25]])
     # wallDict["outlineCoords"] = np.array([[0,0], [a,0]])
     # wallDict["outlineCoords"] = np.array([[0,0], [a,0]])
     
@@ -45,7 +46,7 @@ def importModel():
     wallDict["thickness"] = 0.05 # m
     wall1 = Wall(wallDict)
 
-    wallDict["outlineCoords"] = np.array([[0,b], [a,b]])
+    wallDict["outlineCoords"] = np.array([[a,b*0.5], [a,b]])
     wall2 = Wall(wallDict)
 
     # wallDict["outlineCoords"] = np.array([[0,b], [a,b], [a,2*b]])
@@ -80,7 +81,7 @@ def importModel():
     
     firstModel.addPlate(plate1)
     firstModel.addWall(wall1)
-    # firstModel.addWall(wall2)
+    firstModel.addWall(wall2)
     # firstModel.addColumn(col1)
     # firstModel.addColumn(col2)
     # firstModel.addColumn(col3)

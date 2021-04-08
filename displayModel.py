@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 
 from mpl_toolkits.mplot3d import Axes3D # 3D plot
 from matplotlib import cm   # contour plot
+import base64
+from io import BytesIO
 
 def plotInputGeometry(self, figaspect = 1):
     w, h = plt.figaspect(1.)
@@ -31,6 +33,7 @@ def plotInputGeometry(self, figaspect = 1):
 
 def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines', bendingMomentsToPlot = [], shearForcesToPlot = [], saveImage=False):
     outAxis = []
+    outFig = []
     valPoss = ['x', 'y', 'xy']
     
     outVal = np.zeros(6, dtype=bool)
@@ -49,9 +52,14 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         if displacementPlot == 'isolines':
             fig,axVertDisp = myIsoPlot(self,x,y,z, theTitle='Vertical Displacements')
             if saveImage:
-                plt.savefig('displacement.png')
-
-
+                buf = BytesIO()
+                fig.savefig(buf, format="png")
+                data0 = base64.b64encode(buf.getbuffer()).decode("ascii")
+                # plt.savefig(r'C:\Users\Diggelmann\Desktop\FEMFlask\static\images\new_plot.png')
+                outFig.append(data0)
+        
+        # Embed the result in the html output.
+        
 
         elif displacementPlot == '3d':
             fig = plt.figure()
@@ -74,6 +82,12 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         z = self.results.bendingMoments[:,0]
         if displacementPlot == 'isolines':
             fig,axMx = myIsoPlot(self,x,y,z, theTitle='M_x')
+            if saveImage:
+                buf = BytesIO()
+                fig.savefig(buf, format="png")
+                data1 = base64.b64encode(buf.getbuffer()).decode("utf8")
+                # plt.savefig(r'C:\Users\Diggelmann\Desktop\FEMFlask\static\images\new_plot.png')
+                outFig.append(data1)
 
         elif displacementPlot == '3d':
             fig=plt.figure()
@@ -92,6 +106,12 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         z= self.results.bendingMoments[:,1]
         if displacementPlot == 'isolines':
             fig,axMy = myIsoPlot(self,x,y,z,theTitle='M_y')
+            if saveImage:
+                buf = BytesIO()
+                fig.savefig(buf, format="png")
+                data2 = base64.b64encode(buf.getbuffer()).decode("ascii")
+                # plt.savefig(r'C:\Users\Diggelmann\Desktop\FEMFlask\static\images\new_plot.png')
+                outFig.append(data2)
 
         elif displacementPlot == '3d':
             fig=plt.figure()
@@ -108,6 +128,12 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         z= self.results.bendingMoments[:,2]
         if displacementPlot == 'isolines':
             fig,axMxy = myIsoPlot(self,x,y,z,theTitle='M_{xy}')
+            if saveImage:
+                buf = BytesIO()
+                fig.savefig(buf, format="png")
+                data3 = base64.b64encode(buf.getbuffer()).decode("ascii")
+                # plt.savefig(r'C:\Users\Diggelmann\Desktop\FEMFlask\static\images\new_plot.png')
+                outFig.append(data3)
            
         elif displacementPlot == '3d':
             fig=plt.figure()
@@ -124,6 +150,12 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         z = self.results.shearForces[:,0]
         if displacementPlot == 'isolines':
             fig,axVx = myIsoPlot(self,x,y,z,theTitle='V_x')
+            if saveImage:
+                buf = BytesIO()
+                fig.savefig(buf, format="png")
+                data4 = base64.b64encode(buf.getbuffer()).decode("ascii")
+                # plt.savefig(r'C:\Users\Diggelmann\Desktop\FEMFlask\static\images\new_plot.png')
+                outFig.append(data4)
 
         elif displacementPlot == '3d':
             fig=plt.figure()
@@ -142,6 +174,12 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         z = self.results.shearForces[:,1]
         if displacementPlot == 'isolines':
             fig,axVy = myIsoPlot(self,x,y,z,theTitle='V_y')
+            if saveImage:
+                buf = BytesIO()
+                fig.savefig(buf, format="png")
+                data5 = base64.b64encode(buf.getbuffer()).decode("ascii")
+                # plt.savefig(r'C:\Users\Diggelmann\Desktop\FEMFlask\static\images\new_plot.png')
+                outFig.append(data5)
 
         elif displacementPlot == '3d':
             fig=plt.figure()
@@ -153,6 +191,8 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
 
         self.axes['Vy'] = axVy
         outAxis.append(axVy)
+
+    return outFig, outAxis
 
 
 def myIsoPlot(self,x,y,z, theTitle = ''):

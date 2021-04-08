@@ -43,8 +43,8 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     startIndexStiffness = 0
     startIndexForce = 0
     k=0
-    # for element in tqdm(elementsList):
-    for element in elementsList:
+    for element in tqdm(elementsList):
+    # for element in elementsList:
         # iterate over each element, get stiffness and creates basis for the creation of the global stiffness matrix
         elemNodes = element.connectivity
         coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
