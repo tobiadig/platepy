@@ -17,7 +17,7 @@ def importModel():
     ConcreteDict["nu"] = 0.17
     C25_30 = Concrete(ConcreteDict)
 
-    distributedLoad = Load(np.array([-1, 0, 0]))
+    distributedLoad = Load('area',np.array([-1, 0, 0]))
 
     a=10
     b=10

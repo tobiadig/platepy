@@ -29,8 +29,24 @@ test['triangular'][1]={}
 test['triangular'][1]['points'] = [0,1,2]
 print(test['triangular'][1]['points'])
 #%%
-test={'triangular': {1: {'points': [0, 1, 2]}}, 
-        'quadrangular': 0
-}
+import numpy as np
+A=np.array([[1,2], [3,4]])
+B =  np.array([[1,2], [3,4]])
+C = np.array([[1,2], [3,4]])
 
-print(test)
+
+
+#%%
+import numpy as np
+N1 = lambda r, s: 1*np.ones(len(r))
+N3 = lambda r, s: (1-r)*(1-s)
+ri=np.array([1,2,3])
+si = np.array([1,2,3])
+A=np.array([N1(ri,si),N3(ri,si)])
+print(A[1,2])
+
+#%%
+import numpy as np
+a=np.array([1,2,3])
+a=a.reshape((3,1))
+print(a.shape)

@@ -43,8 +43,8 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     startIndexStiffness = 0
     startIndexForce = 0
     k=0
-    for element in tqdm(elementsList):
-    # for element in elementsList:
+    # for element in tqdm(elementsList):
+    for element in elementsList:
         # iterate over each element, get stiffness and creates basis for the creation of the global stiffness matrix
         elemNodes = element.connectivity
         coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
@@ -99,7 +99,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         startIndexStiffness += rows.size
         
         rowsForForceSparseMatrix[startIndexForce:startIndexForce+kCoeff.size] = kCoeff
-        dataForForceSparseMatrix[startIndexForce:startIndexForce+kCoeff.size] = fLocal
+        dataForForceSparseMatrix[startIndexForce:startIndexForce+kCoeff.size] = fLocal[:,0]
         startIndexForce += kCoeff.size
         k+=1
 
@@ -168,7 +168,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         Dc = self.plates[0].Dc
 
         elemType = len(xi)
-        N, Bf,Bc, detJ = GetShapeFunction(elemType,0, 0, xi, yi)
+        N, Bf,Bc, detJ = GetShapeFunction(elemType,np.array([0]), np.array([0]), xi, yi)
         element.BbMat = Bf
 
         kCoeff = np.zeros((3*nNodes),dtype=int)
@@ -211,6 +211,7 @@ def GetLocalMatrix(xi, yi, Df,Dc, p, reducedIntegration):
     elemType = len(xi)
 
     gaussQuadrature = GetGaussQuadrature()
+
     if elemType==3:
     # 1 point
         gaussPointsRed =  gaussQuadrature['triangular'][1]['points']
@@ -229,40 +230,72 @@ def GetLocalMatrix(xi, yi, Df,Dc, p, reducedIntegration):
         gaussPoints =  gaussQuadrature['rectangular'][4]['points']
         gaussWeights =  gaussQuadrature['rectangular'][4]['weights']
 
-    kLocal = np.zeros((3*elemType,3*elemType))
+    # kLocal = np.zeros((3*elemType,3*elemType))
     fLocal = np.zeros(3*elemType)
 
     #full integration for bending component
-    for i in range(0,gaussPoints.shape[0]):
-        ri = gaussPoints[i,0]
-        si = gaussPoints[i,1]
-        wi = gaussWeights[i]
-        N, Bf,Bc, detJ = GetShapeFunction(elemType,ri, si, xi, yi)
+    # for i in range(0,gaussPoints.shape[0]):
+    #     ri = gaussPoints[i,0]
+    #     si = gaussPoints[i,1]
+    #     wi = gaussWeights[i]
+    #     N, Bf,Bc, detJ = GetShapeFunction(elemType,ri, si, xi, yi)
         
-        m11 = np.matmul(Bf.transpose(),Df)
-        m12 = np.matmul(m11,Bf)
+    #     m11 = np.matmul(Bf.transpose(),Df)
+    #     m12 = np.matmul(m11,Bf)
 
-        kLocal += wi*m12*detJ
+    #     # kLocal += wi*m12*detJ
+    #     kLocal += wi*m12*detJ
+
+    ri = gaussPoints[:,0]
+
+    si = gaussPoints[:,1]
+    wi = gaussWeights
+    N, Bf,Bc, detJ = GetShapeFunction(elemType,ri, si, xi, yi)
+
+    m11 = np.matmul(Bf.transpose((0,2,1)),Df)
+    m12 = np.matmul(m11,Bf)
+
+    # kLocal += wi*m12*detJ
+    # matrixes stacked on axis 0, for .dot operation has to be 2!
+    m12 = np.moveaxis(m12,0,-1)
+    kLocal = np.dot(m12,wi*detJ)
 
     #Reduced integration for shear contribution and force
-    for i in range(0,gaussPointsRed.shape[0]):
-        ri = gaussPointsRed[i,0]
-        si = gaussPointsRed[i,1]
-        wi = gaussWeightsRed[i]
-        N, Bf,Bc, detJ = GetShapeFunction(elemType,ri, si, xi, yi)
+    # for i in range(0,gaussPointsRed.shape[0]):
+    ri = gaussPointsRed[:,0]
 
-        m21 = np.matmul(Bc.transpose(),Dc) 
-        m22 = np.matmul(m21,Bc)
+    si = gaussPointsRed[:,1]
+    wi = gaussWeightsRed[:]
+    N, Bf,Bc, detJ = GetShapeFunction(elemType,ri, si, xi, yi)
 
-        kLocal += wi*m22*detJ
+    m21 = np.matmul(Bc.transpose((0,2,1)),Dc) 
+    m22 = np.matmul(m21,Bc)
+    m22 = np.moveaxis(m22,0,-1)
+    # print('m22 shape: ', m22.shape)
+    # print('rest shape: ', (wi*detJ).shape)
+    kLocal += np.dot(m22,wi*detJ)
+    # kLocal = np.dot(wi*detJ,m22)
 
-    for i in range(0,gaussPointsRed.shape[0]):
-        ri = gaussPointsRed[i,0]
-        si = gaussPointsRed[i,1]
-        wi = gaussWeightsRed[i]
-        N, Bf,Bc, detJ = GetShapeFunction(elemType,ri, si, xi, yi)
+    # for i in range(0,gaussPointsRed.shape[0]):
+    ri = gaussPoints[:,0]
+    si = gaussPoints[:,1]
 
-        fLocal += wi*np.matmul(N.transpose(),p)*detJ
+    wi = gaussWeights[:]
+    N, Bf,Bc, detJ = GetShapeFunction(elemType,ri, si, xi, yi)
+    
+    mTemp = np.matmul(N.transpose((0,2,1)),p)
+    mTemp=np.expand_dims(mTemp,2)
+    mTemp = np.moveaxis(mTemp,0,-1)
+
+    fLocal = np.dot(mTemp,wi*detJ)
+
+
+        # ri = gaussPoints[i,0]
+        # si = gaussPoints[i,1]
+        # wi = gaussWeights[i]
+        # N, Bf,Bc, detJ = GetShapeFunction(elemType,ri, si, xi, yi)
+        # mTemp = np.matmul(N.transpose((0,2,1)),p).reshape((-1,1,1))
+        # fLocal += np.matmul(N.transpose,p)*wi*detJ
 
     return kLocal, fLocal
 
@@ -276,11 +309,11 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
                 B: values of the deformation matrix at ri, si [1x3 array]
                 detJ: Determinant of the Jacobian matrix [float]
     '''
-
+    nPoints = ri.size
     nodeCoordinates = np.zeros((elemType, 2))
     nodeCoordinates[:,0]=xi
     nodeCoordinates[:,1]=yi
-
+    
     if elemType == 3:
         # Define shape functions
         N1 = lambda r, s: r
@@ -289,42 +322,44 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
         
         # Form the shape function matrix
         Nfun= lambda r, s: [N1(r,s), N2(r,s), N3(r,s)]
-        Nval=Nfun(ri, si)
-        N=np.zeros((3, 3*3))
-        N[0, 0:N.shape[1]:3]=Nval
-        N[1, 1:N.shape[1]:3]=Nval
-        N[2, 2:N.shape[1]:3]=Nval
-
-
+        Nval=np.array(Nfun(ri, si))
+        Nval=np.moveaxis(Nval, -1, 0)
+        N=np.zeros((nPoints,3, 3*elemType))
+        N[:,0, 0::3]=Nval
+        N[:,1, 1::3]=Nval
+        N[:,2, 2::3]=Nval
 
         # Define shape function derivatives, derive deformation matrix
-        N1r = lambda r, s: 1
-        N2r = lambda r, s: 0
-        N3r = lambda r, s: -1
+        N1r = lambda r, s: 1*np.ones(len(r))
+        N2r = lambda r, s: 0*np.ones(len(r))
+        N3r = lambda r, s: -1*np.ones(len(r))
 
-        N1s = lambda r, s: 0
-        N2s = lambda r, s: 1
-        N3s = lambda r, s: -1
+        N1s = lambda r, s: 0*np.ones(len(r))
+        N2s = lambda r, s: 1*np.ones(len(r))
+        N3s = lambda r, s: -1*np.ones(len(r))
 
         NrsFun = lambda r,s: np.array([[N1r(r, s), N1s(r, s)], [N2r(r, s), N2s(r, s)], [N3r(r, s), N3s(r, s)]])
-        NrsVal=NrsFun(ri,si)
+        NrsVal=np.array(NrsFun(ri,si))
+        NrsVal=np.moveaxis(NrsVal, -1, 0)
 
         # Jacobian matrix
         J=np.matmul(nodeCoordinates.transpose(), NrsVal)
         detJ = np.linalg.det(J)
+        invJ = np.linalg.inv(J)
 
-        Bf=np.zeros((3,3*3))
-        NrsVal = np.matmul(NrsVal,np.linalg.inv(J))
-        Bf[0,1::3]=NrsVal[:,0]
-        Bf[1,2::3]=NrsVal[:,1]
-        Bf[2,1::3]=NrsVal[:,1]
-        Bf[2,2::3]=NrsVal[:,0]
+        NrsVal = np.matmul(NrsVal,invJ)
+        Bf=np.zeros((nPoints,3,3*elemType))
+        
+        Bf[:,0,1::3]=NrsVal[:,:,0]
+        Bf[:,1,2::3]=NrsVal[:,:,1]
+        Bf[:,2,1::3]=NrsVal[:,:,1]
+        Bf[:,2,2::3]=NrsVal[:,:,0]
 
-        Bc=np.zeros((2,3*3))
-        Bc[0,0::3]=NrsVal[:,0]
-        Bc[0,1::3]=Nval
-        Bc[1,0::3]=NrsVal[:,1]
-        Bc[1,2::3]=Nval
+        Bc=np.zeros((nPoints,2,3*elemType))
+        Bc[:,0,0::3]=NrsVal[:,:,0]
+        Bc[:,0,1::3]=Nval[:]
+        Bc[:,1,0::3]=NrsVal[:,:,1]
+        Bc[:,1,2::3]=Nval[:]
         return N, Bf,Bc, detJ
     
     elif elemType==4:
@@ -336,11 +371,13 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
 
         # Form the shape function matrix
         Nfun= lambda r, s: [N1(r,s), N2(r,s), N3(r,s), N4(r,s)]
-        Nval=Nfun(ri, si)
-        N=np.zeros((3, 3*elemType))
-        N[0, 0::3]=Nval
-        N[1, 1::3]=Nval
-        N[2, 2::3]=Nval
+        Nval=np.array(Nfun(ri, si))
+        Nval=np.moveaxis(Nval, -1, 0)
+
+        N=np.zeros((nPoints,3, 3*elemType))
+        N[:,0, 0::3]=Nval
+        N[:,1, 1::3]=Nval
+        N[:,2, 2::3]=Nval
 
         # Define shape function derivatives, derive deformation matrix
         N1r = lambda r, s: -0.25*(1-s)
@@ -354,24 +391,27 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
         N4s = lambda r, s: 0.25*(1-r)
 
         NrsFun = lambda r,s: np.array([[N1r(r, s), N1s(r, s)], [N2r(r, s), N2s(r, s)], [N3r(r, s), N3s(r, s)],[N4r(r, s), N4s(r, s)]])
-        NrsVal=NrsFun(ri,si)
+        NrsVal=np.array(NrsFun(ri,si))
+        NrsVal = np.moveaxis(NrsVal,-1,0)
+        # matmul treat NrsVal as stack of matrixes residing in the LAST 2 indexes
+
 
         J=np.matmul(nodeCoordinates.transpose(), NrsVal)
         detJ = np.linalg.det(J)
         invJ = np.linalg.inv(J)
 
         NrsVal = np.matmul(NrsVal,invJ)
-        Bf=np.zeros((3,3*elemType))
-        Bf[0,1::3]=NrsVal[:,0]
-        Bf[1,2::3]=NrsVal[:,1]
-        Bf[2,1::3]=NrsVal[:,1]
-        Bf[2,2::3]=NrsVal[:,0]
+        Bf=np.zeros((nPoints,3,3*elemType))
+        Bf[:,0,1::3]=NrsVal[:,:,0]
+        Bf[:,1,2::3]=NrsVal[:,:,1]
+        Bf[:,2,1::3]=NrsVal[:,:,1]
+        Bf[:,2,2::3]=NrsVal[:,:,0]
 
-        Bc=np.zeros((2,3*elemType))
-        Bc[0,0::3]=NrsVal[:,0]
-        Bc[0,1::3]=Nval
-        Bc[1,0::3]=NrsVal[:,1]
-        Bc[1,2::3]=Nval
+        Bc=np.zeros((nPoints,2,3*elemType))
+        Bc[:,0,0::3]=NrsVal[:,:,0]
+        Bc[:,0,1::3]=Nval
+        Bc[:,1,0::3]=NrsVal[:,:,1]
+        Bc[:,1,2::3]=Nval
         return N, Bf,Bc, detJ
 
 def GetGaussQuadrature():

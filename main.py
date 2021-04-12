@@ -11,13 +11,13 @@ sampleModel=cubusGeometry.importModel()
 
 # create mesh
 from generateMesh import *
-generateMesh(sampleModel, showGmshMesh=False, elementType='QUAD', meshSize=5e-1)
-# generateMesh(sampleModel, showGmshMesh=False, elementType='QUAD', nEdgeNodes=31)
+# generateMesh(sampleModel, showGmshMesh=False, elementType='QUAD', meshSize=5e-1)
+generateMesh(sampleModel, showGmshMesh=False, elementType='QUAD', nEdgeNodes=31)
 
 # compute
 from solveModel import *
 solveModel(sampleModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3)
 
 # display results
-plotResults(sampleModel,displacementPlot='isolines', verticalDisplacement=False, bendingMomentsToPlot=[],shearForcesToPlot=['x'])
+plotResults(sampleModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=[])
 plt.show()
