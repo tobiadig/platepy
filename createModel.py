@@ -139,7 +139,6 @@ class PlateModel:
             gmsh.model.mesh.embed(0, pointTags, 1, 3)#TODO: column should recognize to which line it belongs
             gmsh.model.geo.synchronize()
 
-
     def addLoad(self, newLoad):
         '''
             add a load to the model
@@ -169,7 +168,6 @@ class PlateModel:
             gmsh.model.geo.synchronize()
             gmsh.model.geo.removeAllDuplicates()
             gmsh.model.geo.synchronize()
-
 
 class Plate:
     def __init__(self, inputDict):
@@ -278,7 +276,8 @@ class Load:
     def __init__(self,case, magnitude):
         self.magnitude = magnitude
         self.case=case
-        self.outlineCoords = None
+        self.outlineCoords = np.array([])
         self.physicalGroup = None
+        self.elements1DList = None
 
 

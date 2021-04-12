@@ -161,6 +161,9 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
             fig=plt.figure()
             axVx = fig.gca(projection='3d')
             axVx.plot_trisurf(x,y,z,cmap=cm.jet)
+        
+        elif displacementPlot == 'text':
+            fig, axVx = myTextPlot(self, x,y,z, theTitle='Vx')
 
         else:
             raise TypeError('type of plot does not exist')
@@ -185,6 +188,8 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
             fig=plt.figure()
             axVy = fig.gca(projection='3d')
             axVy.plot_trisurf(x,y,z,cmap=cm.jet)
+        elif displacementPlot == 'text':
+            fig, axVy = myTextPlot(self, x,y,z,theTitle='Vy')
 
         else:
             raise TypeError('type of plot does not exist')
@@ -193,6 +198,16 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         outAxis.append(axVy)
 
     return outFig, outAxis
+
+
+def myTextPlot(self,x,y,z, theTitle = ''):
+    fig,outAx = plotInputGeometry(self)
+    for i,a in enumerate(z):
+        outAx.text(x[i], y[i], '{:.2f}'.format(a))
+
+    outAx.set_title(theTitle)
+    return fig, outAx
+
 
 
 def myIsoPlot(self,x,y,z, theTitle = ''):
@@ -238,24 +253,6 @@ def myIsoPlot(self,x,y,z, theTitle = ''):
 
     outAx.set_title(theTitle)
     return fig,outAx
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

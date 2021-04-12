@@ -19,5 +19,5 @@ from solveModel import *
 solveModel(sampleModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3)
 
 # display results
-plotResults(sampleModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=[])
+plotResults(sampleModel,displacementPlot='isolines', verticalDisplacement=False, bendingMomentsToPlot=[],shearForcesToPlot=['x', 'y'])
 plt.show()

@@ -95,6 +95,31 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
         elementsList.append(newElement)
         k+=1
 
+    #assemble 2D elements for line load
+
+    k=1
+    for p in self.loads:
+        if p.case == 'line':
+            tags = gmsh.model.getEntitiesForPhysicalGroup(p.physicalGroup[0],p.physicalGroup[1])
+            elementTypes, elementTags, nodeTags = gmsh.model.mesh.getElements(1,tags[0])   
+            elements1DList = []
+            for elemTag in elementTags[0]:
+                elementType, nodeTags = gmsh.model.mesh.getElement(elemTag)
+                newElement = Element()
+                newElement.tag = elemTag
+
+
+                newElement.nNodes  = len(nodeTags)
+                newElement.connectivity  = nodeTags
+                newElement.coherentConnectivity = gmshToCoherentNodesNumeration.loc[nodeTags]
+
+                newElement.coordinates = nodesArrayPd.loc[nodeTags].to_numpy()
+
+                newElement.whichPlate  = 1  #TODO: implement more plates
+                elements1DList.append(newElement)
+                k+=1
+            p.elements1DList = elements1DList
+
     #generate BCs and nodes directions by iterating over wall segments
     
     BCsDic = {}
@@ -133,7 +158,6 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
 
         for node in nodeTags:
             BCsDic[node] = col.support.supportCondition
-            print('column nodes: ', node)
 
     BCs = np.zeros((len(BCsDic), 4))
     for count, a in enumerate(BCsDic):

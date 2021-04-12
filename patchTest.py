@@ -52,13 +52,13 @@ from displayModel import *
 
 # create mesh
 from generateMesh import *
-generateMesh(patchTestModel, showGmshMesh=True, elementType='QUAD', meshSize=5e-1)
-# generateMesh(sampleModel, showGmshMesh=False, elementType='TRI', nEdgeNodes=51)
+# generateMesh(patchTestModel, showGmshMesh=False, elementType='QUAD', meshSize=5e-1)
+generateMesh(patchTestModel, showGmshMesh=True, elementType='QUAD', nEdgeNodes=21)
 
 # compute
 from solveModel import *
 solveModel(patchTestModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3)
 
 # display results
-plotResults(patchTestModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=[])
+plotResults(patchTestModel,displacementPlot='isolines', verticalDisplacement=False, bendingMomentsToPlot=['x', 'y', 'xy'],shearForcesToPlot=['x', 'y'])
 plt.show()
