@@ -79,7 +79,20 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
 
     k=1
     for elemTag in elemTags[0]:
+        
         elementType, nodeTags = gmsh.model.mesh.getElement(elemTag)
+        # if k == 1:
+        #     nodeTags = np.array([9,8,1,5])
+        # if k ==2:
+        #     nodeTags = np.array([7,4,8,9])
+        # if k ==3:
+        #     nodeTags = np.array([6,9,5,2])
+        # if k ==4:
+        #     nodeTags = np.array([3,7,9,6])
+
+
+
+
         newElement = Element()
         newElement.tag = elemTag
 
@@ -93,6 +106,7 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
 
         newElement.whichPlate  = 1  #TODO: implement more plates
         elementsList.append(newElement)
+
         k+=1
 
     #assemble 2D elements for line load

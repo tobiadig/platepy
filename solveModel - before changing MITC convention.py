@@ -65,9 +65,9 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         Df = self.plates[0].Df   #TODO: the elements should know to which plate it belongs and take the right material param.
         Dc = self.plates[0].Dc
 
-        # kLocalNotRotated,fLocal = GetLocalMatrix(xi, yi, Df,Dc,p, elemType='MITC4')
+        kLocalNotRotated,fLocal = GetLocalMatrix(xi, yi, Df,Dc,p, elemType='MITC4')
 
-        kLocalNotRotated,fLocal = GetLocalMatrix(xi, yi, Df,Dc,p, elemType=4)
+        # kLocalNotRotated,fLocal = GetLocalMatrix(xi, yi, Df,Dc,p, elemType=4)
 
         # if the load is a line load IGNORE fLocal (set to zero), the force vector will be calculated in the next loop
         # bad solution, hopefully it works
@@ -199,7 +199,6 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     # create global matrixes
     sparseGlobalMatrix = sparse.csr_matrix((dataForStiffnessSparseMatrix,(rowsForStiffnessSparseMatrix,columnsForStiffnessSparseMatrix)))
     sparseForceGlobal = sparse.csr_matrix((dataForForceSparseMatrix,(rowsForForceSparseMatrix,columnsForForceSparseMatrix)), shape=(nNodesTotal*3,1))
-    print('force vector: ', sparseForceGlobal.toarray())
 
     # apply boundary conditions
     rDofsBool = np.zeros((nGDofs),dtype=bool)
@@ -372,7 +371,6 @@ def GetLocalMatrix(xi, yi, Df,Dc, p, elemType=''):
         kLocal = np.dot(m12,wi*detJ)
 
         kBDEbug = np.dot(m12,wi*detJ)
-        print('kb: ', kBDEbug[0:2,0:2])
 
         #Reduced integration for shear contribution and force
         # for i in range(0,gaussPointsRed.shape[0]):
@@ -389,7 +387,6 @@ def GetLocalMatrix(xi, yi, Df,Dc, p, elemType=''):
         # print('rest shape: ', (wi*detJ).shape)
         kLocal += np.dot(m22,wi*detJ)
         ksDEbug = np.dot(m22,wi*detJ)
-        print('ks: ', ksDEbug[0:2, 0:2])
         # kLocal = np.dot(wi*detJ,m22)
 
         # for i in range(0,gaussPointsRed.shape[0]):
@@ -417,11 +414,9 @@ def GetLocalMatrix(xi, yi, Df,Dc, p, elemType=''):
         kBDEbug = np.zeros((3*4,3*4))
         ksDEbug = np.zeros((3*4,3*4))
         for i in range(0,gaussPoints.shape[0]):
-            # print('NEW POINT')
             ri = gaussPoints[i,0]
             si = gaussPoints[i,1]
             wi = gaussWeights[i]
-
             N, Bf,Bc, detJ = GetShapeFunction(elemType,ri, si, xi, yi)
             
             m11 = np.matmul(Bf.transpose(),Df)
@@ -433,9 +428,8 @@ def GetLocalMatrix(xi, yi, Df,Dc, p, elemType=''):
 
             kLocal += wi*m12*detJ + wi*m22*detJ
             fLocal += wi*np.matmul(N.transpose(),p.magnitude)*detJ
-        print('kb: ', kBDEbug[0:2,0:2])
-        print('ks:', ksDEbug[0:2, 0:2])
 
+        print('ks:', ksDEbug[0:2, 0:2])
         # print(kBDEbug)
 
     return kLocal, fLocal
@@ -609,49 +603,17 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
         return N, Bf,Bc, detJ
 
     elif elemType == 'MITC4':
-        # si = -si
-        # ri = -ri
 
         nodeCoordinates = np.zeros((4, 2))
         nodeCoordinates[:,0]=xi
         nodeCoordinates[:,1]=yi
-        # print('xi: ', xi)
-        # print('yi: ', yi)
-        # print('ri, si: ', ri, si)
-        # # Define shape functions
-        # N1 = lambda r, s: 0.25*(1-r)*(1-s)
-        # N2 = lambda r, s: 0.25*(1+r)*(1-s)
-        # N3 = lambda r, s: 0.25*(1+r)*(1+s)
-        # N4 = lambda r, s: 0.25*(1-r)*(1+s)
-
-        # # Define shape function derivatives, derive deformation matrix
-        # N1r = lambda r, s: -0.25*(1-s)
-        # N2r = lambda r, s: 0.25*(1-s)
-        # N3r = lambda r, s: 0.25*(1+s)
-        # N4r = lambda r, s: -0.25*(1+s)
-
-        # N1s = lambda r, s: -0.25*(1-r)
-        # N2s = lambda r, s: -0.25*(1+r)
-        # N3s = lambda r, s: 0.25*(1+r)
-        # N4s = lambda r, s: 0.25*(1-r)
-
-        # ACCORDING TO BATHES
-
-        N1 = lambda r, s: 0.25*(1+r)*(1+s)
-        N2 = lambda r, s: 0.25*(1-r)*(1+s)
-        N3 = lambda r, s: 0.25*(1-r)*(1-s)
-        N4 = lambda r, s: 0.25*(1+r)*(1-s)
-
-        # Define shape function derivatives, derive deformation matrix
-        N1r = lambda r, s: 0.25*(1+s)
-        N2r = lambda r, s: -0.25*(1+s)
-        N3r = lambda r, s: -0.25*(1-s)
-        N4r = lambda r, s: 0.25*(1-s)
-
-        N1s = lambda r, s: 0.25*(1+r)
-        N2s = lambda r, s: 0.25*(1-r)
-        N3s = lambda r, s: -0.25*(1-r)
-        N4s = lambda r, s: -0.25*(1+r)
+        print('xi: ', xi)
+        print('yi: ', yi)
+        # Define shape functions
+        N1 = lambda r, s: 0.25*(1-r)*(1-s)
+        N2 = lambda r, s: 0.25*(1+r)*(1-s)
+        N3 = lambda r, s: 0.25*(1+r)*(1+s)
+        N4 = lambda r, s: 0.25*(1-r)*(1+s)
 
         # Form the shape function matrix
         Nfun= lambda r, s: [N1(r,s), N2(r,s), N3(r,s), N4(r,s)]
@@ -661,7 +623,16 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
         N[1, 1::3]=Nval
         N[2, 2::3]=Nval
 
+        # Define shape function derivatives, derive deformation matrix
+        N1r = lambda r, s: -0.25*(1-s)
+        N2r = lambda r, s: 0.25*(1-s)
+        N3r = lambda r, s: 0.25*(1+s)
+        N4r = lambda r, s: -0.25*(1+s)
 
+        N1s = lambda r, s: -0.25*(1-r)
+        N2s = lambda r, s: -0.25*(1+r)
+        N3s = lambda r, s: 0.25*(1+r)
+        N4s = lambda r, s: 0.25*(1-r)
 
         NrsFun = lambda r,s: np.array([[N1r(r, s), N1s(r, s)], [N2r(r, s), N2s(r, s)], [N3r(r, s), N3s(r, s)],[N4r(r, s), N4s(r, s)]])
         NrsVal=NrsFun(ri,si)
@@ -670,7 +641,7 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
         J=np.matmul(nodeCoordinates.transpose(), NrsVal)
         # print('J: ',J)
         detJ = np.linalg.det(J)
-
+        print('detj: ', detJ)
         invJ = np.linalg.inv(J)
         NrsVal = np.matmul(NrsVal,invJ)
 
@@ -681,11 +652,11 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
         Bb[2,2::3]=NrsVal[:,0]
 
         alpha, beta = naturalToCartesian(xi,yi)
-        # ROTab = np.array([[np.sin(beta), -np.sin(alpha)], 
-        #                     [-np.cos(beta), np.cos(alpha)]])
-        ROTab = np.array([[1, 0], 
-                            [0, 1]])
-        # print('rot: ', ROTab)
+        ROTab = np.array([[np.sin(beta), -np.sin(alpha)], 
+                            [-np.cos(beta), np.cos(alpha)]])
+        # ROTab = np.array([[0, 0], 
+        #                     [1, -1]])
+        print('rot: ', ROTab)
 
         Ax = xi[0] - xi[1] - xi[2] + xi[3]
         Ay = yi[0] - yi[1] - yi[2] + yi[3]
@@ -696,33 +667,10 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
         Cx = xi[0] + xi[1] - xi[2] - xi[3]
         Cy = yi[0] + yi[1] - yi[2] - yi[3]
 
-        # Dx = np.sqrt((Cx+ri*Bx)**2 + (Cy + ri*By)**2)/(8*detJ)
-        # Dy = np.sqrt((Ax+si*Bx)**2 + (Ay + si*By)**2)/(8*detJ)
-
-        # a1 = 0.5
-        # a2 = (-yi[0] + yi[1])*0.25
-        # a3 = (xi[0]-xi[1])*0.25
-        # a4 = (xi[3]-xi[2])*0.25
-        # a5 = -0.25*(yi[3]-yi[2])
-        # Arz1 = np.array([a1, a2, a3, -a1, a2, a3, 0, 0, 0, 0, 0, 0])
-        # Arz2 = np.array([0,0,0,0,0,0, -a1, a5, a4, a1, a5, a4])
-        # grz = Dx*((1+si)*Arz1+(1-si)*Arz2)
-
-        # b1 = 0.5
-        # b2 = -0.25*(yi[0]-yi[3])
-        # b3 = 0.25*(xi[0]-xi[3])
-        # b4 = 0.25*(xi[1]-xi[2])
-        # b5 = -0.25*(yi[1]-yi[2])
-        # Bsz1 = np.array([b1, b2, b3, 0, 0, 0, 0, 0, 0, -b1, b2, b3])
-        # Bsz2 = np.array([0,0,0,b1,b5,b4,-b1, b5, b4, 0, 0, 0])
-        # gsz = Dy*((1+ri)*Bsz1+(1-ri)*Bsz2)
-
         Dx = np.sqrt((Cx+ri*Bx)**2 + (Cy + ri*By)**2)/(8*detJ)
         Dy = np.sqrt((Ax+si*Bx)**2 + (Ay + si*By)**2)/(8*detJ)
-        
-        # print('Dx, Dy', Dx, Dy)
 
-        a1 = -0.5
+        a1 = 0.5
         a2 = (-yi[0] + yi[1])*0.25
         a3 = (xi[0]-xi[1])*0.25
         a4 = (xi[3]-xi[2])*0.25
@@ -731,7 +679,7 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
         Arz2 = np.array([0,0,0,0,0,0, -a1, a5, a4, a1, a5, a4])
         grz = Dx*((1+si)*Arz1+(1-si)*Arz2)
 
-        b1 = -0.5
+        b1 = 0.5
         b2 = -0.25*(yi[0]-yi[3])
         b3 = 0.25*(xi[0]-xi[3])
         b4 = 0.25*(xi[1]-xi[2])
@@ -741,8 +689,6 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
         gsz = Dy*((1+ri)*Bsz1+(1-ri)*Bsz2)
 
         gz = np.array([grz, gsz])
-
-
 
         Bs = np.matmul(ROTab, gz)
 
