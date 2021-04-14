@@ -18,8 +18,10 @@ from scipy.linalg import block_diag # to create the rotation matrix
 import time
 from tqdm import tqdm
 
-def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1):
+def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1, elemType='MITC4-N' ):
     ''' Input/Output descriptions
+    ElemType: Quadrangluar or Triangular + Linear or Quadratic or MITC + Reduced or Normal Integration
+            
         self: PlateModel class, where the geometry and the mesh are initialized
         reducedIntegration: to manage the number of Gauss integration points
     '''
@@ -59,15 +61,15 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 
         xi=element.coordinates[:,0]
         yi=element.coordinates[:,1]
+        elementShape = len(xi)
         # print('xi: ', xi)
         # print('yi: ', yi)
         
         Df = self.plates[0].Df   #TODO: the elements should know to which plate it belongs and take the right material param.
         Dc = self.plates[0].Dc
 
-        # kLocalNotRotated,fLocal = GetLocalMatrix(xi, yi, Df,Dc,p, elemType='MITC4')
+        kLocal,fLocal = GetLocalMatrix(xi, yi, Df,Dc,p,elementShape , elemType)
 
-        kLocalNotRotated,fLocal = GetLocalMatrix(xi, yi, Df,Dc,p, elemType=4)
 
         # if the load is a line load IGNORE fLocal (set to zero), the force vector will be calculated in the next loop
         # bad solution, hopefully it works
@@ -85,9 +87,10 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
                 R = block_diag(R, rotMatrix(dofRot))
 
         element.rotationMatrix = R
-        #rotate stiffness matrix
-        kTemp = np.matmul(kLocalNotRotated, R)
-        kLocal = np.matmul(R.transpose(), kTemp)
+        # #rotate stiffness matrix
+        # kTemp = np.matmul(kLocalNotRotated, R)
+        # kLocal = np.matmul(R.transpose(), kTemp)
+
         # kLocal = kLocalNotRotated
 
         # coefficients of the DOFs and assignment of the stiffness matrix / force vector
@@ -105,7 +108,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
                 rows[c] = i
                 columns[c] = j
                 c+=1
-
+                
         # create vectors to assemble sparse matrixes
         rowsForStiffnessSparseMatrix[startIndexStiffness:startIndexStiffness+rows.size] = rows
         columnsForStiffnessSparseMatrix[startIndexStiffness:startIndexStiffness+rows.size] = columns
@@ -124,7 +127,6 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 
     #if line load, assemble HERE load vector
     if p.case == 'line':
-   
         rowsForForceSparseMatrix = np.zeros(nSparseData, dtype=int)
         columnsForForceSparseMatrix = np.zeros(nSparseData, dtype=int)
         dataForForceSparseMatrix = np.zeros(nSparseData)
@@ -160,16 +162,16 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
             fLocal[0:3] = p.magnitude*L/2
             fLocal[3:] = p.magnitude*L/2
             # # create rotation matrix
-            # Ri = []
-            # RiInit = False
-            # for dofRot in elemNodesRotations:
-            #     if not(RiInit):
-            #         R=rotMatrix(dofRot)
-            #         RiInit=True
-            #     else:
-            #         R = block_diag(R, rotMatrix(dofRot))
+            Ri = []
+            RiInit = False
+            for dofRot in elemNodesRotations:
+                if not(RiInit):
+                    R=rotMatrix(dofRot)
+                    RiInit=True
+                else:
+                    R = block_diag(R, rotMatrix(dofRot))
 
-            # element.rotationMatrix = R
+            element.rotationMatrix = R
             # #rotate stiffness matrix
             # kTemp = np.matmul(kLocalNotRotated, R)
             # kLocal = np.matmul(R.transpose(), kTemp)
@@ -199,8 +201,8 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     # create global matrixes
     sparseGlobalMatrix = sparse.csr_matrix((dataForStiffnessSparseMatrix,(rowsForStiffnessSparseMatrix,columnsForStiffnessSparseMatrix)))
     sparseForceGlobal = sparse.csr_matrix((dataForForceSparseMatrix,(rowsForForceSparseMatrix,columnsForForceSparseMatrix)), shape=(nNodesTotal*3,1))
-    print('force vector: ', sparseForceGlobal.toarray())
 
+    # np.savetxt('K.csv', sparseGlobalMatrix.toarray(), delimiter=",")
     # apply boundary conditions
     rDofsBool = np.zeros((nGDofs),dtype=bool)
     for constraint in BCs:
@@ -247,7 +249,11 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     shearForces = np.zeros((len(elementsList),2))
 
     k=0
+    temp = elemType.split('-')
+    elementDegree = temp[0]
+    elementIntegration = temp[1]
     for element in elementsList:
+
   
         elemNodes = element.connectivity
         coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
@@ -266,10 +272,13 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         Dc = self.plates[0].Dc
 
         elemType = len(xi)
-        N, Bf,Bc, detJ = GetShapeFunction(elemType,np.array([0]), np.array([0]), xi, yi)
-        Bf = Bf[0,:,:]
-        Bc = Bc[0,:,:]
-        element.BbMat = Bf
+        if elementDegree !='MITC4':
+            N, Bf,Bc, detJ = getLinearVectorizedShapeFunctions(elementShape,np.array([0]), np.array([0]), xi, yi)
+            Bf = Bf[0,:,:]
+            Bc = Bc[0,:,:]
+            
+        elif elementDegree =='MITC4':
+            N, Bf,Bc, detJ =getMITCShapefunctions(0, 0, xi, yi)
 
         kCoeff = np.zeros((3*nNodes),dtype=int)
         for i in range(0,3):
@@ -299,8 +308,9 @@ def rotMatrix(theta):
 
     return A
 
-def GetLocalMatrix(xi, yi, Df,Dc, p, elemType=''):
+def GetLocalMatrix(xi, yi, Df,Dc, p,elementShape, elemType):
     ''' Input/Output descriptions
+    ElemType: Quadrangluar or Triangular or Beam + Linear or Quadratic or MITC + Reduced or Normal Integration
         xi, yi: element's nodes coordinates
         Df, Dc: material of the plate
         p: load vector
@@ -309,107 +319,67 @@ def GetLocalMatrix(xi, yi, Df,Dc, p, elemType=''):
         return:
         kLocal, fLocal
     '''
-    # if type(elemType)!= int:
-    #     elemType = len(xi)
+    temp = elemType.split('-')
+    elementDegree = temp[0]
+    elementIntegration = temp[1]
 
-    gaussQuadrature = GetGaussQuadrature()
-
-    if elemType==2:
+    if elementShape==2:
     # 1 point
-        gaussPointsRed =  gaussQuadrature['linear'][1]['points']
-        gaussWeightsRed =  gaussQuadrature['linear'][1]['weights']
-
+        gaussPointsRed, gaussWeightsRed =  getGaussQuadrature('linear',1)
     # 2 points            
-        gaussPoints =  gaussQuadrature['linear'][2]['points']
-        gaussWeights =  gaussQuadrature['linear'][2]['weights']
+        gaussPoints, gaussWeights =  getGaussQuadrature('linear',2)
 
-    if elemType==3:
+    if elementShape == 3:
     # 1 point
-        gaussPointsRed =  gaussQuadrature['triangular'][1]['points']
-        gaussWeightsRed =  gaussQuadrature['triangular'][1]['weights']
+        gaussPointsRed, gaussWeightsRed =  getGaussQuadrature('triangular',1)
 
     # 3 points            
-        gaussPoints =  gaussQuadrature['triangular'][3]['points']
-        gaussWeights =  gaussQuadrature['triangular'][3]['weights']
+        gaussPoints, gaussWeights =  getGaussQuadrature('triangular',3)
 
-    elif elemType == 4 or elemType == 'MITC4':
+    elif elementShape == 4:
     # 1 point
-        gaussPointsRed =  gaussQuadrature['rectangular'][1]['points']
-        gaussWeightsRed =  gaussQuadrature['rectangular'][1]['weights']
+        gaussPointsRed, gaussWeightsRed =  getGaussQuadrature('rectangular',1)
 
     # 4 points
-        gaussPoints =  gaussQuadrature['rectangular'][4]['points']
-        gaussWeights =  gaussQuadrature['rectangular'][4]['weights']
+        gaussPoints, gaussWeights =  getGaussQuadrature('rectangular',4)
 
-    # kLocal = np.zeros((3*elemType,3*elemType))
-    if elemType != 'MITC4':
-        fLocal = np.zeros(3*elemType)
-        #full integration for bending component
-        # for i in range(0,gaussPoints.shape[0]):
-        #     ri = gaussPoints[i,0]
-        #     si = gaussPoints[i,1]
-        #     wi = gaussWeights[i]
-        #     N, Bf,Bc, detJ = GetShapeFunction(elemType,ri, si, xi, yi)
-            
-        #     m11 = np.matmul(Bf.transpose(),Df)
-        #     m12 = np.matmul(m11,Bf)
 
-        #     # kLocal += wi*m12*detJ
-        #     kLocal += wi*m12*detJ
-
+    if elementDegree != 'MITC4': #perform vectorized integration
+        fLocal = np.zeros(3*elementShape)
         ri = gaussPoints[:,0]
-
         si = gaussPoints[:,1]
         wi = gaussWeights
-        N, Bf,Bc, detJ = GetShapeFunction(elemType,ri, si, xi, yi)
+        N, Bf,Bc, detJ = getLinearVectorizedShapeFunctions(elementShape,ri, si, xi, yi)
 
         m11 = np.matmul(Bf.transpose((0,2,1)),Df)
         m12 = np.matmul(m11,Bf)
 
-        # kLocal += wi*m12*detJ
-        # matrixes stacked on axis 0, for .dot operation has to be 2!
         m12 = np.moveaxis(m12,0,-1)
         kLocal = np.dot(m12,wi*detJ)
 
         kBDEbug = np.dot(m12,wi*detJ)
-        print('kb: ', kBDEbug[0:2,0:2])
 
-        #Reduced integration for shear contribution and force
-        # for i in range(0,gaussPointsRed.shape[0]):
         ri = gaussPointsRed[:,0]
-
         si = gaussPointsRed[:,1]
         wi = gaussWeightsRed[:]
-        N, Bf,Bc, detJ = GetShapeFunction(elemType,ri, si, xi, yi)
+        N, Bf,Bc, detJ = getLinearVectorizedShapeFunctions(elementShape,ri, si, xi, yi)
 
         m21 = np.matmul(Bc.transpose((0,2,1)),Dc) 
         m22 = np.matmul(m21,Bc)
         m22 = np.moveaxis(m22,0,-1)
-        # print('m22 shape: ', m22.shape)
-        # print('rest shape: ', (wi*detJ).shape)
         kLocal += np.dot(m22,wi*detJ)
         ksDEbug = np.dot(m22,wi*detJ)
-        print('ks: ', ksDEbug[0:2, 0:2])
-        # kLocal = np.dot(wi*detJ,m22)
 
-        # for i in range(0,gaussPointsRed.shape[0]):
         ri = gaussPoints[:,0]
         si = gaussPoints[:,1]
         wi = gaussWeights[:]
-        N, Bf,Bc, detJ = GetShapeFunction(elemType,ri, si, xi, yi)
+        N, Bf,Bc, detJ = getLinearVectorizedShapeFunctions(elementShape,ri, si, xi, yi)
         mTemp = np.matmul(N.transpose((0,2,1)),p.magnitude)
         mTemp=np.expand_dims(mTemp,2)
         mTemp = np.moveaxis(mTemp,0,-1)
         fLocal = np.dot(mTemp,wi*detJ)
 
-            # ri = gaussPoints[i,0]
-            # si = gaussPoints[i,1]
-            # wi = gaussWeights[i]
-            # N, Bf,Bc, detJ = GetShapeFunction(elemType,ri, si, xi, yi)
-            # mTemp = np.matmul(N.transpose((0,2,1)),p).reshape((-1,1,1))
-            # fLocal += np.matmul(N.transpose,p)*wi*detJ
-
-    else:
+    elif elementDegree == 'MITC4':
         #full integration for both components
         fLocal = np.zeros(3*4)
         kLocal = np.zeros((3*4,3*4))
@@ -422,7 +392,8 @@ def GetLocalMatrix(xi, yi, Df,Dc, p, elemType=''):
             si = gaussPoints[i,1]
             wi = gaussWeights[i]
 
-            N, Bf,Bc, detJ = GetShapeFunction(elemType,ri, si, xi, yi)
+            N, Bf,Bc, detJ = getMITCShapefunctions(ri, si, xi, yi)
+
             
             m11 = np.matmul(Bf.transpose(),Df)
             m12 = np.matmul(m11,Bf)
@@ -431,16 +402,14 @@ def GetLocalMatrix(xi, yi, Df,Dc, p, elemType=''):
             ksDEbug += wi*m22*detJ
             kBDEbug += wi*m12*detJ
 
+
+
             kLocal += wi*m12*detJ + wi*m22*detJ
             fLocal += wi*np.matmul(N.transpose(),p.magnitude)*detJ
-        print('kb: ', kBDEbug[0:2,0:2])
-        print('ks:', ksDEbug[0:2, 0:2])
-
-        # print(kBDEbug)
 
     return kLocal, fLocal
 
-def GetShapeFunction(elemType,ri, si, xi, yi):
+def getLinearVectorizedShapeFunctions(elemType,ri, si, xi, yi):
     '''
     INPUT-->    ri: calculation point along the r-axis [float]
                 si: calculation point along the s-axis [float]
@@ -450,18 +419,15 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
                 B: values of the deformation matrix at ri, si [1x3 array]
                 detJ: Determinant of the Jacobian matrix [float]
     '''
-
-    if elemType !='MITC4':
-        nPoints = ri.size
-        nodeCoordinates = np.zeros((elemType, 2))
-        nodeCoordinates[:,0]=xi
-        nodeCoordinates[:,1]=yi
+    nPoints = ri.size
+    nodeCoordinates = np.zeros((elemType, 2))
+    nodeCoordinates[:,0]=xi
+    nodeCoordinates[:,1]=yi
 
     if elemType==2:
         # Define shape functions
         N1 = lambda r, s: 0.5*(1-r)
         N2 = lambda r, s: 0.5*(1+r)
-
 
         # Form the shape function matrix
         Nfun= lambda r, s: [N1(r,s), N2(r,s)]
@@ -489,7 +455,6 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
         NrsVal = np.moveaxis(NrsVal,-1,0)
         # matmul treat NrsVal as stack of matrixes residing in the LAST 2 indexes
 
-
         J=np.matmul(nodeCoordinates.transpose(), NrsVal)
         detJ = np.linalg.det(J)
         invJ = np.linalg.inv(J)
@@ -506,9 +471,9 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
         Bc[:,0,1::3]=Nval
         Bc[:,1,0::3]=NrsVal[:,:,1]
         Bc[:,1,2::3]=Nval
-        return N, Bf,Bc, detJ
 
-    elif elemType == 3:
+
+    elif elemType==3:
         # Define shape functions
         N1 = lambda r, s: r
         N2 = lambda r, s: s
@@ -554,7 +519,7 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
         Bc[:,0,1::3]=Nval[:]
         Bc[:,1,0::3]=NrsVal[:,:,1]
         Bc[:,1,2::3]=Nval[:]
-        return N, Bf,Bc, detJ
+
     
     elif elemType==4:
         # Define shape functions
@@ -606,148 +571,147 @@ def GetShapeFunction(elemType,ri, si, xi, yi):
         Bc[:,0,1::3]=Nval
         Bc[:,1,0::3]=NrsVal[:,:,1]
         Bc[:,1,2::3]=Nval
-        return N, Bf,Bc, detJ
 
-    elif elemType == 'MITC4':
+    return N, Bf,Bc, detJ
+
+def getMITCShapefunctions(ri, si, xi, yi):
         # si = -si
         # ri = -ri
 
-        nodeCoordinates = np.zeros((4, 2))
-        nodeCoordinates[:,0]=xi
-        nodeCoordinates[:,1]=yi
-        # print('xi: ', xi)
-        # print('yi: ', yi)
-        # print('ri, si: ', ri, si)
-        # # Define shape functions
-        # N1 = lambda r, s: 0.25*(1-r)*(1-s)
-        # N2 = lambda r, s: 0.25*(1+r)*(1-s)
-        # N3 = lambda r, s: 0.25*(1+r)*(1+s)
-        # N4 = lambda r, s: 0.25*(1-r)*(1+s)
+    nodeCoordinates = np.zeros((4, 2))
+    nodeCoordinates[:,0]=xi
+    nodeCoordinates[:,1]=yi
+    # print('xi: ', xi)
+    # print('yi: ', yi)
+    # print('ri, si: ', ri, si)
+    # # Define shape functions
+    # N1 = lambda r, s: 0.25*(1-r)*(1-s)
+    # N2 = lambda r, s: 0.25*(1+r)*(1-s)
+    # N3 = lambda r, s: 0.25*(1+r)*(1+s)
+    # N4 = lambda r, s: 0.25*(1-r)*(1+s)
 
-        # # Define shape function derivatives, derive deformation matrix
-        # N1r = lambda r, s: -0.25*(1-s)
-        # N2r = lambda r, s: 0.25*(1-s)
-        # N3r = lambda r, s: 0.25*(1+s)
-        # N4r = lambda r, s: -0.25*(1+s)
+    # # Define shape function derivatives, derive deformation matrix
+    # N1r = lambda r, s: -0.25*(1-s)
+    # N2r = lambda r, s: 0.25*(1-s)
+    # N3r = lambda r, s: 0.25*(1+s)
+    # N4r = lambda r, s: -0.25*(1+s)
 
-        # N1s = lambda r, s: -0.25*(1-r)
-        # N2s = lambda r, s: -0.25*(1+r)
-        # N3s = lambda r, s: 0.25*(1+r)
-        # N4s = lambda r, s: 0.25*(1-r)
+    # N1s = lambda r, s: -0.25*(1-r)
+    # N2s = lambda r, s: -0.25*(1+r)
+    # N3s = lambda r, s: 0.25*(1+r)
+    # N4s = lambda r, s: 0.25*(1-r)
 
-        # ACCORDING TO BATHES
+    # ACCORDING TO BATHES
 
-        N1 = lambda r, s: 0.25*(1+r)*(1+s)
-        N2 = lambda r, s: 0.25*(1-r)*(1+s)
-        N3 = lambda r, s: 0.25*(1-r)*(1-s)
-        N4 = lambda r, s: 0.25*(1+r)*(1-s)
+    N1 = lambda r, s: 0.25*(1+r)*(1+s)
+    N2 = lambda r, s: 0.25*(1-r)*(1+s)
+    N3 = lambda r, s: 0.25*(1-r)*(1-s)
+    N4 = lambda r, s: 0.25*(1+r)*(1-s)
 
-        # Define shape function derivatives, derive deformation matrix
-        N1r = lambda r, s: 0.25*(1+s)
-        N2r = lambda r, s: -0.25*(1+s)
-        N3r = lambda r, s: -0.25*(1-s)
-        N4r = lambda r, s: 0.25*(1-s)
+    # Define shape function derivatives, derive deformation matrix
+    N1r = lambda r, s: 0.25*(1+s)
+    N2r = lambda r, s: -0.25*(1+s)
+    N3r = lambda r, s: -0.25*(1-s)
+    N4r = lambda r, s: 0.25*(1-s)
 
-        N1s = lambda r, s: 0.25*(1+r)
-        N2s = lambda r, s: 0.25*(1-r)
-        N3s = lambda r, s: -0.25*(1-r)
-        N4s = lambda r, s: -0.25*(1+r)
+    N1s = lambda r, s: 0.25*(1+r)
+    N2s = lambda r, s: 0.25*(1-r)
+    N3s = lambda r, s: -0.25*(1-r)
+    N4s = lambda r, s: -0.25*(1+r)
 
-        # Form the shape function matrix
-        Nfun= lambda r, s: [N1(r,s), N2(r,s), N3(r,s), N4(r,s)]
-        Nval=Nfun(ri, si)
-        N=np.zeros((3, 3*4))
-        N[0, 0::3]=Nval
-        N[1, 1::3]=Nval
-        N[2, 2::3]=Nval
+    # Form the shape function matrix
+    Nfun= lambda r, s: [N1(r,s), N2(r,s), N3(r,s), N4(r,s)]
+    Nval=Nfun(ri, si)
+    N=np.zeros((3, 3*4))
+    N[0, 0::3]=Nval
+    N[1, 1::3]=Nval
+    N[2, 2::3]=Nval
 
-
-
-        NrsFun = lambda r,s: np.array([[N1r(r, s), N1s(r, s)], [N2r(r, s), N2s(r, s)], [N3r(r, s), N3s(r, s)],[N4r(r, s), N4s(r, s)]])
-        NrsVal=NrsFun(ri,si)
-
-
-        J=np.matmul(nodeCoordinates.transpose(), NrsVal)
-        # print('J: ',J)
-        detJ = np.linalg.det(J)
-
-        invJ = np.linalg.inv(J)
-        NrsVal = np.matmul(NrsVal,invJ)
-
-        Bb=np.zeros((3,3*4))
-        Bb[0,1::3]=NrsVal[:,0]
-        Bb[1,2::3]=NrsVal[:,1]
-        Bb[2,1::3]=NrsVal[:,1]
-        Bb[2,2::3]=NrsVal[:,0]
-
-        alpha, beta = naturalToCartesian(xi,yi)
-        # ROTab = np.array([[np.sin(beta), -np.sin(alpha)], 
-        #                     [-np.cos(beta), np.cos(alpha)]])
-        ROTab = np.array([[1, 0], 
-                            [0, 1]])
-        # print('rot: ', ROTab)
-
-        Ax = xi[0] - xi[1] - xi[2] + xi[3]
-        Ay = yi[0] - yi[1] - yi[2] + yi[3]
-
-        Bx = xi[0] - xi[1] + xi[2] - xi[3]
-        By = yi[0] - yi[1] + yi[2] - yi[3]
-
-        Cx = xi[0] + xi[1] - xi[2] - xi[3]
-        Cy = yi[0] + yi[1] - yi[2] - yi[3]
-
-        # Dx = np.sqrt((Cx+ri*Bx)**2 + (Cy + ri*By)**2)/(8*detJ)
-        # Dy = np.sqrt((Ax+si*Bx)**2 + (Ay + si*By)**2)/(8*detJ)
-
-        # a1 = 0.5
-        # a2 = (-yi[0] + yi[1])*0.25
-        # a3 = (xi[0]-xi[1])*0.25
-        # a4 = (xi[3]-xi[2])*0.25
-        # a5 = -0.25*(yi[3]-yi[2])
-        # Arz1 = np.array([a1, a2, a3, -a1, a2, a3, 0, 0, 0, 0, 0, 0])
-        # Arz2 = np.array([0,0,0,0,0,0, -a1, a5, a4, a1, a5, a4])
-        # grz = Dx*((1+si)*Arz1+(1-si)*Arz2)
-
-        # b1 = 0.5
-        # b2 = -0.25*(yi[0]-yi[3])
-        # b3 = 0.25*(xi[0]-xi[3])
-        # b4 = 0.25*(xi[1]-xi[2])
-        # b5 = -0.25*(yi[1]-yi[2])
-        # Bsz1 = np.array([b1, b2, b3, 0, 0, 0, 0, 0, 0, -b1, b2, b3])
-        # Bsz2 = np.array([0,0,0,b1,b5,b4,-b1, b5, b4, 0, 0, 0])
-        # gsz = Dy*((1+ri)*Bsz1+(1-ri)*Bsz2)
-
-        Dx = np.sqrt((Cx+ri*Bx)**2 + (Cy + ri*By)**2)/(8*detJ)
-        Dy = np.sqrt((Ax+si*Bx)**2 + (Ay + si*By)**2)/(8*detJ)
-        
-        # print('Dx, Dy', Dx, Dy)
-
-        a1 = -0.5
-        a2 = (-yi[0] + yi[1])*0.25
-        a3 = (xi[0]-xi[1])*0.25
-        a4 = (xi[3]-xi[2])*0.25
-        a5 = -0.25*(yi[3]-yi[2])
-        Arz1 = np.array([a1, a2, a3, -a1, a2, a3, 0, 0, 0, 0, 0, 0])
-        Arz2 = np.array([0,0,0,0,0,0, -a1, a5, a4, a1, a5, a4])
-        grz = Dx*((1+si)*Arz1+(1-si)*Arz2)
-
-        b1 = -0.5
-        b2 = -0.25*(yi[0]-yi[3])
-        b3 = 0.25*(xi[0]-xi[3])
-        b4 = 0.25*(xi[1]-xi[2])
-        b5 = -0.25*(yi[1]-yi[2])
-        Bsz1 = np.array([b1, b2, b3, 0, 0, 0, 0, 0, 0, -b1, b2, b3])
-        Bsz2 = np.array([0,0,0,b1,b5,b4,-b1, b5, b4, 0, 0, 0])
-        gsz = Dy*((1+ri)*Bsz1+(1-ri)*Bsz2)
-
-        gz = np.array([grz, gsz])
+    NrsFun = lambda r,s: np.array([[N1r(r, s), N1s(r, s)], [N2r(r, s), N2s(r, s)], [N3r(r, s), N3s(r, s)],[N4r(r, s), N4s(r, s)]])
+    NrsVal=NrsFun(ri,si)
 
 
 
-        Bs = np.matmul(ROTab, gz)
+    J=np.matmul(nodeCoordinates.transpose(), NrsVal)
+    detJ = np.linalg.det(J)
 
-        return N, Bb,Bs, detJ
+    invJ = np.linalg.inv(J)
+    NrsVal = np.matmul(NrsVal,invJ)
+    # print('NrsVal: ', pd.DataFrame(NrsVal.transpose()))
 
+
+    Bb=np.zeros((3,3*4))
+    #qui cambia un po tutto wtf, prima:    Bb[0,1::3]=  NrsVal[:,0] Bb[1,2::3]=  -NrsVal[:,1] Bb[2,1::3]=  NrsVal[:,1]   Bb[2,2::3]=  -NrsVal[:,0]
+
+    Bb[0,2::3]=  NrsVal[:,0]
+    Bb[1,1::3]=  -NrsVal[:,1]
+    Bb[2,2::3]=  NrsVal[:,1]  
+    Bb[2,1::3]=  -NrsVal[:,0]
+    # print('Bb: ', pd.DataFrame(Bb))
+    alpha, beta = naturalToCartesian(xi,yi)
+    ROTab = np.array([[np.sin(beta), -np.sin(alpha)], 
+                        [-np.cos(beta), np.cos(alpha)]])
+    # ROTab = np.array([[1, 0], 
+    #                     [0, 1]])
+    # print('rot: ', ROTab)
+
+    Ax = xi[0] - xi[1] - xi[2] + xi[3]
+    Ay = yi[0] - yi[1] - yi[2] + yi[3]
+
+    Bx = xi[0] - xi[1] + xi[2] - xi[3]
+    By = yi[0] - yi[1] + yi[2] - yi[3]
+
+    Cx = xi[0] + xi[1] - xi[2] - xi[3]
+    Cy = yi[0] + yi[1] - yi[2] - yi[3]
+
+    # Dx = np.sqrt((Cx+ri*Bx)**2 + (Cy + ri*By)**2)/(8*detJ)
+    # Dy = np.sqrt((Ax+si*Bx)**2 + (Ay + si*By)**2)/(8*detJ)
+
+    # a1 = 0.5
+    # a2 = (-yi[0] + yi[1])*0.25
+    # a3 = (xi[0]-xi[1])*0.25
+    # a4 = (xi[3]-xi[2])*0.25
+    # a5 = -0.25*(yi[3]-yi[2])
+    # Arz1 = np.array([a1, a2, a3, -a1, a2, a3, 0, 0, 0, 0, 0, 0])
+    # Arz2 = np.array([0,0,0,0,0,0, -a1, a5, a4, a1, a5, a4])
+    # grz = Dx*((1+si)*Arz1+(1-si)*Arz2)
+
+    # b1 = 0.5
+    # b2 = -0.25*(yi[0]-yi[3])
+    # b3 = 0.25*(xi[0]-xi[3])
+    # b4 = 0.25*(xi[1]-xi[2])
+    # b5 = -0.25*(yi[1]-yi[2])
+    # Bsz1 = np.array([b1, b2, b3, 0, 0, 0, 0, 0, 0, -b1, b2, b3])
+    # Bsz2 = np.array([0,0,0,b1,b5,b4,-b1, b5, b4, 0, 0, 0])
+    # gsz = Dy*((1+ri)*Bsz1+(1-ri)*Bsz2)
+
+    Dx = np.sqrt((Cx+ri*Bx)**2 + (Cy + ri*By)**2)/(8*detJ)
+    Dy = np.sqrt((Ax+si*Bx)**2 + (Ay + si*By)**2)/(8*detJ)
+    
+    # print('Dx, Dy', Dx, Dy)
+
+    a1 = 0.5
+    a2 = (-yi[0] + yi[1])*0.25
+    a3 = (xi[0]-xi[1])*0.25
+    a4 = (xi[3]-xi[2])*0.25
+    a5 = -0.25*(yi[3]-yi[2])
+    Arz1 = np.array([a1, a2, a3, -a1, a2, a3, 0, 0, 0, 0, 0, 0])
+    Arz2 = np.array([0,0,0,0,0,0, -a1, a5, a4, a1, a5, a4])
+    grz = Dx*((1+si)*Arz1+(1-si)*Arz2)
+
+    b1 = 0.5
+    b2 = -0.25*(yi[0]-yi[3])
+    b3 = 0.25*(xi[0]-xi[3])
+    b4 = 0.25*(xi[1]-xi[2])
+    b5 = -0.25*(yi[1]-yi[2])
+    Bsz1 = np.array([b1, b2, b3, 0, 0, 0, 0, 0, 0, -b1, b2, b3])
+    Bsz2 = np.array([0,0,0,b1,b5,b4,-b1, b5, b4, 0, 0, 0])
+    gsz = Dy*((1+ri)*Bsz1+(1-ri)*Bsz2)
+
+    gz = np.array([grz, gsz])
+    Bs = np.matmul(ROTab, gz)
+
+    return N, Bb,Bs, detJ
 
 def naturalToCartesian(xi,yi):
     #according to bathes book, p. 425
@@ -757,7 +721,6 @@ def naturalToCartesian(xi,yi):
 
     # xd = 0.5*(xi[0]+xi[3])
     # yd = 0.5*(yi[0]+yi[3])
-
 
     #my numeration:
     xb= 0.5*(xi[1]+xi[2])
@@ -797,7 +760,7 @@ def naturalToCartesian(xi,yi):
 
     return alpha, beta  
 
-def GetGaussQuadrature():
+def getGaussQuadrature(shape, nPoints):
     gaussQuadrature={'linear': {1:{'points': np.array([[0,0]]),
                                     'weights': np.array([2])},
 
@@ -838,7 +801,7 @@ def GetGaussQuadrature():
                                                             [   0    , +np.sqrt(3/5)],
                                                             [+np.sqrt(3/5), +np.sqrt(3/5)]]),
                                     'weights': np.array([25, 40, 25, 40, 64, 40, 25, 40, 25])/81}}}
-    return gaussQuadrature
+    return gaussQuadrature[shape][nPoints]['points'], gaussQuadrature[shape][nPoints]['weights']
 
 class Result:
     '''

@@ -66,14 +66,13 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
             axVertDisp = fig.gca(projection='3d')
             axVertDisp.plot_trisurf(self.results.outPos[:,0],self.results.outPos[:,1],self.results.wVert,cmap=cm.jet)
 
-        # elif displacementPlot == 'table':
-            # for i, coord in enumerate(outPos):
-                # sampleModel.geometryInterface.text(coord[0], coord[1], '{:.2f}'.format(wVert[i]*1000))
+        elif displacementPlot == 'text':
+            fig, axVertDisp = myTextPlot(self, x,y,z, theTitle='w')
         else:
             raise TypeError('type of plot does not exist')
 
 
-        self.axes['Mx'] = axVertDisp
+        self.axes['vertDisp'] = axVertDisp
         outAxis.append(axVertDisp)
 
     if outVal[1]: #plot Mx

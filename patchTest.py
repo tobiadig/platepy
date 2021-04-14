@@ -61,8 +61,10 @@ generateMesh(patchTestModel, showGmshMesh=True, elementType='QUAD', nEdgeNodes=3
 
 # compute
 from solveModel import *
-solveModel(patchTestModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e1)
+    # ElemType: Quadrangluar or Triangular + Linear or Quadratic or MITC + Reduced or Normal Integration
+elemTypes = ['L-R', 'MITC4-N']
+solveModel(patchTestModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3, elemType=elemTypes[1])
 
 # display results
-plotResults(patchTestModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=[])
+plotResults(patchTestModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=['x', 'y'])
 plt.show()

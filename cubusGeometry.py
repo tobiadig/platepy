@@ -34,7 +34,7 @@ def importModel():
     wallDict["outlineCoords"] = np.array([[0,0], [a,0],[a,b],[0,b],[0,0]])
     wallDict["high"] = 3 # m
     wallDict["body"] = C25_30
-    wallDict["support"] = Support(np.array([1, 1, 0]))
+    wallDict["support"] = Support(np.array([1, 0, 0]))
     wallDict["thickness"] = 0.5 # m
     wall1 = Wall(wallDict)
 

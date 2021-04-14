@@ -50,3 +50,9 @@ import numpy as np
 a=np.array([1,2,3])
 a=a.reshape((3,1))
 print(a.shape)
+
+#%%
+a='Q-MITC-N'
+
+b=a.split('-')
+print(b[2]=='R')

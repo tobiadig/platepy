@@ -90,7 +90,8 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
         # if k ==4:
         #     nodeTags = np.array([3,7,9,6])
 
-
+        # print('element: ', k)
+        # print('nodes: ', nodeTags)
 
 
         newElement = Element()
