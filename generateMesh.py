@@ -10,7 +10,7 @@ import pandas as pd
 
 import gmsh # To create CAD model and mesh
 
-def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, nEdgeNodes = 0):
+def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, nEdgeNodes = 0, order='linear'):
 
     ''' Input/Output descriptions
         self: PlateModel class, where the geometry is initialized
@@ -21,6 +21,7 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
         following information are also generated and stored:
         nodes coordinates and orientation, element connectivity, boundary conditions
     '''
+    gmsh.model.mesh.clear()
     if elementType == 'QUAD':
         gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 1) #0: simple, 1: blossom (default), 2: simple full-quad, 3: blossom full-quad
         gmsh.model.geo.mesh.setRecombine(2, 1)
@@ -56,6 +57,11 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
     except:
         print('gmsh mesh generation failed')
         raise
+
+    if order == 'quadratic':
+        gmsh.model.mesh.setOrder(2)
+    elif order !='linear':
+        raise Exception('order not recognised')
     
     # eventually open fltk UI
     if showGmshMesh:
@@ -79,8 +85,7 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
 
     k=1
     for elemTag in elemTags[0]:
-        
-        elementType, nodeTags = gmsh.model.mesh.getElement(elemTag)
+        elemType, nodeTags = gmsh.model.mesh.getElement(elemTag)
         # if k == 1:
         #     nodeTags = np.array([9,8,1,5])
         # if k ==2:
@@ -94,11 +99,18 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
         # print('nodes: ', nodeTags)
 
 
+
         newElement = Element()
         newElement.tag = elemTag
 
+        if elementType == 'QUAD':
+            newElement.shape = 4
+        else:
+            newElement.shape =3       
+
         newElement.nNodes  = len(nodeTags)
         newElement.connectivity  = nodeTags
+
         newElement.coherentConnectivity = gmshToCoherentNodesNumeration.loc[nodeTags]
 
         # old = nodesArray[nodeTags-1,:]
@@ -107,7 +119,6 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
 
         newElement.whichPlate  = 1  #TODO: implement more plates
         elementsList.append(newElement)
-
         k+=1
 
     #assemble 2D elements for line load
@@ -197,17 +208,48 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
     #         BCs = np.append(BCs,BCsTemp, axis=0)
 
     # store result in a mesh class and then in plateModel
+    # print('nodesRotationsPd: ', nodesRotationsPd)
+
+    
     self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs)
+
+def setMesh(self, nodesArray, elements, BCs, load = None):
+    elementsList = []
+    nNodes = nodesArray.shape[0]
+    k=1
+    for element in elements:
+        newElement = Element()
+   
+        newElement.tag = k
+
+        newElement.nNodes  = len(element)
+        newElement.connectivity  = element
+        newElement.shape=len(element)
+        newElement.coherentConnectivity = pd.DataFrame(element-1)
+
+        newElement.coordinates = np.zeros((len(element), 3))
+        newElement.coordinates[:,0:2] = nodesArray[element-1, :]
+
+        newElement.whichPlate  = 1  #TODO: implement more plates
+        elementsList.append(newElement)
+        k+=1
+
+    nodesRotationsPd = pd.DataFrame(np.zeros((nNodes, 1)), index=range(1, nNodes+1))
+    nodesArrayPd =pd.DataFrame(nodesArray, index=range(1, nNodes+1) )
+    self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs)
+    self.mesh.load = load
+
 
 class Mesh:
     '''
         stores informations about nodes coordinates and rotation, element connectivity and boundary conditions
     '''
     def __init__(self,nodesArray, nodesRotations, elementsList, BCs):
-        self.nodesArray = nodesArray
+        self.nodesArray = nodesArray  #pandas!
         self.nodesRotations = nodesRotations
         self.elementsList=elementsList
         self.BCs = BCs
+        self.load = None
 
 class Element:
     '''
@@ -215,10 +257,11 @@ class Element:
     '''
     def __init__(self):
         self.tag  = None
+        self.shape = None
         self.nNodes  = None
         self.connectivity  = None
         self.coordinates  = None
         self.whichPlate  = None
         self.BbMat = None
         self.rotationMatrix = None
-        self.coherentConnectivity = None
+        self.coherentConnectivity = None #rearranges nodes with a sequential nummeration

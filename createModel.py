@@ -145,9 +145,9 @@ class PlateModel:
         '''
         self.loads.append(newLoad)
         
-        if newLoad.outlineCoords.size==0:
+        if newLoad.case =='area':
             pass
-        else:
+        elif newLoad.case == 'line':
             nPoints = len(newLoad.outlineCoords)
             pointTags = [0]*nPoints
             i=0
@@ -168,6 +168,10 @@ class PlateModel:
             gmsh.model.geo.synchronize()
             gmsh.model.geo.removeAllDuplicates()
             gmsh.model.geo.synchronize()
+        elif newLoad.case == 'nodes':
+            pass
+    def clearMesh(self):
+        self.mesh = None
 
 class Plate:
     def __init__(self, inputDict):
@@ -187,6 +191,7 @@ class Plate:
         self.Df=h**3/12*E/(1-nu**2)*np.array([[1, nu, 0],
                                                 [nu, 1, 0],
                                                 [0, 0, (1-nu)/2]])
+
         self.Dc = 5/6*h*np.array([[G,0],[0,G]]) #alpha = 5/6 according to ferreira p. 162
 
     def plot(self, axGeometry):
@@ -279,5 +284,6 @@ class Load:
         self.outlineCoords = np.array([])
         self.physicalGroup = None
         self.elements1DList = None
+        self.nodePattern = None
 
 

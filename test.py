@@ -52,7 +52,76 @@ a=a.reshape((3,1))
 print(a.shape)
 
 #%%
-a='Q-MITC-N'
+import numpy as np
+a = np.array([[2,2],[2,2]])
+b = np.array([1,2])
 
-b=a.split('-')
-print(b[2]=='R')
+print(a/b)
+
+#%%
+
+N9 = lambda r, s: (1-r**2)*(1-s**2)
+N8 = lambda r,s: 0.5*(1-s**2)*(1+r)-0.5*N9(r,s)
+N7 = lambda r, s: 0.5*(1-r**2)*(1-s)-0.5*N9(r,s)
+N6 = lambda r, s: 0.5*(1-s**2)*(1-r)-0.5*N9(r,s)
+N5 = lambda r, s: 0.5*(1-r**2)*(1+s)-0.5*N9(r,s)
+N4 = lambda r, s: 0.25*(1+r)*(1-s) - 0.5*N7(r,s) - 0.5*N8(r,s) - 0.25*N9(r,s)
+N3 = lambda r, s: 0.25*(1-r)*(1-s) - 0.5*N7(r,s) - 0.5*N6(r,s) - 0.25*N9(r,s)
+N2 = lambda r, s: 0.25*(1-r)*(1+s) - 0.5*N5(r,s) - 0.5*N6(r,s) - 0.25*N9(r,s)
+N1 = lambda r, s: 0.25*(1+r)*(1+s) - 0.5*N5(r,s) - 0.5*N8(r,s) - 0.25*N9(r,s)
+
+print(N1(0.7, 0.7))
+
+N1 = lambda r, s: 0.25*(r**2-r)*(s**2-s)
+N2 = lambda r, s: 0.25*(r**2+r)*(s**2-s)
+N3 = lambda r, s: 0.25*(r**2+r)*(s**2+s)
+N4 = lambda r, s: 0.25*(r**2-r)*(s**2+s)
+N5 = lambda r, s: 0.5*(s**2-s)*(1-r**2)
+N6 = lambda r, s: 0.5*(r**2+r)*(1-s**2)
+N7 = lambda r, s: 0.5*(s**2+s)*(1-r**2)
+N8 = lambda r, s: 0.5*(r**2-r)*(1-s**2)
+N9 = lambda r, s: (1-r**2)*(1-s**2)
+
+print(N1(-0.7, -0.7))
+#%%
+import numpy as np
+a=np.array([[1,2,3],[1,2,3],[1,2,3]])
+b=np.array([[1,2,3],[1,2,3],[1,2,3]])
+
+c=np.matmul(a, b)
+c2=np.matmul(c, c)
+d=a@b@c
+
+print(c2)
+print(d)
+
+#%%
+from solveModel import *
+import numpy as np
+import pandas as pd
+elemType = 4
+ri = np.array([-1])
+si = np.array([0])
+xi = np.array([0,5,5,0])
+yi = np.array([0,0,5, 5])
+
+N, Bf,Bc, detJ= getLinearVectorizedShapeFunctions(elemType,ri, si, xi, yi)
+
+Bc=Bc[0,:,:]
+N = N[0,:,:]
+# print('N: ', pd.DataFrame(N))
+print(pd.DataFrame(Bc))
+ri = -1
+si = 0
+N, Bb,Bs, detJ = getMITCShapefunctions(ri, si, xi, yi)
+print(pd.DataFrame(Bs))
+
+#%%
+from scipy import sparse    # To work with sparse matrix
+import numpy as np
+A= sparse.csr_matrix(np.array([[1,2,3], [1,2,3], [1,2,3]]))
+B= sparse.csr_matrix(np.array([[2,2,2]]).transpose())
+
+C=A*B
+
+print(C)
