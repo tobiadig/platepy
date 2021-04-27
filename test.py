@@ -125,3 +125,31 @@ B= sparse.csr_matrix(np.array([[2,2,2]]).transpose())
 C=A*B
 
 print(C)
+
+#%%
+import numpy as np
+ri = np.random.rand(4,)
+si = np.random.rand(4,)
+print(ri.shape)
+
+N1 = lambda r, s: 0.25*(1-r)*(1-s)
+N2 = lambda r, s: 0.25*(1+r)*(1-s)
+N3 = lambda r, s: 0.25*(1+r)*(1+s)
+N4 = lambda r, s: 0.25*(1-r)*(1+s)
+
+# Form the shape function matrix
+Nfun= lambda r, s: [N1(r,s), N2(r,s), N3(r,s), N4(r,s)]
+
+
+Nval=np.array(Nfun(ri, si))
+print(Nval)
+Nval=np.moveaxis(Nval, -1, 0)
+print(Nval)
+#%%
+GPr = -0.7745966692414834
+GPs = -0.7745966692414834
+N4r = 0.25*(1-GPs) + 0.5*GPr*(1-GPs) -0.25*(1-GPs**2) + 0.5*GPr*(1-GPs**2)
+
+N4 = 0.25*(1+GPr)*(1-GPs) - 0.25*(1-GPr**2)*(1-GPs) - 0.25*(1-GPs**2)*(1+GPr) - 0.25*(1-GPr**2)*(1-GPs**2)
+print('N4: ', N4)
+print('N4r: ',N4r)

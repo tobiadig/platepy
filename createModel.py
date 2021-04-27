@@ -101,7 +101,7 @@ class PlateModel:
         entities = np.array(gmsh.model.getEntities(1))
         for line in linesTags:
             if line in entities[:,1]:
-                gmsh.model.mesh.embed(1, [line], 2, 1) #TODO: the wall should recognize to which plate it belongs. temporarly just plate 1
+                gmsh.model.mesh.embed(1, [line], 2, 1) 
         
         gmsh.model.geo.synchronize()
 
@@ -133,10 +133,10 @@ class PlateModel:
         gmsh.model.geo.synchronize()
 
         if newColumn.isInPlate:
-            gmsh.model.mesh.embed(0, pointTags, 2, 1)#TODO: column should recognize to which plate it belongs. temporarly just plate 1
+            gmsh.model.mesh.embed(0, pointTags, 2, 1)
             gmsh.model.geo.synchronize()
         else:
-            gmsh.model.mesh.embed(0, pointTags, 1, 3)#TODO: column should recognize to which line it belongs
+            gmsh.model.mesh.embed(0, pointTags, 1, 3)
             gmsh.model.geo.synchronize()
 
     def addLoad(self, newLoad):

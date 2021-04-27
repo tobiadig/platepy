@@ -41,7 +41,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     columnsForForceSparseMatrix = np.zeros(nSparseData, dtype=int)
     dataForForceSparseMatrix = np.zeros(nSparseData)
 
-    p=self.loads[0]   #TODO: implement calculation for loads as functions of x and y
+    p=self.loads[0]  
                                         
     startIndexStiffness = 0
     startIndexForce = 0
@@ -62,7 +62,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         # print('xi: ', xi)
         # print('yi: ', yi)
         
-        Df = self.plates[0].Df   #TODO: the elements should know to which plate it belongs and take the right material param.
+        Df = self.plates[0].Df   
         Dc = self.plates[0].Dc
 
         kLocalNotRotated,fLocal = GetLocalMatrix(xi, yi, Df,Dc,p, elemType='MITC4')
@@ -143,7 +143,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
             # xi=element.coordinates[:,0]
             # yi=element.coordinates[:,1]
             
-            # Df = self.plates[0].Df   #TODO: the elements should know to which plate it belongs and take the right material param.
+            # Df = self.plates[0].Df   
             # Dc = self.plates[0].Dc
 
             # kLocalNotRotated,fLocal = GetLocalMatrix(xi, yi, Df,Dc,p, reducedIntegration)
@@ -261,7 +261,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         internalForcesPositions[k,0]=xm
         internalForcesPositions[k,1]=ym
 
-        Df = self.plates[0].Df   #TODO: the elements should know to which plate it belongs and take the right material param.
+        Df = self.plates[0].Df   
         Dc = self.plates[0].Dc
 
         elemType = len(xi)

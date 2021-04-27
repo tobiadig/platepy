@@ -34,6 +34,8 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     nNodesTotal = nodes.shape[0]
     nodesRotations = self.mesh.nodesRotations # both dataframes
     elementsList = self.mesh.elementsList
+    nElements = len(elementsList)
+    discartedDOFs = np.zeros(nElements)
     BCs = self.mesh.BCs
     nGDofs = nodes.shape[0]*3
 
@@ -55,7 +57,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     # for element in elementsList:
         # iterate over each element, get stiffness and creates basis for the creation of the global stiffness matrix
         elemNodes = element.connectivity
-
+        # print('connectivity: ', elemNodes)
 
         coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
 
@@ -80,40 +82,85 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         if p.case != "area":
             fLocal = np.zeros((3*nNodes,1))
 
-        # create rotation matrix
-        Ri = []
-        RiInit = False
+        if elementDegree != 'MITC9':
+            # create rotation matrix
+            Ri = []
+            RiInit = False
 
-        for dofRot in elemNodesRotations:
-            if not(RiInit):
-                R=rotMatrix(dofRot)
-                RiInit=True
-            else:
-                R = block_diag(R, rotMatrix(dofRot))
+            for dofRot in elemNodesRotations:
+                if not(RiInit):
+                    R=rotMatrix(dofRot)
+                    RiInit=True
+                else:
+                    R = block_diag(R, rotMatrix(dofRot))
 
-        element.rotationMatrix = R
+            element.rotationMatrix = R
 
+            # #rotate stiffness matrix
+            kTemp = np.matmul(kLocalNotRotated, R)
+            kLocal = np.matmul(R.transpose(), kTemp)
+            # print('kLocal: ', pd.DataFrame(kLocal))
 
-        # #rotate stiffness matrix
-        kTemp = np.matmul(kLocalNotRotated, R)
-        kLocal = np.matmul(R.transpose(), kTemp)
+            # kLocal = kLocalNotRotated
+            # coefficients of the DOFs and assignment of the stiffness matrix / force vector
 
-        # kLocal = kLocalNotRotated
-        # coefficients of the DOFs and assignment of the stiffness matrix / force vector
+            kCoeff = np.zeros((3*nNodes),dtype=int)
+            for i in range(0,3):
+                kCoeff[0+i::3]=coherentElemNodes*3+i
+            # print('kCoeff: ', kCoeff)
 
-        kCoeff = np.zeros((3*nNodes),dtype=int)
-        for i in range(0,3):
-            kCoeff[0+i::3]=coherentElemNodes*3+i
+            rows = np.zeros(kLocal.size,dtype=int)
+            columns = np.zeros(kLocal.size,dtype=int)
+            c=0
+            for j in kCoeff:
+                for i in kCoeff:
+                    rows[c] = i
+                    columns[c] = j
+                    c+=1
+        else:
+            # create rotation matrix
+            Ri = []
+            RiInit = False
 
-        rows = np.zeros(kLocal.size,dtype=int)
-        columns = np.zeros(kLocal.size,dtype=int)
-        c=0
-        for j in kCoeff:
-            for i in kCoeff:
-                rows[c] = i
-                columns[c] = j
-                c+=1
+            for dofRot in elemNodesRotations:
+                if not(RiInit):
+                    R=rotMatrix(dofRot)
+                    RiInit=True
+                else:
+                    R = block_diag(R, rotMatrix(dofRot))
 
+            element.rotationMatrix = R
+
+            # #rotate stiffness matrix
+            # kTemp = np.matmul(kLocalNotRotated, R)
+            # kLocal = np.matmul(R.transpose(), kTemp)
+
+            kLocal = kLocalNotRotated #TODO: rotate the matrixes!
+
+            # coefficients of the DOFs and assignment of the stiffness matrix / force vector
+
+            kCoeffTemp = np.zeros((3*nNodes),dtype=int)
+            for i in range(0,3):
+                kCoeffTemp[0+i::3]=coherentElemNodes*3+i
+
+            kCoeff = np.zeros((3*nNodes-1),dtype=int)
+            kCoeff[:-2] = kCoeffTemp[:-3]
+            kCoeff[-2:] = kCoeffTemp[-2:]
+            discartedDOFs[k] = kCoeffTemp[-3]
+            discartedDOFs = np.array(discartedDOFs, dtype = int)
+
+            rows = np.zeros(kLocal.size,dtype=int)
+            columns = np.zeros(kLocal.size,dtype=int)
+            c=0
+            for j in kCoeff:
+                for i in kCoeff:
+                    rows[c] = i
+                    columns[c] = j
+                    c+=1
+            # print('kCoeffTemp: ', kCoeffTemp)
+            # print('kCoeff: ', kCoeff)
+            # print('disc: ', discartedDOFs)
+    
         # create vectors to assemble sparse matrixes
         rowsForStiffnessSparseMatrix[startIndexStiffness:startIndexStiffness+rows.size] = rows
         columnsForStiffnessSparseMatrix[startIndexStiffness:startIndexStiffness+rows.size] = columns
@@ -228,12 +275,21 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     # np.savetxt('K.csv', sparseGlobalMatrix.toarray(), delimiter=",")
     # apply boundary conditions
     rDofsBool = np.zeros((nGDofs),dtype=bool)
-
+    
+    if elementDegree=='MITC9':
+        keepedDisplacements = np.zeros((nGDofs),dtype=bool)
+        keepedDisplacements[discartedDOFs] = np.ones((discartedDOFs.size), dtype=bool)
+        keepedDisplacements = np.invert(keepedDisplacements)
+        rDofsBool[discartedDOFs] = np.ones((discartedDOFs.size), dtype=bool)
+    else:
+        keepedDisplacements = np.zeros((nGDofs),dtype=bool)
+        keepedDisplacements = np.invert(keepedDisplacements)
 
     for constraint in BCs:
         node=int(constraint[0])
         rDofsBool[node*3-3:node*3] = constraint[1:].astype(bool)
 
+    #remove discarted nodes
     allDofs =np.arange(0,nGDofs)
     fDofsBool = np.invert(rDofsBool)
     fDofsInt = allDofs[fDofsBool]
@@ -242,18 +298,27 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     kMatFree = kMatFree[:,fDofsInt]
 
     fVecFree = sparseForceGlobal[fDofsInt]
+    # print('force vector: ', sparseForceGlobal.toarray())
 
     # SOLVE
     Uf = sparse.linalg.spsolve(kMatFree,fVecFree)
     Uf=Uf.reshape(-1,1)
 
     # global displacement and force vector
+    
     uGlob=np.zeros((nGDofs,1))
     uGlob[fDofsInt]=Uf
-
+    # if elementDegree == 'MITC9':
+    # uGlob = uGlob[discartedDisplacements]
+    
     uGlobSparse = sparse.csr_matrix(uGlob)
 
     # globalForce = np.matmul(sparseGlobalMatrix.toarray(),uGlob)
+    # print(discartedDisplacements)
+    # M1 = sparseGlobalMatrix[discartedDisplacements]
+    # M1 = M1[:,discartedDisplacements]
+    # print('m1size: ', M1.shape)
+    # print('uGlob shape: ', uGlob.shape)
     globalForce = (sparseGlobalMatrix*uGlobSparse).toarray()
 
     # elaborate and store results
@@ -263,10 +328,16 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     outPos = np.zeros((nodes.shape[0],2))
     values = np.zeros((nodes.shape[0],3))
     outPos[:,0:2]=nodes[:,0:2]
-    values[:,0]=uGlob[0::3,0]
+    keepedDisplacements = keepedDisplacements[0::3]
+    vDisp = uGlob[0::3,0]
+
+    vDisp = vDisp[keepedDisplacements]
+    outPos = outPos[keepedDisplacements, :]  #TODO: only works for vertical displacements!
+    # dear future me,
+    # I0m sorry if you lost time with this line of code, I was too lazy to change
     values[:,1]=uGlob[1::3,0]
     values[:,2]=uGlob[2::3,0]
-    self.results = Result(outPos,values[:,0], values[:,1], values[:,2],resultsScale=(resultsScaleVertDisp,resultsScaleIntForces))
+    self.results = Result(outPos,vDisp, values[:,1], values[:,2],resultsScale=(resultsScaleVertDisp,resultsScaleIntForces))
     #compute MOMENTS
     nodesArray = self.mesh.nodesArray
 
@@ -275,16 +346,21 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     internalForcesPositions = nodesArray.to_numpy()[:,0:2]
     k=0
 
-
     ##################### debug
     if internalForcePosition == 'center':
         bendingMoments = np.zeros((len(elementsList),3))
         internalForcesPositions = np.zeros((len(elementsList),2))
         shearForces = np.zeros((len(elementsList),2))
 
+    elif internalForcePosition == 'intPoints':
+        nGaussPoints = 7
+        bendingMoments = np.zeros((len(elementsList)*nGaussPoints,3))
+        internalForcesPositions = np.zeros((len(elementsList)*nGaussPoints,2))
+        shearForces = np.zeros((len(elementsList)*nGaussPoints,2))
+
     ######################
     singlePrint = True
-    for element in elementsList:
+    for k,element in enumerate(elementsList):
         elemNodes = element.connectivity
         # print('conn: ', elemNodes)
 
@@ -311,7 +387,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
             si = np.array([-1,-1,1,1])
             for i in range(0, len(ri)):
                 # print('ri, si: ', ri[i], si[i])
-                N, Bf,Bc, detJ = getLinearVectorizedShapeFunctions(elementShape,np.array([ri[i]]), np.array([si[i]]), xi, yi)
+                N, Bf,Bc, detJ, Nval = getLinearVectorizedShapeFunctions(elementShape,np.array([ri[i]]), np.array([si[i]]), xi, yi)
                 Bf = Bf[0,:,:]
                 Bc = Bc[0,:,:]
 
@@ -320,7 +396,6 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
                 bendingMomentsSum[coherentElemNodes[i],3] += 1
                 shearForcesSum[coherentElemNodes[i],2] += 1
                 # if singlePrint:
-
                 #     print('r, s: ', ri[i], si[i])
                 #     print('node: ', coherentElemNodes[i])
                 #     print('vloc: ', vLoc)
@@ -329,7 +404,6 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
                 #     print('shear: ',np.matmul(Dc, np.matmul(Bc, vLoc)) )
                 #     singlePrint = True
 
-        #for debug purposes: #####################################################
         if elementDegree =='L' and internalForcePosition == 'center':
             
             elemNodes = element.connectivity
@@ -349,7 +423,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
             Dc = self.plates[0].Dc
 
             elementShape = len(xi)
-            N, Bf,Bc, detJ = getLinearVectorizedShapeFunctions(elementShape,np.array([0]), np.array([0]), xi, yi)
+            N, Bf,Bc, detJ, Nval = getLinearVectorizedShapeFunctions(elementShape,np.array([0]), np.array([0]), xi, yi)
             Bf = Bf[0,:,:]
             Bc = Bc[0,:,:]
 
@@ -369,7 +443,6 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
             #     print('shear: ',np.matmul(Dc, np.matmul(Bc, vLoc)) )
             #     singlePrint = True
 
-
         if elementDegree =='Q' and internalForcePosition == 'center':
             
             elemNodes = element.connectivity
@@ -378,7 +451,6 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 
             xi=element.coordinates[:,0]
             yi=element.coordinates[:,1]
-
 
             xm = np.average(xi)
             ym = np.average(yi)
@@ -400,8 +472,6 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
             vLoc = np.matmul(element.rotationMatrix, uGlob[kCoeff])
             bendingMoments[k,:] = np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*-1
             shearForces[k,:]=np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*-1  
-
-#end of debug purposes##############################
 
         elif elementDegree =='MITC4' and internalForcePosition == 'nodes':
             ri = np.array([1, -1, -1, 1])
@@ -435,7 +505,6 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
             xi=element.coordinates[:,0]
             yi=element.coordinates[:,1]
 
-
             xm = np.average(xi)
             ym = np.average(yi)
             internalForcesPositions[k,0]=xm
@@ -463,7 +532,6 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
             #     print('shear: ',np.matmul(Dc, np.matmul(Bc, vLoc)) )
             #     singlePrint = True
 
-
         if elementDegree =='Q' and internalForcePosition == 'center':
             elemNodes = element.connectivity
             coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
@@ -471,7 +539,6 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 
             xi=element.coordinates[:,0]
             yi=element.coordinates[:,1]
-
 
             xm = np.average(xi)
             ym = np.average(yi)
@@ -494,8 +561,6 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
             bendingMoments[k,:] = np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*-1
             shearForces[k,:]=np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*-1  
 
-
-
         elif elementDegree =='MITC4' and internalForcePosition == 'nodes':
             ri = np.array([1, -1, -1, 1])
             si = np.array([1,1,-1,-1])
@@ -507,10 +572,36 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
                 bendingMomentsSum[coherentElemNodes[i],0:3] += np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*1
                 shearForcesSum[coherentElemNodes[i],0:2] += np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*1 
                 bendingMomentsSum[coherentElemNodes[i],3] += 1
-                shearForcesSum[coherentElemNodes[i],2] += 1  
+                shearForcesSum[coherentElemNodes[i],2] += 1 
 
-        k+=1
-        
+        elif elementDegree == 'L' and internalForcePosition == 'intPoints':
+            # nGaussPoints = 10
+            # gaussPoints, gaussWeights =  getGaussQuadrature('rectangular',nGaussPoints)
+            # ri = gaussPoints[:,0]
+            # si = gaussPoints[:,1]
+            ri =np.linspace(-1, 1, num=nGaussPoints)
+            # print('ri: ', ri)
+            si = np.zeros(nGaussPoints)
+            allN, allBf,allBc, alldetJ, allNval =getLinearVectorizedShapeFunctions(elementShape,ri, si, xi, yi)
+            for i in range(0, len(ri)):
+                # print('ri, si: ', ri[i], si[i])
+
+                N=allN[i,:,:]
+                Bf = allBf[i,:,:]
+                Bc = allBc[i,:,:]
+
+                Nval = allNval[i,:]
+
+                # print('node: ', coherentElemNodes[i])
+                # print('shear: ',np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*-1 )
+                
+                bendingMoments[k*nGaussPoints+i,0:3] = np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*1
+                shearForces[k*nGaussPoints+i,0:2] = np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*1 
+
+                xr = Nval@xi
+                yr = Nval@yi
+                internalForcesPositions[k*nGaussPoints+i,0]=xr
+                internalForcesPositions[k*nGaussPoints+i,1]=yr
 
     if internalForcePosition == 'nodes':
         # n = bendingMomentsSum.shape[0]
@@ -522,6 +613,10 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 
         bendingMoments = bendingMomentsSum[:,0:3]/bendingMomentsSum[:,3, None]
         shearForces = shearForcesSum[:,0:2]/shearForcesSum[:,2, None]
+    elif internalForcePosition =='intPoints':
+        pass
+
+
 
     self.results.bendingMoments=bendingMoments*resultsScaleIntForces[0]
     self.results.internalForcesPositions=internalForcesPositions
@@ -592,21 +687,19 @@ def GetLocalMatrix(xi, yi, Df,Dc, p,elementShape, elemType):
             gaussPoints, gaussWeights =  getGaussQuadrature('triangular',3)
 
         elif elementShape == 9:
-
+ 
         # 4 point
             gaussPointsRed, gaussWeightsRed =  getGaussQuadrature('rectangular',4)
 
         # 9 points
             gaussPoints, gaussWeights =  getGaussQuadrature('rectangular',9)
 
-
-
     if elementDegree == 'L': #perform vectorized integration
         fLocal = np.zeros(3*elementShape)
         ri = gaussPoints[:,0]
         si = gaussPoints[:,1]
         wi = gaussWeights
-        N, Bf,Bc, detJ = getLinearVectorizedShapeFunctions(elementShape,ri, si, xi, yi)
+        N, Bf,Bc, detJ, Nval = getLinearVectorizedShapeFunctions(elementShape,ri, si, xi, yi)
 
         m11 = np.matmul(Bf.transpose((0,2,1)),Df)
         m12 = np.matmul(m11,Bf)
@@ -615,13 +708,13 @@ def GetLocalMatrix(xi, yi, Df,Dc, p,elementShape, elemType):
         kLocal = np.dot(m12,wi*detJ)
 
         kBDEbug = np.dot(m12,wi*detJ)
-
+        # CHANGING INTEGRATION
         ri = gaussPointsRed[:,0]
         si = gaussPointsRed[:,1]
         wi = gaussWeightsRed[:]
-        N, Bf,Bc, detJ = getLinearVectorizedShapeFunctions(elementShape,ri, si, xi, yi)
+        N, Bf,Bc, detJ, Nval = getLinearVectorizedShapeFunctions(elementShape,ri, si, xi, yi)
 
-        m21 = np.matmul(Bc.transpose((0,2,1)),Dc) 
+        m21 = np.matmul(Bc.transpose((0,2,1)),Dc)
         m22 = np.matmul(m21,Bc)
         m22 = np.moveaxis(m22,0,-1)
         kLocal += np.dot(m22,wi*detJ)
@@ -630,7 +723,7 @@ def GetLocalMatrix(xi, yi, Df,Dc, p,elementShape, elemType):
         ri = gaussPoints[:,0]
         si = gaussPoints[:,1]
         wi = gaussWeights[:]
-        N, Bf,Bc, detJ = getLinearVectorizedShapeFunctions(elementShape,ri, si, xi, yi)
+        N, Bf,Bc, detJ, Nval = getLinearVectorizedShapeFunctions(elementShape,ri, si, xi, yi)
         mTemp = np.matmul(N.transpose((0,2,1)),p.magnitude)
         mTemp=np.expand_dims(mTemp,2)
         mTemp = np.moveaxis(mTemp,0,-1)
@@ -661,7 +754,6 @@ def GetLocalMatrix(xi, yi, Df,Dc, p,elementShape, elemType):
             fLocal += wi*np.matmul(N.transpose(),p.magnitude)*detJ
 
     elif elementDegree == 'Q':
-        #full integration for both components
         fLocal = np.zeros(3*9)
         kLocal = np.zeros((3*9,3*9))
 
@@ -676,13 +768,53 @@ def GetLocalMatrix(xi, yi, Df,Dc, p,elementShape, elemType):
 
             m11 = np.matmul(Bf.transpose(),Df)
             m12 = np.matmul(m11,Bf)
-            m21 = np.matmul(Bc.transpose(),Dc) 
-            m22 = np.matmul(m21,Bc)
-            ksDEbug += wi*m22*detJ
+            # m21 = np.matmul(Bc.transpose(),Dc) 
+            # m22 = np.matmul(m21,Bc)
+            # ksDEbug += wi*m22*detJ
             kBDEbug += wi*m12*detJ
 
-            kLocal += wi*m12*detJ + wi*m22*detJ
+            # kLocal += wi*m12*detJ + wi*m22*detJ
+            kLocal += wi*m12*detJ
             fLocal += wi*np.matmul(N.transpose(),p.magnitude)*detJ
+
+        for i in range(0, gaussPointsRed.shape[0]):
+            ri = gaussPointsRed[i,0]
+            si = gaussPointsRed[i,1]
+            wi = gaussWeightsRed[i]
+            N, Bf,Bc, detJ = getQuadraticShapeFunctions(elemType,ri, si, xi, yi)
+
+
+            m21 = np.matmul(Bc.transpose(),Dc) 
+            m22 = np.matmul(m21,Bc)
+
+
+            kLocal += wi*m22*detJ
+
+
+    elif elementDegree == 'MITC9':
+        #full integration for both components
+        nDOFs = 8+2*9
+        fLocal = np.zeros(nDOFs)
+        kLocal = np.zeros((nDOFs,nDOFs))
+
+        kBDEbug = np.zeros((nDOFs,nDOFs))
+        ksDEbug = np.zeros((nDOFs,nDOFs))
+        for i in range(0,gaussPoints.shape[0]):
+            # print('NEW POINT')
+            ri = gaussPoints[i,0]
+            si = gaussPoints[i,1]
+            wi = gaussWeights[i]
+            N, Bf,Bc, detJ = getMITC9Shapefunctions(ri, si, xi, yi)
+
+            m21 = np.matmul(Bc.transpose(),Dc) 
+            m22 = np.matmul(m21,Bc)
+            ksDEbug += wi*Bc.transpose() @ Dc @ Bc *detJ #TODO: è giusto il Jacobian?
+            kBDEbug += wi*Bf.transpose() @ Df @ Bf * detJ
+            temp1 = np.expand_dims(p.magnitude, 1)
+            temp2 = wi* N.transpose() @ temp1 *detJ
+            kLocal += wi*Bf.transpose() @ Df @ Bf *detJ + wi*Bc.transpose() @ Dc @ Bc*detJ
+            fLocal += temp2[:,0]
+
 
     return kLocal, fLocal
 
@@ -814,7 +946,6 @@ def getLinearVectorizedShapeFunctions(elemType,ri, si, xi, yi):
         N[:,1, 1::3]=Nval
         N[:,2, 2::3]=Nval
  
-
         # Define shape function derivatives, derive deformation matrix
         N1r = lambda r, s: -0.25*(1-s)
         N2r = lambda r, s: 0.25*(1-s)
@@ -855,7 +986,7 @@ def getLinearVectorizedShapeFunctions(elemType,ri, si, xi, yi):
         # Bc[:,0,elemType:2*elemType]=Nval
         
         # Bc[:,1,2*elemType:3*elemType]=Nval
-    return N, Bf,Bc, detJ
+    return N, Bf,Bc, detJ, Nval
 
 def getQuadraticShapeFunctions(elemType,ri, si, xi, yi):
     '''
@@ -907,6 +1038,7 @@ def getQuadraticShapeFunctions(elemType,ri, si, xi, yi):
         J=np.matmul(nodeCoordinates.transpose(), NrsVal)
         detJ = np.linalg.det(J)
         invJ = np.linalg.inv(J)
+
 
         NrsVal = np.matmul(NrsVal,invJ)
         Bf=np.zeros((3,3*elemType))
@@ -983,7 +1115,6 @@ def getQuadraticShapeFunctions(elemType,ri, si, xi, yi):
         Nfun= lambda r, s: [N1(r,s), N2(r,s), N3(r,s), N4(r,s), N5(r,s), N6(r,s), N7(r,s), N8(r,s), N9(r,s)]
         Nval=np.array(Nfun(ri, si))
 
-
         N=np.zeros((3, 3*9))
         N[0, 0::3]=Nval
         N[1, 1::3]=Nval
@@ -1027,7 +1158,8 @@ def getQuadraticShapeFunctions(elemType,ri, si, xi, yi):
         detJ = np.linalg.det(J)
         invJ = np.linalg.inv(J)
         NrsVal = np.matmul(NrsVal,invJ)
-
+        # print('J of Q elem: ', J)
+        # print('det J: ', detJ)
         Bf=np.zeros((3,3*9))
         Bf[0,1::3]=NrsVal[:,0]
         Bf[1,2::3]=NrsVal[:,1]
@@ -1139,24 +1271,23 @@ def shapeFun8(GPr, GPs):
     N[6] = 0.5*(1-GPr**2)*(1-GPs)
     N[7] = 0.5*(1-GPs**2)*(1+GPr)
 
-    Nr[0] = 0.5*(1+GPs) - 0.25*(1-2*GPr)*(1+GPs) - 0.5*(1-GPs**2)
-    Nr[1] = -0.25*(1-2*GPr)*(1+GPs)
-    Nr[2] = -0.25*(1-2*GPr)*(1-GPs)
-    Nr[3] = 0.5*(1-GPs) - 0.25*(1-2*GPr)*(1-GPs) - 0.5*(1-GPs**2)
-    Nr[4] = 0.5*(1-2*GPr)*(1+GPs)
-    Nr[5] = 0
-    Nr[6] = 0.5*(1-2*GPr)*(1-GPs)
-    Nr[7] = (1-GPs**2)
+    Nr[0] =  0.25*(1+GPs) + 0.5*GPr*(1+GPs) - 0.25*(1-GPs**2)
+    Nr[1] = -0.25*(1+GPs) + 0.5*GPr*(1+GPs) + 0.25*(1-GPs**2)
+    Nr[2] = -0.25*(1-GPs) + 0.25*(1-GPs**2) + 0.5*GPr*(1-GPs)
+    Nr[3] =  0.25*(1-GPs) + 0.5*(1-GPs)     -0.25*(1-GPs**2)
+    Nr[4] = -GPr*(1+GPs)
+    Nr[5] = -0.5*(1-GPs**2)
+    Nr[6] = -GPr*(1-GPs)
+    Nr[7] = 0.5*(1-GPs**2)
 
-
-    Ns[0] = 0.5*(1+GPr) - 0.5*(1-GPr**2) - 0.25*(1-2*GPs)*(1+GPr)
-    Ns[1] = 0.5*(1-GPr) - 0.5*(1-GPr**2) - 0.25*(1-1*GPs)*(1-GPr)
-    Ns[2] = -0.25*(1-2*GPs)*(1-GPr)
-    Ns[3] = - 0.25*(1-2*GPs)*(1+GPr)
-    Ns[4] = (1-GPr**2)
-    Ns[5] = 0.5*(1-2*GPs)*(1-GPr)
-    Ns[6] = 0
-    Ns[7] = 0.5*(1-2*GPs)*(1+GPr)
+    Ns[0] =  0.25*(1+GPr) - 0.25*(1-GPr**2) + 0.5*GPs*(1+GPr)
+    Ns[1] =  0.25*(1-GPr) - 0.25*(1-GPr**2) + 0.5*GPs*(1-GPr)
+    Ns[2] = -0.25*(1-GPr) + 0.5*GPs*(1-GPr) + 0.25*(1-GPr**2)
+    Ns[3] = -0.25*(1+GPr) + 0.25*(1-GPr**2) + 0.5*(1+GPr)
+    Ns[4] = 0.5*(1-GPr**2)
+    Ns[5] = -GPs*(1-GPr)
+    Ns[6] = -0.5*(1-GPr**2)
+    Ns[7] = -GPs*(1+GPr)
 
     return N, Nr, Ns
 
@@ -1165,38 +1296,36 @@ def shapeFun9(GPr, GPs):
     Nr=np.zeros(9)
     Ns=np.zeros(9)
 
-    N[0] = 0.25*(1+GPr)*(1+GPs) - 0.25*(1-GPr**2)*(1+GPs) - 0.25*(1-GPs**2)*(1+GPr) - 0.25*(1-GPr**2)*(1-GPs**2)
-    N[1] = 0.25*(1-GPr)*(1+GPs) - 0.25*(1-GPr**2)*(1+GPs) - 0.25*(1-GPs**2)*(1-GPr) - 0.25*(1-GPr**2)*(1-GPs**2)
-    N[2] = 0.25*(1-GPr)*(1-GPs) - 0.25*(1-GPs**2)*(1-GPr) - 0.25*(1-GPr**2)*(1-GPs) - 0.25*(1-GPr**2)*(1-GPs**2)
-    N[3] = 0.25*(1+GPr)*(1-GPs) - 0.25*(1-GPr**2)*(1-GPs) - 0.25*(1-GPs**2)*(1+GPr) - 0.25*(1-GPr**2)*(1-GPs**2)
+    N[0] = 0.25*(1+GPr)*(1+GPs) - 0.25*(1-GPr**2)*(1+GPs) - 0.25*(1-GPs**2)*(1+GPr) + 0.25*(1-GPr**2)*(1-GPs**2)
+    N[1] = 0.25*(1-GPr)*(1+GPs) - 0.25*(1-GPr**2)*(1+GPs) - 0.25*(1-GPs**2)*(1-GPr) + 0.25*(1-GPr**2)*(1-GPs**2)
+    N[2] = 0.25*(1-GPr)*(1-GPs) - 0.25*(1-GPs**2)*(1-GPr) - 0.25*(1-GPr**2)*(1-GPs) + 0.25*(1-GPr**2)*(1-GPs**2)
+    N[3] = 0.25*(1+GPr)*(1-GPs) - 0.25*(1-GPr**2)*(1-GPs) - 0.25*(1-GPs**2)*(1+GPr) + 0.25*(1-GPr**2)*(1-GPs**2)
     N[4] = 0.5*(1-GPr**2)*(1+GPs) - 0.5*(1-GPr**2)*(1-GPs**2)
     N[5] = 0.5*(1-GPs**2)*(1-GPr) - 0.5*(1-GPr**2)*(1-GPs**2)
     N[6] = 0.5*(1-GPr**2)*(1-GPs) - 0.5*(1-GPr**2)*(1-GPs**2)
     N[7] = 0.5*(1-GPs**2)*(1+GPr) - 0.5*(1-GPr**2)*(1-GPs**2)
     N[8] = (1-GPr**2)*(1-GPs**2)
 
-    Nr[0] = 0.5*(1+GPs) - 0.25*(1-2*GPr)*(1+GPs) - 0.5*(1-GPs**2) - 0.25*(1-2*GPr)*(1-GPs**2)
-    Nr[1] = -0.25*(1-2*GPr)*(1+GPs) - 0.25*(1-2*GPr)*(1-GPs**2)
-    Nr[2] = -0.25*(1-2*GPr)*(1-GPs) - 0.25*(1-2*GPr)*(1-GPs**2)
-    Nr[3] = 0.5*(1-GPs) - 0.25*(1-2*GPr)*(1-GPs) - 0.5*(1-GPs**2) - 0.25*(1-2*GPr)*(1-GPs**2)
-    Nr[4] = 0.5*(1-2*GPr)*(1+GPs) - 0.5*(1-2*GPr)*(1-GPs**2)
-    Nr[5] = 0 - 0.5*(1-2*GPr)*(1-GPs**2)
-    Nr[6] = 0.5*(1-2*GPr)*(1-GPs) - 0.5*(1-2*GPr)*(1-GPs**2)
-    Nr[7] = (1-GPs**2) - 0.5*(1-2*GPr)*(1-GPs**2)
-    Nr[8] = (1-2*GPr)*(1-GPs**2)
+    Nr[0] =  0.25*(1+GPs) + 0.5*GPr*(1+GPs) - 0.25*(1-GPs**2) - 0.5*GPr*(1-GPs**2)
+    Nr[1] = -0.25*(1+GPs) + 0.5*GPr*(1+GPs) + 0.25*(1-GPs**2) - 0.5*GPr*(1-GPs**2)
+    Nr[2] = -0.25*(1-GPs) + 0.25*(1-GPs**2) + 0.5*GPr*(1-GPs) - 0.5*GPr*(1-GPs**2)
+    Nr[3] =  0.25*(1-GPs) + 0.5*GPr*(1-GPs)     -0.25*(1-GPs**2) - 0.5*GPr*(1-GPs**2)
+    Nr[4] = -GPr*(1+GPs) + GPr*(1-GPs**2)
+    Nr[5] = -0.5*(1-GPs**2) + GPr*(1-GPs**2)
+    Nr[6] = -GPr*(1-GPs) + GPr*(1-GPs**2)
+    Nr[7] = 0.5*(1-GPs**2) + GPr*(1-GPs**2)
+    Nr[8] = -2*GPr*(1-GPs**2)
 
-
-    Ns[0] = 0.5*(1+GPr) - 0.5*(1-GPr**2) - 0.25*(1-2*GPs)*(1+GPr) - 0.25*(1-GPr**2)*(1-2*GPs)
-    Ns[1] = 0.5*(1-GPr) - 0.5*(1-GPr**2) - 0.25*(1-1*GPs)*(1-GPr) - 0.25*(1-GPr**2)*(1-2*GPs)
-    Ns[2] = -0.25*(1-2*GPs)*(1-GPr) - 0.25*(1-GPr**2)*(1-2*GPs)
-    Ns[3] = - 0.25*(1-2*GPs)*(1+GPr) - 0.25*(1-GPr**2)*(1-2*GPs)
-    Ns[4] = (1-GPr**2) - 0.5*(1-GPr**2)*(1-2*GPs)
-    Ns[5] = 0.5*(1-2*GPs)*(1-GPr) - 0.5*(1-GPr**2)*(1-2*GPs)
-    Ns[6] = 0 - 0.5*(1-GPr**2)*(1-2*GPs)
-    Ns[7] = 0.5*(1-2*GPs)*(1+GPr) - 0.5*(1-GPr**2)*(1-2*GPs)
-    Ns[8] = (1-GPr**2)*(1-2*GPs)
-
-    return N, Nr, Ns
+    Ns[0] =  0.25*(1+GPr) - 0.25*(1-GPr**2) + 0.5*GPs*(1+GPr) - 0.5*GPs*(1-GPr**2)
+    Ns[1] =  0.25*(1-GPr) - 0.25*(1-GPr**2) + 0.5*GPs*(1-GPr) - 0.5*GPs*(1-GPr**2)
+    Ns[2] = -0.25*(1-GPr) + 0.5*GPs*(1-GPr) + 0.25*(1-GPr**2) - 0.5*GPs*(1-GPr**2)
+    Ns[3] = -0.25*(1+GPr) + 0.25*(1-GPr**2) + 0.5*GPs*(1+GPr) - 0.5*GPs*(1-GPr**2)
+    Ns[4] = 0.5*(1-GPr**2) + GPs*(1-GPr**2)
+    Ns[5] = -GPs*(1-GPr) + GPs*(1-GPr**2)
+    Ns[6] = -0.5*(1-GPr**2) + GPs*(1-GPr**2)
+    Ns[7] = -GPs*(1+GPr) + GPs*(1-GPr**2)
+    Ns[8] = -2*GPs*(1-GPr**2)
+    return N, Nr, Ns 
 
 def getJac(Nr, Ns, xi, yi):
     xr = np.matmul(Nr,xi)
@@ -1253,7 +1382,7 @@ def naturalToCartesian(xi,yi):
 
     beta = np.arccos(np.dot(u,v)/(uLength*vLength))
 
-    return alpha, beta  
+    return alpha, beta 
 
 def getGaussQuadrature(shape, nPoints):
     gaussQuadrature={'linear': {1:{'points': np.array([[0,0]]),
@@ -1298,9 +1427,6 @@ def getGaussQuadrature(shape, nPoints):
                                     'weights': np.array([25, 40, 25, 40, 64, 40, 25, 40, 25])/81}}}
     return gaussQuadrature[shape][nPoints]['points'], gaussQuadrature[shape][nPoints]['weights']
 
-
-
-
 def getMITC9Shapefunctions(ri, si, xi, yi):
 
     v1 = lambda r, s: np.array([1, r, s, r*s, s**2, 0, 0, 0, 0, 0])
@@ -1329,46 +1455,51 @@ def getMITC9Shapefunctions(ri, si, xi, yi):
         rP=points[i][0]
         sP = points[i][1]
 
-        N, Nr, Ns = shapeFun8(rP, sP)
+        N8, Nr8, Ns8 = shapeFun8(rP, sP)
         xi8 = xi[0:-1]
         yi8 = yi[0:-1]
-        Jac, JacInv, JacDet = getJac(Nr, Ns, xi8, yi8)
+        # Jac, JacInv, JacDet = getJac(Nr, Ns, xi8, yi8)
 
-        T= np.matmul(JacInv, np.array([Nr, Ns]))
+        # T= np.matmul(JacInv, np.array([Nr, Ns]))
         
-        Nr = T[0,:]
-        Ns = T[1,:]
-        N, Nr9, Ns9 = shapeFun9(rP, sP)
+        # Nr = T[0,:]
+        # Ns = T[1,:]
+        N9, Nr9, Ns9 = shapeFun9(rP, sP)
 
         if i < 4:
             M2[i,:] = v1(rP, sP)
-            M3[i,0:8] = Nr
-            M3[i, 17:] = N
+            M3[i,0:8] = Nr8
+            
+            M3[i, 8:17] = -np.dot(Nr9, yi)*N9
+            M3[i, 17:] = np.dot(Nr9, xi)*N9
         else:
             M2[i,:] = v2(rP, sP)
-            M3[i,0:8] = Ns
-            M3[i, 8:17] = -N
+            M3[i,0:8] = Ns8
+            M3[i, 8:17] = -np.dot(Ns9, yi)*N9
+            M3[i, 17:] = np.dot(Ns9, xi)*N9
+    
+    #integration
 
     nPoints=9
     gaussPoints, gaussWeights = getGaussQuadrature('rectangular', nPoints)
     for i in range(0,nPoints):
-        N, Nr, Ns = shapeFun8(gaussPoints[i,0], gaussPoints[i,1])
+        wi = gaussWeights[i]
+        N8, Nr8, Ns8 = shapeFun8(gaussPoints[i,0], gaussPoints[i,1])
         xi8 = xi[0:-1]
         yi8 = yi[0:-1]
-        Jac, JacInv, JacDet = getJac(Nr, Ns, xi8, yi8)
-        T= np.matmul(JacInv, np.array([Nr, Ns]))
-        Nr = T[0,:]
-        Ns = T[1,:]
-        N, Nr9, Ns9 = shapeFun9(gaussPoints[i,0], gaussPoints[i,1])
 
-        M2[8,:] += gaussWeights[i]*v1(gaussPoints[i,0], gaussPoints[i,1])
-        M2[9, :] += gaussWeights[i]*v2(gaussPoints[i,0], gaussPoints[i,1])
+        N9, Nr9, Ns9 = shapeFun9(gaussPoints[i,0], gaussPoints[i,1])
 
-        M3[8,0:8] += Nr
-        M3[8, 17:] += N
+        M2[8,:] += wi*v1(gaussPoints[i,0], gaussPoints[i,1])
+        M2[9, :] += wi*v2(gaussPoints[i,0], gaussPoints[i,1])
 
-        M3[9,0:8] += Ns
-        M3[9, 8:17] += -N
+        M3[8,0:8] += wi*Nr8
+        M3[8, 8:17] += -wi*np.dot(Nr9, yi)*N9
+        M3[8, 17:] += wi*np.dot(Nr9, xi)*N9
+
+        M3[9,0:8] += wi*Ns8
+        M3[9, 8:17] += -wi*np.dot(Ns9, yi)*N9
+        M3[9, 17:] += wi*np.dot(Ns9, xi)*N9
 
     # print('M3: ', pd.DataFrame(M3))
     # print('M2: ', pd.DataFrame(M2))
@@ -1376,37 +1507,91 @@ def getMITC9Shapefunctions(ri, si, xi, yi):
 
     Bs = M1@np.linalg.inv(M2)@M3
 
-    #Bending component!
-    N, Nr, Ns = shapeFun9(ri, si)
-
+    # Transofrmation in global coordinates
+    N8, Nr8, Ns8 = shapeFun8(ri, si)
+    N9, Nr, Ns = shapeFun9(ri, si)
     Jac, JacInv, JacDet = getJac(Nr, Ns, xi, yi)
+    # print('Jacobian: ', Jac)
+    # print('JacDet: ', JacDet)
+
+    endNTemp = np.zeros((3,3*9))
+    endNTemp[0,0:-3:3] = N8
+    endNTemp[1,1::3] = N9
+    endNTemp[2,2::3] = N9
+
+    endN = np.zeros((3, 26))
+    endN[:,0:-2] = endNTemp[:,0:-3]
+    endN[:,-2:] = endNTemp[:,-2:]
+
+
+    alpha, beta = naturalToCartesian(xi,yi)
+
+    Dx=np.sqrt((np.dot(Ns,xi))**2+(np.dot(Ns,yi))**2)/(JacDet)
+    Dy=np.sqrt((np.dot(Nr,xi))**2+(np.dot(Nr,yi))**2)/(JacDet)
+    # print('Alpha: ', alpha)
+    # print('beta: ', beta)
+    # print('Dx: ', Dx)
+    # print('Dy: ', Dy)
+    transformMat = np.array([[np.sin(beta)*Dx, -np.sin(alpha)*Dy], [-np.cos(beta)*Dx, np.cos(alpha)*Dy]])
+
+    Bs = transformMat@Bs
+
+    #Bending component!  #TODO: I dont know what im doing
     NrsVal = np.array([Nr, Ns])
     NrsVal = np.matmul(JacInv,NrsVal)
     Nr = NrsVal[0,:]
     Ns = NrsVal[1,:]
 
     Bb = np.zeros((3,26))
-    Bb[0,17:] = -Nr
-    Bb[1, 8:17] = Ns
-    Bb[2,8:17] = Nr
-    Bb[2,17:] = -Ns
+    Bb[0,17:] = Nr
+    Bb[1, 8:17] = -Ns
+
+    Bb[2,8:17] = -Nr
+    Bb[2,17:] = Ns
 
 
+    #reorder matrixes:
+    BsTemp = np.zeros((2,27))
+    BbTemp = np.zeros((3,27))
+    BsToReturn = np.zeros((2,26))
+    BbToReturn = np.zeros((3,26))
 
-    return N, Bb,Bs, JacDet
+    BsTemp[:,0:-3:3] = Bs[:,0:8]
+    BsTemp[:,1::3] = Bs[:,8:17]
+    BsTemp[:,2::3] = Bs[:,17:]
+    BsToReturn[:,0:-2] = BsTemp[:,0:-3]
+    BsToReturn[:,-2:] = BsTemp[:,-2:]
+
+    BbTemp[:,0:-3:3] = Bb[:,0:8]
+    BbTemp[:,1::3] = Bb[:,8:17]
+    BbTemp[:,2::3] = Bb[:,17:]
+    BbToReturn[:,0:-2] = BbTemp[:,0:-3]
+    BbToReturn[:,-2:] = BbTemp[:,-2:]
+
+    return endN, BbToReturn,BsToReturn, JacDet
 
 if __name__ == "__main__":
-    # xi = np.array([1, 0, 0, 1, 0.5, 0, 0.5, 1, 0.5])
-    # yi = np.array([1, 1, 0, 0, 1, 0.5, 0, 0.5, 0.5])
 
-    xi = np.array([1, -1, -1, 1, 0, -1, 0, 1, 0])
-    yi = np.array([1, 1, -1, -1, 1, 0, -1, 0, 0])
+    xi = np.array([5. , 0. , 0. , 5. , 2.5, 0. , 2.5, 5. , 2.5])
+    yi = np.array([5. , 5. , 0. , 0. , 5. , 2.5, 0. , 2.5, 2.5])
 
-    ri = 1
-    si = 0
+    ri = -0.7745966692414834
+    si = -0.7745966692414834
 
-    N, Bb,Bs, detJ = getMITC9Shapefunctions(ri, si, xi, yi)
-    print(pd.DataFrame(Bs))
+    N, Nr, Ns = shapeFun9(ri, si)
+    xr = np.matmul(Nr,xi)
+    xs = np.matmul(Ns,xi)
+    yr = np.matmul(Nr,yi)
+    ys=np.matmul(Ns,yi)
+    Jac = np.array([[xr, xs],[yr, ys]])
+    JacInv = np.linalg.inv(Jac)
+    JacDet = np.linalg.det(Jac)
+
+    N, Bf,Bc, detJ, NrsVal, J = getQuadraticShapeFunctions(9,ri, si, xi, yi)
+
+
+
+
 
 class Result:
     '''

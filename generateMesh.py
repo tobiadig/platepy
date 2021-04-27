@@ -10,7 +10,7 @@ import pandas as pd
 
 import gmsh # To create CAD model and mesh
 
-def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, nEdgeNodes = 0, order='linear'):
+def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, nEdgeNodes = 0, order='linear', meshDistortion = False, progVal=1.2):
 
     ''' Input/Output descriptions
         self: PlateModel class, where the geometry is initialized
@@ -21,6 +21,7 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
         following information are also generated and stored:
         nodes coordinates and orientation, element connectivity, boundary conditions
     '''
+    
     gmsh.model.mesh.clear()
     if elementType == 'QUAD':
         gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 1) #0: simple, 1: blossom (default), 2: simple full-quad, 3: blossom full-quad
@@ -34,11 +35,18 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
     # manual assignment of edge nodes
     try:
         pointTags=gmsh.model.getEntities(0)
-        if nEdgeNodes>0:
+        if nEdgeNodes>0 and not(meshDistortion):
             gmsh.model.geo.mesh.setTransfiniteCurve(1, nEdgeNodes)
             gmsh.model.geo.mesh.setTransfiniteCurve(2, nEdgeNodes)
             gmsh.model.geo.mesh.setTransfiniteCurve(3, nEdgeNodes)
             gmsh.model.geo.mesh.setTransfiniteCurve(4, nEdgeNodes)
+            gmsh.model.geo.mesh.setTransfiniteSurface(1, "Left", [1, 2, 3, 4])
+            gmsh.model.geo.synchronize()
+        elif nEdgeNodes>0 and meshDistortion:
+            gmsh.model.geo.mesh.setTransfiniteCurve(1, nEdgeNodes, "Progression", progVal)
+            gmsh.model.geo.mesh.setTransfiniteCurve(2, nEdgeNodes, "Progression", progVal)
+            gmsh.model.geo.mesh.setTransfiniteCurve(3, nEdgeNodes, "Progression", progVal)
+            gmsh.model.geo.mesh.setTransfiniteCurve(4, nEdgeNodes, "Progression", progVal)
             gmsh.model.geo.mesh.setTransfiniteSurface(1, "Left", [1, 2, 3, 4])
             gmsh.model.geo.synchronize()
         else:
@@ -76,24 +84,24 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
     nodesRotationsPd = pd.DataFrame(np.zeros(nodeTagsModel.size), index =nodeTagsModel)
     gmshToCoherentNodesNumeration = pd.DataFrame(range(0,len(nodeTagsModel)), index = nodeTagsModel)
 
-
-
     # generate elements list of class Element
     # iterate over 2D surfaces and get nodeTags of each mesh-element
     elementsList = []
-    _, elemTags, _ = gmsh.model.mesh.getElements(2)  #TODO: implement more plates
+    _, elemTags, _ = gmsh.model.mesh.getElements(2)  
 
     k=1
     for elemTag in elemTags[0]:
         elemType, nodeTags = gmsh.model.mesh.getElement(elemTag)
+
+# CHANGING NODES############################################################################################3
         # if k == 1:
-        #     nodeTags = np.array([9,8,1,5])
+        #     nodeTags = np.array([17, 14, 1, 5, 19, 16, 6, 18, 20])
         # if k ==2:
-        #     nodeTags = np.array([7,4,8,9])
+        #     nodeTags = np.array([11, 4, 14, 17, 13, 15, 19, 21, 22])
         # if k ==3:
-        #     nodeTags = np.array([6,9,5,2])
+        #     nodeTags = np.array([8, 17, 5, 2, 23, 18, 7, 9, 24])
         # if k ==4:
-        #     nodeTags = np.array([3,7,9,6])
+        #     nodeTags = np.array([3, 11, 17, 8, 12, 21, 23, 10, 25])
 
         # print('element: ', k)
         # print('nodes: ', nodeTags)
@@ -117,7 +125,7 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
 
         newElement.coordinates = nodesArrayPd.loc[nodeTags].to_numpy()
 
-        newElement.whichPlate  = 1  #TODO: implement more plates
+        newElement.whichPlate  = 1 
         elementsList.append(newElement)
         k+=1
 
@@ -141,7 +149,7 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
 
                 newElement.coordinates = nodesArrayPd.loc[nodeTags].to_numpy()
 
-                newElement.whichPlate  = 1  #TODO: implement more plates
+                newElement.whichPlate  = 1  
                 elements1DList.append(newElement)
                 k+=1
             p.elements1DList = elements1DList
@@ -230,7 +238,7 @@ def setMesh(self, nodesArray, elements, BCs, load = None):
         newElement.coordinates = np.zeros((len(element), 3))
         newElement.coordinates[:,0:2] = nodesArray[element-1, :]
 
-        newElement.whichPlate  = 1  #TODO: implement more plates
+        newElement.whichPlate  = 1  
         elementsList.append(newElement)
         k+=1
 
