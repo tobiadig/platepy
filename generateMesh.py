@@ -68,6 +68,7 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
 
     if order == 'quadratic':
         gmsh.model.mesh.setOrder(2)
+        gmsh.model.geo.synchronize()
     elif order !='linear':
         raise Exception('order not recognised')
     
@@ -185,6 +186,7 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
 
             for node in nodeTags[:-2]:
                 BCsDic[node] = wall.support.supportCondition
+        # print('nodesRotation in mesh gen: ', nodesRotationsPd)
 
     for col in self.columns:
         dim = col.physicalGroup[0]
