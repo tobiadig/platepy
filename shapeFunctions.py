@@ -13,7 +13,6 @@ def getShapeFunctionForElementType(elementType,ri, si, xi, yi):
     return N, Bb,Bs, detJ
 
 
-
 def getLinearVectorizedShapeFunctions(ri, si, xi, yi):
     '''
     INPUT-->    ri: calculation point along the r-axis [float]
@@ -202,40 +201,34 @@ def getQuadraticShapeFunctions(ri, si, xi, yi):
     nCoord = len(xi)
     elemType = len(xi)
 
-    if elemType==2:
+    if elemType==3:
         # Define shape functions
-        N1 = lambda r, s: 0.5*(1-r)
-        N2 = lambda r, s: 0.5*(1+r)
+        N1 = lambda r, s: 0.5*r*(r-1)
+        N2 = lambda r, s: 1-r**2
+        N3 = lambda r,s: 0.5*r*(1+r)
 
         # Form the shape function matrix
-        Nfun= lambda r, s: [N1(r,s), N2(r,s)]
+        Nfun= lambda r, s: [N1(r,s), N2(r,s), N3(r,s)]
         Nval=np.array(Nfun(ri, si))
-        Nval=np.moveaxis(Nval, -1, 0)
 
-        N=np.zeros((nPoints,3, 3*elemType))
+        N=np.zeros((3, 3*elemType))
         N[0, 0::3]=Nval
         N[1, 1::3]=Nval
         N[2, 2::3]=Nval
 
         # Define shape function derivatives, derive deformation matrix
-        N1r = lambda r, s: -0.25*(1-s)
-        N2r = lambda r, s: 0.25*(1-s)
-        N3r = lambda r, s: 0.25*(1+s)
-        N4r = lambda r, s: -0.25*(1+s)
+        N1r = lambda r, s: 0.5*(2*r-1)
+        N2r = lambda r, s: 1-2*r
+        N3r = lambda r, s: 0.5*(2*r+1)
 
-        N1s = lambda r, s: -0.25*(1-r)
-        N2s = lambda r, s: -0.25*(1+r)
-        N3s = lambda r, s: 0.25*(1+r)
-        N4s = lambda r, s: 0.25*(1-r)
-
-        NrsFun = lambda r,s: np.array([[N1r(r, s), N1s(r, s)], [N2r(r, s), N2s(r, s)], [N3r(r, s), N3s(r, s)],[N4r(r, s), N4s(r, s)]])
+        NrsFun = lambda r,s: np.array([N1r(r, s), N2r(r, s), N3r(r,s)])
         NrsVal=np.array(NrsFun(ri,si))
 
         # matmul treat NrsVal as stack of matrixes residing in the LAST 2 indexes
-
-        J=np.matmul(nodeCoordinates.transpose(), NrsVal)
-        detJ = np.linalg.det(J)
-        invJ = np.linalg.inv(J)
+        L = np.sqrt((xi[1]-xi[0])**2+(yi[1]-yi[0])**2)
+        J= L/2
+        detJ = L/2
+        invJ = 2/L
 
 
         NrsVal = np.matmul(NrsVal,invJ)
@@ -251,7 +244,7 @@ def getQuadraticShapeFunctions(ri, si, xi, yi):
         Bc[1,0::3]=NrsVal[:,1]
         Bc[1,2::3]=Nval
 
-    elif elemType==3:
+    elif elemType==7:
         # Define shape functions
         N1 = lambda r, s: r
         N2 = lambda r, s: s

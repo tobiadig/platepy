@@ -1,4 +1,6 @@
 import numpy as np 
+import pandas as pd
+pd.set_option('display.max_rows', None)
 from shapeFunctions import *
 from slicingFunctions import *
 
@@ -31,8 +33,8 @@ def getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, 
             kCoeff, discartedDOF = getKCoeff(elementType, coherentElemNodes)
 
             vLoc = np.matmul(element.rotationMatrix, uGlob[kCoeff])
-            bendingMoments[k,:] = np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*-1
-            shearForces[k,:]=np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*-1
+            bendingMoments[k,:] = np.matmul(Df,np.matmul(Bf, vLoc))[:,0]
+            shearForces[k,:]=np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]
 
     elif internalForcePosition == 'nodes':
         bendingMomentsSum = np.zeros((nodesArray.shape[0],3+1))
@@ -44,9 +46,10 @@ def getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, 
             nNodes=element.nNodes
             xi=element.coordinates[:,0]
             yi=element.coordinates[:,1]
-            kCoeff = np.zeros((3*nNodes),dtype=int)
-            for i in range(0,3):
-                kCoeff[0+i::3]=coherentElemNodes*3+i
+            kCoeff, discartedDOF = getKCoeff(elementType, coherentElemNodes)
+            # kCoeff = np.zeros((3*nNodes),dtype=int)
+            # for i in range(0,3):
+            #     kCoeff[0+i::3]=coherentElemNodes*3+i
             vLoc = np.matmul(element.rotationMatrix, uGlob[kCoeff])
             if elementType =='L' :
                 ri = np.array([-1, 1, 1, -1])
@@ -66,6 +69,24 @@ def getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, 
                     N, Bf,Bc, detJ = getShapeFunctionForElementType(elementType,ri[i], si[i], xi, yi)
                     bendingMomentsSum[coherentElemNodes[i],0:3] += np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*1
                     shearForcesSum[coherentElemNodes[i],0:2] += np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*1 
+                    bendingMomentsSum[coherentElemNodes[i],3] += 1
+                    shearForcesSum[coherentElemNodes[i],2] += 1 
+            elif elementType=='Q':
+                ri = np.array([-1, 1, 1, -1, 0, 1, 0, -1, 0])
+                si = np.array([-1, -1, 1, 1, -1, 0, 1, 0, 0])
+                for i in range(0, len(ri)):
+                    N, Bf,Bc, detJ = getShapeFunctionForElementType(elementType,ri[i], si[i], xi, yi)
+                    bendingMomentsSum[coherentElemNodes[i],0:3] += np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*-1
+                    shearForcesSum[coherentElemNodes[i],0:2] += np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*-1
+                    bendingMomentsSum[coherentElemNodes[i],3] += 1
+                    shearForcesSum[coherentElemNodes[i],2] += 1 
+            elif elementType == 'MITC9':
+                ri = np.array([1, -1, -1, 1, 0, -1, 0, 1, 0])
+                si = np.array([1, 1, -1, -1, 1, 0, -1, 0, 0])
+                for i in range(0, len(ri)):
+                    N, Bf,Bc, detJ = getShapeFunctionForElementType(elementType,ri[i], si[i], xi, yi)
+                    bendingMomentsSum[coherentElemNodes[i],0:3] += np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*-1
+                    shearForcesSum[coherentElemNodes[i],0:2] += np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*-1
                     bendingMomentsSum[coherentElemNodes[i],3] += 1
                     shearForcesSum[coherentElemNodes[i],2] += 1 
             else:

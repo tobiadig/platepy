@@ -1,5 +1,5 @@
 import numpy as np
-
+from scipy.linalg import block_diag # to create the rotation matrix
 def rotMatrix(theta):
     '''
         creates rotation matrix of angle theta for a single node

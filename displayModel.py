@@ -137,7 +137,7 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
                 data3 = base64.b64encode(buf.getbuffer()).decode("ascii")
                 # plt.savefig(r'C:\Users\Diggelmann\Desktop\FEMFlask\static\images\new_plot.png')
                 outFig.append(data3)
-           
+
         elif displacementPlot == '3d':
             fig=plt.figure()
             axMxy = fig.gca(projection='3d')
@@ -207,7 +207,7 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
 def myTextPlot(self,x,y,z, theTitle = ''):
     fig,outAx = plotInputGeometry(self)
     for i,a in enumerate(z):
-        outAx.text(x[i], y[i], '{:.2f}'.format(a))
+        outAx.text(x[i], y[i], '{:.4f}'.format(a)) # number of Nachkomastellen to be displayed
         outAx.scatter(x[i], y[i], marker = ".", facecolor = "k")
 
     outAx.set_title(theTitle)
@@ -288,36 +288,3 @@ def plotMesh(self):
 
 
 
-
-
-# def momentsPlotPreparation(self, nMoment):
-#     coords = self.results.bendingMomentsPositions
-#     z = self.results.bendingMoments[:,nMoment]
-#     nEdge = int(np.sqrt(z.size))
-#     e = 1/nEdge/2
-#     numC = z.size-(nEdge-1)*4
-#     # print('nedge ',nEdge)
-#     # print('zsize ', z.size)
-#     # print('numc: ', numC)
-#     a=10000
-#     Llow = e*1.2*a
-#     Lup = (1-e)*0.98*a
-
-#     # print('lLow: ', Llow)
-#     # print('Lup: ', Lup)
-#     newCoords = np.zeros((numC, 2))
-#     newZ = np.zeros(numC)
-#     k=0
-
-#     # print('e ', e)
-#     for i, c in enumerate(coords):
-#         # print(1,c[0], c[1])
-#         if (c[0]>Llow and c[0]<Lup) and (c[1]>Llow and c[1]<Lup):
-#             # print(2,c[0], c[1])
-#             newCoords[k, :]=c
-#             newZ[k]=z[i]
-#             k+=1
-#     # print('k ',k)
-#     # print(newZ)
-
-#     return newCoords, newZ

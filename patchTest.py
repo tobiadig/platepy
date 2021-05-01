@@ -14,12 +14,12 @@ ConcreteDict = {}
 ConcreteDict["eModule"] = 10920 #kN/m2
 ConcreteDict["gModule"] =  10920/(2*1.3) #kN/m2
 ConcreteDict["density"] = 2.5 # t/m3
-ConcreteDict["nu"] = 0.3
+ConcreteDict["nu"] = 0.0
 C25_30 = Concrete(ConcreteDict)
 
-a=10
-b=10
-h=0.1
+a=1
+b=1
+h=0.001
 plateDict = {}
 plateDict["outlineCoords"]=np.array([[0,0], [a,0], [a,b], [0,b],[0,0]])
 
@@ -29,16 +29,16 @@ plateDict["body"]=C25_30
 plateDict["stiffnessFactor"] = 1
 plate1 = Plate(plateDict)
 
-lineLoad = Load('area',np.array([-1,-1*0,0]))
+lineLoad = Load('line',np.array([-1,-1*0,0]))
 lineLoad.outlineCoords=np.array([[a,0], [a,b]])
 
 wallDict = {}
-# wallDict["outlineCoords"] = np.array([[0,0], [0,b]])
-wallDict["outlineCoords"] = np.array([[0,0], [a,0], [a,b], [0,b], [0,0]])
+wallDict["outlineCoords"] = np.array([[0,0], [0,b]])
+# wallDict["outlineCoords"] = np.array([[0,0], [a,0], [a,b], [0,b], [0,0]])
 wallDict["high"] = 3 # m
 wallDict["body"] = C25_30
-wallDict["support"] = Support(np.array([1, 0, 1]))
-wallDict["thickness"] = 0.5 # m
+wallDict["support"] = Support(np.array([1, 1, 1]))
+wallDict["thickness"] = 0.05 # m
 wall1 = Wall(wallDict)
 
 patchTestModel = PlateModel("plateModel1")
@@ -59,7 +59,7 @@ from displayModel import *
 # create mesh
 from generateMesh import *
 # generateMesh(patchTestModel, showGmshMesh=True, elementType='QUAD', meshSize=5e-1, order = 'quadratic')
-generateMesh(patchTestModel, showGmshMesh=False, elementType='QUAD', nEdgeNodes=33, order='quadratic')
+generateMesh(patchTestModel, showGmshMesh=False, elementType='QUAD', nEdgeNodes=51, order='quadratic')
 
 #manually define elements and nodes
 
@@ -148,10 +148,10 @@ generateMesh(patchTestModel, showGmshMesh=False, elementType='QUAD', nEdgeNodes=
 # compute
 # ElemType: Quadrangluar or Triangular + Linear or Quadratic or MITC + Reduced or Normal Integration
 elemTypes = ['L-R', 'MITC4-N', 'Q-R', 'MITC9-N']
-solveModel(patchTestModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e-1, elementDefinition=elemTypes[2], internalForcePosition = 'center')
+solveModel(patchTestModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e-6, elementDefinition=elemTypes[3], internalForcePosition = 'center')
 
 # # print('MITC')
 # solveModel(patchTestModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3, elemType=elemTypes[1], internalForcePosition = 'nodes')
 # display results
-plotResults(patchTestModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=['x', 'xy'] ,shearForcesToPlot=[])
+plotResults(patchTestModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=['x'] ,shearForcesToPlot=['x'])
 plt.show()

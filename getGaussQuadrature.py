@@ -6,7 +6,7 @@ def getGaussQuadrature(shape, nPoints):
                                     2:{'points': np.array([[-1*np.sqrt(3),0],
                                                             [1*np.sqrt(3),0]]),
                                     'weights': np.array([1,1])}},
-        
+    
                     'triangular': {1:{'points': np.array([[1/3, 1/3]]),
                                     'weights': np.array([1/2])},
 

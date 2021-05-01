@@ -5,13 +5,13 @@ Purpose of module: computes the equilibrium solution using finite elements, stor
 -----------------------------------------------------------
 - Copywrite Tobia Diggelmann (ETH Zurich) 24.03.2021
 '''
-#%% Basic modules
+#Basic modules
 import numpy as np
 import pandas as pd
 import gmsh # To create CAD model and mesh
 from scipy import sparse    # To work with sparse matrix
 from scipy.sparse import linalg # Linear sparse matrices operations
-from scipy.linalg import block_diag # to create the rotation matrix
+
 from shapeFunctions import *
 from localMatrixes import *
 from internalForces import *
@@ -71,7 +71,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         # if the load is a line load IGNORE fLocal (set to zero), the force vector will be calculated in the next loop
         # bad solution, hopefully it works #TODO: adjust forces
         if p.case != "area":
-            fLocal = np.zeros((3*nNodes,1))
+            fLocal = np.zeros((fLocal.size,1))
 
         R = getRotationMatrix(elementType, elemNodesRotations)
 
@@ -136,14 +136,21 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
             yi=element.coordinates[:,1]
 
             L = np.sqrt((xi[1]-xi[0])**2+(yi[1]-yi[0])**2)
+            # gaussPoints, gaussWeights =  getGaussQuadrature('linear',2)
+            # N, Bb,Bs, detJ = getShapeFunctionForElementType(elementType,ri, si, xi, yi)
             fLocal = np.zeros(3*nNodes)
+            # for i in range(0, gaussPoints.shape[0]):
+            #     if fLocal == None:
+            #         ri = 1
+            #         si= gaussPoints
+
             if nNodes ==2:
                 fLocal[0:3] = p.magnitude*L/2
                 fLocal[3:] = p.magnitude*L/2
             elif nNodes == 3:
                 fLocal[0:3] = p.magnitude*L/4
-                fLocal[3:6] = p.magnitude*L/2
-                fLocal[6:] = p.magnitude*L/4
+                fLocal[3:6] = p.magnitude*L/4
+                fLocal[6:] = p.magnitude*L/2
             # # create rotation matrix
             Ri = []
             RiInit = False

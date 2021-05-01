@@ -9,6 +9,27 @@ import numpy as np
 import pandas as pd
 
 import gmsh # To create CAD model and mesh
+def distortMesh(nodesArray, alpha):
+    myIndex = nodesArray.index.to_numpy()
+
+    nodesArrayNumpy = nodesArray.to_numpy()
+    v1=np.ones(nodesArrayNumpy.shape[0])
+    x0 = nodesArrayNumpy[:,0]
+    y0 = nodesArrayNumpy[:,1]
+    a=np.max(x0)
+    
+
+
+    newNodes = np.zeros(nodesArray.shape)
+    newNodes[:,0] = x0+(v1-np.abs(2*x0/a-1))*(2*y0/a-v1)*alpha
+    newNodes[:,1] = y0+2*(v1-np.abs(2*y0/a-1))*(2*x0/a-v1)*alpha
+
+    xMask = np.logical_or(x0==0, x0==a)
+    yMask = np.logical_or(y0==0, y0==a)
+    newNodes[xMask,0] = x0[xMask]
+    newNodes[yMask,1] = y0[yMask]
+    newNodesArray = pd.DataFrame(newNodes, index = myIndex)
+    return newNodesArray
 
 def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, nEdgeNodes = 0, order='linear', meshDistortion = False, progVal=1.2):
 
@@ -85,8 +106,10 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
     nodesRotationsPd = pd.DataFrame(np.zeros(nodeTagsModel.size), index =nodeTagsModel)
     gmshToCoherentNodesNumeration = pd.DataFrame(range(0,len(nodeTagsModel)), index = nodeTagsModel)
 
-    # generate elements list of class Element
-    # iterate over 2D surfaces and get nodeTags of each mesh-element
+    # distort the mesh a bit
+    alpha = 120
+    nodesArrayPd = distortMesh(nodesArrayPd, alpha)
+
     elementsList = []
     _, elemTags, _ = gmsh.model.mesh.getElements(2)  
 
@@ -94,18 +117,6 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
     for elemTag in elemTags[0]:
         elemType, nodeTags = gmsh.model.mesh.getElement(elemTag)
 
-# CHANGING NODES############################################################################################3
-        # if k == 1:
-        #     nodeTags = np.array([17, 14, 1, 5, 19, 16, 6, 18, 20])
-        # if k ==2:
-        #     nodeTags = np.array([11, 4, 14, 17, 13, 15, 19, 21, 22])
-        # if k ==3:
-        #     nodeTags = np.array([8, 17, 5, 2, 23, 18, 7, 9, 24])
-        # if k ==4:
-        #     nodeTags = np.array([3, 11, 17, 8, 12, 21, 23, 10, 25])
-
-        # print('element: ', k)
-        # print('nodes: ', nodeTags)
 
 
 
