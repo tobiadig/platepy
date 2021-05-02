@@ -14,11 +14,11 @@ ConcreteDict = {}
 ConcreteDict["eModule"] = 10920 #kN/m2
 ConcreteDict["gModule"] =  10920/(2*1.3) #kN/m2
 ConcreteDict["density"] = 2.5 # t/m3
-ConcreteDict["nu"] = 0.3
+ConcreteDict["nu"] = 0.0
 C25_30 = Concrete(ConcreteDict)
 
-a=10
-b=10
+a=4
+b=1
 h=0.001
 plateDict = {}
 plateDict["outlineCoords"]=np.array([[0,0], [a,0], [a,b], [0,b],[0,0]])
@@ -77,22 +77,21 @@ from generateMesh import *
 #                     [7,3,4,8],
 #                     [1,5,8,4],
 #                     [5,6,7,8]])
-# # BCs = np.array([[1, 1, 0, 1],
-# #                 [4, 1, 0, 1],
-# #                 [2, 0, 1, 0],
-# #                 [3, 0, 1, 0]])
-
 # BCs = np.array([[1, 1, 1, 1],
-#                 [4, 1, 1, 1],
-#                 [2, 0, 1, 1],
-#                 [3, 0, 1, 1],
-#                 [5, 0, 1, 1],
-#                 [6, 0, 1, 1],
-#                 [7, 0, 1, 1],
-#                 [8, 0, 1, 1]])
+#                 [4, 1, 1, 1]])
 
-# forces = np.array([[2, -5, 0, 0],
-#                     [3, -5, 0, 0]])
+# # BCs = np.array([[1, 1, 1, 1],
+# #                 [4, 1, 1, 1],
+# #                 [2, 0, 1, 1],
+# #                 [3, 0, 1, 1],
+# #                 [5, 0, 1, 1],
+# #                 [6, 0, 1, 1],
+# #                 [7, 0, 1, 1],
+# #                 [8, 0, 1, 1]])
+
+# forces = np.array([[2, 0, 5, 0],
+#                     [3, 0, 5, 0]])
+
 # nodesArray = np.array([[0,0],
 #                         [10, 0], 
 #                         [10,10],
@@ -126,26 +125,28 @@ from generateMesh import *
 
 # 1 d kragarm
 nodesArray = np.array([[0,0],
-#                         [1, 0], 
-#                         [2,0],
-#                         [3,0], 
-#                         [4, 0], 
-#                         [4,1],
-#                         [3, 1], 
-#                         [2,1],
-#                         [1,1], 
-#                         [0, 1]])
+                        [1, 0], 
+                        [2,0],
+                        [3,0], 
+                        [4, 0], 
+                        [4,1],
+                        [3, 1], 
+                        [2,1],
+                        [1,1], 
+                        [0, 1]])
 
-# elements = np.array([[1,2,9,10],
-#                     [2,3,8,9],
-#                     [3,4,7,8],
-#                     [4,5,6,7]])
 
-# BCs = np.array([[1,1,1,1],
-#                 [10,1,1,1]])
 
-# forces = np.array([[5, -0.5, 0, 0],
-#                     [6, -0.5, 0, 0]])
+elements = np.array([[1,2,9,10],
+                    [2,3,8,9],
+                    [3,4,7,8],
+                    [4,5,6,7]])
+
+BCs = np.array([[1,1,1,1],
+                [10,1,1,1]])
+
+forces = np.array([[5, -0.5, 0, 0],
+                    [6, -0.5, 0, 0]])
 
 
 forcePattern = Load('nodes', np.array([0,0,0]))
@@ -154,15 +155,31 @@ patchTestModel.addLoad(forcePattern)
 
 setMesh(patchTestModel, nodesArray, elements, BCs)
 
-plotMesh(patchTestModel)
+# plotMesh(patchTestModel)
 
 # compute
 # ElemType: Quadrangluar or Triangular + Linear or Quadratic or MITC + Reduced or Normal Integration
 elemTypes = ['L-R', 'MITC4-N', 'Q-R', 'MITC9-N']
-solveModel(patchTestModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1, elementDefinition=elemTypes[1], internalForcePosition = 'nodes')
+solveModel(patchTestModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e-7, elementDefinition=elemTypes[0], internalForcePosition = 'intPoints', smoothedValues =True)
 
 # # print('MITC')
 # solveModel(patchTestModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3, elemType=elemTypes[1], internalForcePosition = 'nodes')
 # display results
-plotResults(patchTestModel,displacementPlot='text+mesh', verticalDisplacement=True, bendingMomentsToPlot=[] ,shearForcesToPlot=['x'])
+# plotResults(patchTestModel,displacementPlot='text+mesh', verticalDisplacement=False, bendingMomentsToPlot=['x'] ,shearForcesToPlot=['x'])
+
+
+#%% plot 1-d plot
+
+x = patchTestModel.results.internalForcesPositions[:,0]
+y = patchTestModel.results.internalForcesPositions[:,1]
+z = patchTestModel.results.shearForces[:,0]
+z = np.abs(z)
+
+ax = plt.subplot()
+ax.plot(x,z, color = 'k')
+ax.grid()
+plt.yscale('log')
+plt.xlabel('x [-]')
+plt.ylabel('Vx [-]')
+
 plt.show()

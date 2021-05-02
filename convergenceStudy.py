@@ -6,7 +6,7 @@ from generateMesh import *
 from scipy.stats import linregress
 from displayModel import *
 
-def convergenceAnalysis(self, analyticalValue,nEdgeNodes, elemTypes, meshDistortion = False ):
+def convergenceAnalysis(self, analyticalValue,nEdgeNodes, elemTypes, meshDistortion = False, distVal=100 ):
     nVal = len(nEdgeNodes)*len(elemTypes)
     outRes = np.zeros((nVal,2))
     k=0
@@ -21,8 +21,14 @@ def convergenceAnalysis(self, analyticalValue,nEdgeNodes, elemTypes, meshDistort
                 myOrder = 'quadratic'
             else:
                 raise TypeError('something went wrong')
-            generateMesh(self, showGmshMesh=False, elementType='QUAD', nEdgeNodes=n, order=myOrder, meshDistortion=meshDistortion)
+            generateMesh(self, showGmshMesh=False, elementType='QUAD', nEdgeNodes=n, order=myOrder, meshDistortion=meshDistortion, distVal=distVal)
+            
+            # if n<30:
+            #     plotMesh(self)
+            #     plt.show()
             solveModel(self, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3/1000**4, elementDefinition=elemType, internalForcePosition = 'center')
+            # plotResults(patchTestModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[] ,shearForcesToPlot=[])
+            # plt.show()
             outRes[k,1] = np.abs(patchTestModel.results.wMax[2]-analyticalValue)/np.abs(analyticalValue)
             print('E: ', outRes[k,1])
             print('anal: ', analyticalValue)
@@ -74,51 +80,51 @@ patchTestModel.addWall(wall1)
 
 patchTestModel.addLoad(lineLoad)
 
-# from AnalyticPlateSolutions import *
+from AnalyticPlateSolutions import *
 
-# pOpts = POpts()
-# pOpts.shape="rectangular"
-# pOpts.depth = "thin"
-# pOpts.support = "simplySupported"
-# pOpts.geometry = (1,1)
-# pOpts.material = Material(10920, 0.3, 0.1) #E, nu and h
+pOpts = POpts()
+pOpts.shape="rectangular"
+pOpts.depth = "thin"
+pOpts.support = "simplySupported"
+pOpts.geometry = (1,1)
+pOpts.material = Material(10920, 0.3, 0.1) #E, nu and h
 
-# lOpts = LOpts()
-# lOpts.type = "distributed"
-# lOpts.magnitude = 1
+lOpts = LOpts()
+lOpts.type = "distributed"
+lOpts.magnitude = 1
 
-# sOpts = SOpts()
-# sOpts.nTerms = 40
+sOpts = SOpts()
+sOpts.nTerms = 40
 
-# inPos=np.array([[0,0]])
+inPos=np.array([[0,0]])
 
-# quantities, values, outPos = AnalyticPlateSolutions(pOpts, lOpts, sOpts, inPos)
-# analyticalValue = values[0,0]*1000
-# print('Maximum displacement, analythical: {}'.format(values[0,0]*1000))
+quantities, values, outPos = AnalyticPlateSolutions(pOpts, lOpts, sOpts, inPos)
+analyticalValue = values[0,0]*1000
+print('Maximum displacement, analythical: {}'.format(values[0,0]*1000))
 
 # elemTypes = ['MITC4-N', 'MITC9-N']
-# # elemTypes = ['L-R', 'Q-R']
-# markerSymbols = ['s', '^']
-# ax=plt.axes()
-# outRes = convergenceAnalysis(patchTestModel,-analyticalValue, nEdgeNodes = [3, 5, 9, 17, 33, 65], elemTypes = elemTypes, meshDistortion=False )
+elemTypes = ['L-R', 'Q-R']
+markerSymbols = ['s', '^']
+ax=plt.axes()
+outRes = convergenceAnalysis(patchTestModel,-analyticalValue, nEdgeNodes = [3, 5, 9, 17, 33], elemTypes = elemTypes, meshDistortion=True, distVal = 120 )
 
-# nAnalysis = len(elemTypes)
-# for i in range(0,nAnalysis):
-#     x=np.log10(outRes[i::nAnalysis,0])
-#     y=np.log(outRes[i::nAnalysis,1])
-#     ax.plot(x, y, marker =markerSymbols[i],markerfacecolor = "None", color='k', label = elemTypes[i])
-#     reg = linregress(x, y)
-#     print('slope ',elemTypes[i],' : ', reg.slope)
-# plt.xlabel("LOG(h)")
-# plt.ylabel("LOG(E)")
+nAnalysis = len(elemTypes)
+for i in range(0,nAnalysis):
+    x=np.log10(outRes[i::nAnalysis,0])
+    y=np.log(outRes[i::nAnalysis,1])
+    ax.plot(x, y, marker =markerSymbols[i],markerfacecolor = "None", color='k', label = elemTypes[i])
+    reg = linregress(x, y)
+    print('slope ',elemTypes[i],' : ', reg.slope)
+plt.xlabel("LOG(h)")
+plt.ylabel("LOG(E)")
 
-# ax.legend()
-# plt.show()
+ax.legend()
+plt.show()
 
 
 #%% mesh distortion
 
-generateMesh(patchTestModel, showGmshMesh=False, elementType='QUAD', nEdgeNodes=17, order='linear', meshDistortion=False)
+# generateMesh(patchTestModel, showGmshMesh=False, elementType='QUAD', nEdgeNodes=17, order='linear', meshDistortion=True)
 
 
 # nodesArray = patchTestModel.mesh.nodesArray
@@ -145,10 +151,10 @@ generateMesh(patchTestModel, showGmshMesh=False, elementType='QUAD', nEdgeNodes=
 #     return newNodesArray
 # print(newNodesArray)
 # # patchTestModel.mesh.nodesArray = newNodesArray
-plotMesh(patchTestModel)
+# plotMesh(patchTestModel)
 
 
 
-plt.show()
+# plt.show()
 
 

@@ -49,160 +49,85 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         y = self.results.outPos[:,1]
         z= self.results.wVert
 
-        if displacementPlot == 'isolines':
-            fig,axVertDisp = myIsoPlot(self,x,y,z, theTitle='Vertical Displacements')
-            if saveImage:
-                buf = BytesIO()
-                fig.savefig(buf, format="png")
-                data0 = base64.b64encode(buf.getbuffer()).decode("ascii")
-                # plt.savefig(r'C:\Users\Diggelmann\Desktop\FEMFlask\static\images\new_plot.png')
-                outFig.append(data0)
-        
-        # Embed the result in the html output.
-        
+        theTitle='w'
+        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
 
-        elif displacementPlot == '3d':
-            fig = plt.figure()
-            axVertDisp = fig.gca(projection='3d')
-            axVertDisp.plot_trisurf(self.results.outPos[:,0],self.results.outPos[:,1],self.results.wVert,cmap=cm.jet)
-
-        elif displacementPlot == 'text':
-            fig, axVertDisp = myTextPlot(self, x,y,z, theTitle='w')
-        else:
-            raise TypeError('type of plot does not exist')
-
-
-        self.axes['vertDisp'] = axVertDisp
-        outAxis.append(axVertDisp)
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut)
 
     if outVal[1]: #plot Mx
         x = self.results.internalForcesPositions[:,0]
         y = self.results.internalForcesPositions[:,1]
         z = self.results.bendingMoments[:,0]
-        if displacementPlot == 'isolines':
-            fig,axMx = myIsoPlot(self,x,y,z, theTitle='Mx')
-            if saveImage:
-                buf = BytesIO()
-                fig.savefig(buf, format="png")
-                data1 = base64.b64encode(buf.getbuffer()).decode("utf8")
-                # plt.savefig(r'C:\Users\Diggelmann\Desktop\FEMFlask\static\images\new_plot.png')
-                outFig.append(data1)
+        theTitle='Mx'
+        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
 
-        elif displacementPlot == '3d':
-            fig=plt.figure()
-            axMx = fig.gca(projection='3d')
-            axMx.plot_trisurf(x,y,z,cmap=cm.jet)
-        elif displacementPlot == 'text':
-            fig, axMx = myTextPlot(self, x,y,z, theTitle='Mx')
-
-        else:
-            raise TypeError('type of plot does not exist')
-
-        self.axes['Mx'] = axMx
-        outAxis.append(axMx)        
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut)
 
     if outVal[2]: # plot My
         x= self.results.internalForcesPositions[:,0]
         y = self.results.internalForcesPositions[:,1]
         z= self.results.bendingMoments[:,1]
-        if displacementPlot == 'isolines':
-            fig,axMy = myIsoPlot(self,x,y,z,theTitle='My')
-            if saveImage:
-                buf = BytesIO()
-                fig.savefig(buf, format="png")
-                data2 = base64.b64encode(buf.getbuffer()).decode("ascii")
-                # plt.savefig(r'C:\Users\Diggelmann\Desktop\FEMFlask\static\images\new_plot.png')
-                outFig.append(data2)
+        theTitle='My'
+        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
 
-        elif displacementPlot == '3d':
-            fig=plt.figure()
-            axMy = fig.gca(projection='3d')
-            axMy.plot_trisurf(x,y,z,cmap=cm.jet)
-        elif displacementPlot == 'text':
-            fig, axMy = myTextPlot(self, x,y,z, theTitle='My')
-        else:
-            raise TypeError('type of plot does not exist')
-        self.axes['My'] = axMy
-        outAxis.append(axMy)
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut) 
 
     if outVal[3]:  # plot Mxy
         x= self.results.internalForcesPositions[:,0]
         y = self.results.internalForcesPositions[:,1]
         z= self.results.bendingMoments[:,2]
-        if displacementPlot == 'isolines':
-            fig,axMxy = myIsoPlot(self,x,y,z,theTitle='Mxy')
-            if saveImage:
-                buf = BytesIO()
-                fig.savefig(buf, format="png")
-                data3 = base64.b64encode(buf.getbuffer()).decode("ascii")
-                # plt.savefig(r'C:\Users\Diggelmann\Desktop\FEMFlask\static\images\new_plot.png')
-                outFig.append(data3)
+        theTitle='Mxy'
+        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
 
-        elif displacementPlot == '3d':
-            fig=plt.figure()
-            axMxy = fig.gca(projection='3d')
-            axMxy.plot_trisurf(x,y,z,cmap=cm.jet)
-        elif displacementPlot == 'text':
-            fig, axMxy = myTextPlot(self, x,y,z, theTitle='Mxy')
-        else:
-            raise TypeError('type of plot does not exist')
-        self.axes['Mxy'] = axMxy
-        outAxis.append(axMxy)
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut) 
 
     if outVal[4]: # plot Vx
         x = self.results.internalForcesPositions[:,0]
         y = self.results.internalForcesPositions[:,1]
         z = self.results.shearForces[:,0]
-        if displacementPlot == 'isolines':
-            fig,axVx = myIsoPlot(self,x,y,z,theTitle='Vx')
-            if saveImage:
-                buf = BytesIO()
-                fig.savefig(buf, format="png")
-                data4 = base64.b64encode(buf.getbuffer()).decode("ascii")
-                # plt.savefig(r'C:\Users\Diggelmann\Desktop\FEMFlask\static\images\new_plot.png')
-                outFig.append(data4)
+        theTitle='Vx'
+        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
 
-        elif displacementPlot == '3d':
-            fig=plt.figure()
-            axVx = fig.gca(projection='3d')
-            axVx.plot_trisurf(x,y,z,cmap=cm.jet)
-        
-        elif displacementPlot == 'text':
-            fig, axVx = myTextPlot(self, x,y,z, theTitle='Vx')
-
-        else:
-            raise TypeError('type of plot does not exist')
-
-        self.axes['Vx'] = axVx
-        outAxis.append(axVx)
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut) 
 
     if outVal[5]: # plot Vy
         x = self.results.internalForcesPositions[:,0]
         y = self.results.internalForcesPositions[:,1]
         z = self.results.shearForces[:,1]
-        if displacementPlot == 'isolines':
-            fig,axVy = myIsoPlot(self,x,y,z,theTitle='Vy')
-            if saveImage:
-                buf = BytesIO()
-                fig.savefig(buf, format="png")
-                data5 = base64.b64encode(buf.getbuffer()).decode("ascii")
-                # plt.savefig(r'C:\Users\Diggelmann\Desktop\FEMFlask\static\images\new_plot.png')
-                outFig.append(data5)
+        theTitle='Vy'
+        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
 
-        elif displacementPlot == '3d':
-            fig=plt.figure()
-            axVy = fig.gca(projection='3d')
-            axVy.plot_trisurf(x,y,z,cmap=cm.jet)
-        elif displacementPlot == 'text':
-            fig, axVy = myTextPlot(self, x,y,z,theTitle='Vy')
-
-        else:
-            raise TypeError('type of plot does not exist')
-
-        self.axes['Vy'] = axVy
-        outAxis.append(axVy)
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut) 
 
     return outFig, outAxis
+
+def plotInternalForce(self,plotType,theTitle, x,y,z,saveImage):
+    if plotType == 'isolines':
+        fig,axOut = myIsoPlot(self,x,y,z,theTitle=theTitle)
+        if saveImage:
+            buf = BytesIO()
+            fig.savefig(buf, format="png")
+            data5 = base64.b64encode(buf.getbuffer()).decode("ascii")
+            # plt.savefig(r'C:\Users\Diggelmann\Desktop\FEMFlask\static\images\new_plot.png')
+            outFig.append(data5)
+    elif plotType == '3d':
+        fig=plt.figure()
+        axOut = fig.gca(projection='3d')
+        axOut.plot_trisurf(x,y,z,cmap=cm.jet)
+    elif plotType == 'text':
+        fig, axOut = myTextPlot(self, x,y,z,theTitle=theTitle)
+    elif plotType == 'text+mesh':
+        fig, axOut = myTextOnMeshPlot(self,x,y,z, theTitle = theTitle)
+    else:
+        raise TypeError('type of plot does not exist')
+
+    return fig, axOut
 
 def myTextPlot(self,x,y,z, theTitle = ''):
     fig,outAx = plotInputGeometry(self)
@@ -212,6 +137,16 @@ def myTextPlot(self,x,y,z, theTitle = ''):
 
     outAx.set_title(theTitle)
     return fig, outAx
+
+def myTextOnMeshPlot(self,x,y,z, theTitle = ''):
+    fig, outAx = plotMesh(self, plotNodes=False, plotStrucElements=False)
+    for i,a in enumerate(z):
+        outAx.text(x[i], y[i], '{:.3f}'.format(a)) # number of Nachkomastellen to be displayed
+        outAx.scatter(x[i], y[i], marker = ".", facecolor = "k",zorder=0)
+
+    outAx.set_title(theTitle)
+    return fig, outAx
+
 
 def myIsoPlot(self,x,y,z, theTitle = ''):
     fig,outAx = plotInputGeometry(self)
@@ -257,8 +192,11 @@ def myIsoPlot(self,x,y,z, theTitle = ''):
     outAx.set_title(theTitle)
     return fig,outAx
 
-def plotMesh(self):
-    fig,outAx = plotInputGeometry(self)
+def plotMesh(self, plotNodes = True, plotStrucElements = True):
+    if plotStrucElements:
+        fig,outAx = plotInputGeometry(self)
+    else:
+        fig, outAx = plt.subplots()
     nodes = self.mesh.nodesArray.to_numpy()
 
     #plot lines:
@@ -277,13 +215,15 @@ def plotMesh(self):
         yValues[0:-1] = elemCoords[0:nEdges,1]
         yValues[-1] = elemCoords[0,1]
 
-        outAx.plot(xValues, yValues, color='violet')
+        outAx.plot(xValues, yValues, color='violet', zorder=-1)
     #plot nodes:
     k=1
-    for node in nodes:
-        outAx.scatter(node[0], node[1], facecolor='k', marker='.') 
-        outAx.text(node[0], node[1], k)
-        k+=1
+    if plotNodes:
+        for node in nodes:
+            outAx.scatter(node[0], node[1], facecolor='k', marker='.')
+            outAx.text(node[0], node[1], k)
+            k+=1
+    return fig, outAx 
 
 
 

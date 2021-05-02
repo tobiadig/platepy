@@ -18,31 +18,27 @@ def distortMesh(nodesArray, alpha):
     y0 = nodesArrayNumpy[:,1]
     a=np.max(x0)
     
-
-
     newNodes = np.zeros(nodesArray.shape)
     newNodes[:,0] = x0+(v1-np.abs(2*x0/a-1))*(2*y0/a-v1)*alpha
     newNodes[:,1] = y0+2*(v1-np.abs(2*y0/a-1))*(2*x0/a-v1)*alpha
 
-    xMask = np.logical_or(x0==0, x0==a)
-    yMask = np.logical_or(y0==0, y0==a)
-    newNodes[xMask,0] = x0[xMask]
-    newNodes[yMask,1] = y0[yMask]
+    # xMask = np.logical_or(x0==0, x0==a)
+    # yMask = np.logical_or(y0==0, y0==a)
+    # newNodes[xMask,0] = x0[xMask]
+    # newNodes[yMask,1] = y0[yMask]
     newNodesArray = pd.DataFrame(newNodes, index = myIndex)
     return newNodesArray
 
-def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, nEdgeNodes = 0, order='linear', meshDistortion = False, progVal=1.2):
+def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, nEdgeNodes = 0, order='linear', meshDistortion = False, distVal = 100):
 
     ''' Input/Output descriptions
         self: PlateModel class, where the geometry is initialized
         meshInput: options for the creation of the mesh
-
         return
         the method generates a mesh using gmsh library. The mesh is stored in the PlateModel class.
         following information are also generated and stored:
         nodes coordinates and orientation, element connectivity, boundary conditions
     '''
-    
     gmsh.model.mesh.clear()
     if elementType == 'QUAD':
         gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 1) #0: simple, 1: blossom (default), 2: simple full-quad, 3: blossom full-quad
@@ -56,20 +52,20 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
     # manual assignment of edge nodes
     try:
         pointTags=gmsh.model.getEntities(0)
-        if nEdgeNodes>0 and not(meshDistortion):
+        if nEdgeNodes>0:
             gmsh.model.geo.mesh.setTransfiniteCurve(1, nEdgeNodes)
             gmsh.model.geo.mesh.setTransfiniteCurve(2, nEdgeNodes)
             gmsh.model.geo.mesh.setTransfiniteCurve(3, nEdgeNodes)
             gmsh.model.geo.mesh.setTransfiniteCurve(4, nEdgeNodes)
             gmsh.model.geo.mesh.setTransfiniteSurface(1, "Left", [1, 2, 3, 4])
             gmsh.model.geo.synchronize()
-        elif nEdgeNodes>0 and meshDistortion:
-            gmsh.model.geo.mesh.setTransfiniteCurve(1, nEdgeNodes, "Progression", progVal)
-            gmsh.model.geo.mesh.setTransfiniteCurve(2, nEdgeNodes, "Progression", progVal)
-            gmsh.model.geo.mesh.setTransfiniteCurve(3, nEdgeNodes, "Progression", progVal)
-            gmsh.model.geo.mesh.setTransfiniteCurve(4, nEdgeNodes, "Progression", progVal)
-            gmsh.model.geo.mesh.setTransfiniteSurface(1, "Left", [1, 2, 3, 4])
-            gmsh.model.geo.synchronize()
+        # elif nEdgeNodes>0 and meshDistortion:
+        #     gmsh.model.geo.mesh.setTransfiniteCurve(1, nEdgeNodes, "Progression", progVal)
+        #     gmsh.model.geo.mesh.setTransfiniteCurve(2, nEdgeNodes, "Progression", progVal)
+        #     gmsh.model.geo.mesh.setTransfiniteCurve(3, nEdgeNodes, "Progression", progVal)
+        #     gmsh.model.geo.mesh.setTransfiniteCurve(4, nEdgeNodes, "Progression", progVal)
+        #     gmsh.model.geo.mesh.setTransfiniteSurface(1, "Left", [1, 2, 3, 4])
+        #     gmsh.model.geo.synchronize()
         else:
             gmsh.model.mesh.setSize(pointTags,meshSize)
     except:
@@ -107,8 +103,8 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
     gmshToCoherentNodesNumeration = pd.DataFrame(range(0,len(nodeTagsModel)), index = nodeTagsModel)
 
     # distort the mesh a bit
-    alpha = 120
-    nodesArrayPd = distortMesh(nodesArrayPd, alpha)
+    if meshDistortion:
+        nodesArrayPd = distortMesh(nodesArrayPd, distVal)
 
     elementsList = []
     _, elemTags, _ = gmsh.model.mesh.getElements(2)  
@@ -231,7 +227,6 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
     # store result in a mesh class and then in plateModel
     # print('nodesRotationsPd: ', nodesRotationsPd)
 
-    
     self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs)
 
 def setMesh(self, nodesArray, elements, BCs, load = None):
@@ -240,12 +235,12 @@ def setMesh(self, nodesArray, elements, BCs, load = None):
     k=1
     for element in elements:
         newElement = Element()
-   
+
         newElement.tag = k
 
         newElement.nNodes  = len(element)
         newElement.connectivity  = element
-        newElement.shape=len(element)
+        newElement.shape=4
         newElement.coherentConnectivity = pd.DataFrame(element-1)
 
         newElement.coordinates = np.zeros((len(element), 3))

@@ -12,7 +12,6 @@ def getShapeFunctionForElementType(elementType,ri, si, xi, yi):
 
     return N, Bb,Bs, detJ
 
-
 def getLinearVectorizedShapeFunctions(ri, si, xi, yi):
     '''
     INPUT-->    ri: calculation point along the r-axis [float]
@@ -410,8 +409,11 @@ def getMITCShapefunctions(ri, si, xi, yi):
     Bb[2,1::3]=  -NrsVal[:,0]
 
     alpha, beta = naturalToCartesian(xi,yi)
+    # print('xi: ', xi)
+    # print('yi: ', yi)
     ROTab = np.array([[np.sin(beta), -np.sin(alpha)], 
                         [-np.cos(beta), np.cos(alpha)]])
+
 
     Ax = xi[0] - xi[1] - xi[2] + xi[3]
     Ay = yi[0] - yi[1] - yi[2] + yi[3]
@@ -424,7 +426,8 @@ def getMITCShapefunctions(ri, si, xi, yi):
 
     Dx = np.sqrt((Cx+ri*Bx)**2 + (Cy + ri*By)**2)/(8*detJ)
     Dy = np.sqrt((Ax+si*Bx)**2 + (Ay + si*By)**2)/(8*detJ)
-    
+    # print('Dx: ', Dx)
+    # print('Dy: ', Dy)
     a1 = 0.5
     a2 = (-yi[0] + yi[1])*0.25
     a3 = (xi[0]-xi[1])*0.25
@@ -500,11 +503,11 @@ def shapeFun9(GPr, GPs):
     Nr[0] =  0.25*(1+GPs) + 0.5*GPr*(1+GPs) - 0.25*(1-GPs**2) - 0.5*GPr*(1-GPs**2)
     Nr[1] = -0.25*(1+GPs) + 0.5*GPr*(1+GPs) + 0.25*(1-GPs**2) - 0.5*GPr*(1-GPs**2)
     Nr[2] = -0.25*(1-GPs) + 0.25*(1-GPs**2) + 0.5*GPr*(1-GPs) - 0.5*GPr*(1-GPs**2)
-    Nr[3] =  0.25*(1-GPs) + 0.5*GPr*(1-GPs)     -0.25*(1-GPs**2) - 0.5*GPr*(1-GPs**2)
+    Nr[3] =  0.25*(1-GPs) + 0.5*GPr*(1-GPs) -0.25*(1-GPs**2) - 0.5*GPr*(1-GPs**2)
     Nr[4] = -GPr*(1+GPs) + GPr*(1-GPs**2)
     Nr[5] = -0.5*(1-GPs**2) + GPr*(1-GPs**2)
     Nr[6] = -GPr*(1-GPs) + GPr*(1-GPs**2)
-    Nr[7] = 0.5*(1-GPs**2) + GPr*(1-GPs**2)
+    Nr[7] = 0.5*(1-GPs**2) + GPr*(1-GPs**2) 
     Nr[8] = -2*GPr*(1-GPs**2)
 
     Ns[0] =  0.25*(1+GPr) - 0.25*(1-GPr**2) + 0.5*GPs*(1+GPr) - 0.5*GPs*(1-GPr**2)
@@ -523,7 +526,7 @@ def getJac(Nr, Ns, xi, yi):
     xs = np.matmul(Ns,xi)
     yr = np.matmul(Nr,yi)
     ys=np.matmul(Ns,yi)
-    Jac = np.array([[xr, xs],[yr, ys]])
+    Jac = np.array([[xr, yr],[xs, ys]])
     JacInv = np.linalg.inv(Jac)
     JacDet = np.linalg.det(Jac)
     return Jac, JacInv, JacDet
@@ -604,14 +607,8 @@ def getMITC9Shapefunctions(ri, si, xi, yi):
         sP = points[i][1]
 
         N8, Nr8, Ns8 = shapeFun8(rP, sP)
-        xi8 = xi[0:-1]
-        yi8 = yi[0:-1]
-        # Jac, JacInv, JacDet = getJac(Nr, Ns, xi8, yi8)
 
-        # T= np.matmul(JacInv, np.array([Nr, Ns]))
-        
-        # Nr = T[0,:]
-        # Ns = T[1,:]
+
         N9, Nr9, Ns9 = shapeFun9(rP, sP)
 
         if i < 4:
@@ -631,8 +628,6 @@ def getMITC9Shapefunctions(ri, si, xi, yi):
     for i in range(0,nPoints):
         wi = gaussWeights[i]
         N8, Nr8, Ns8 = shapeFun8(gaussPoints[i,0], gaussPoints[i,1])
-        xi8 = xi[0:-1]
-        yi8 = yi[0:-1]
 
         N9, Nr9, Ns9 = shapeFun9(gaussPoints[i,0], gaussPoints[i,1])
 
@@ -646,10 +641,6 @@ def getMITC9Shapefunctions(ri, si, xi, yi):
         M3[9,0:8] += wi*Ns8
         M3[9, 8:17] += -wi*np.dot(Ns9, yi)*N9
         M3[9, 17:] += wi*np.dot(Ns9, xi)*N9
-
-    # print('M3: ', pd.DataFrame(M3))
-    # print('M2: ', pd.DataFrame(M2))
-    # print('invM2: ', pd.DataFrame(np.linalg.inv(M2)))
 
     Bs = M1@np.linalg.inv(M2)@M3
 
@@ -670,15 +661,13 @@ def getMITC9Shapefunctions(ri, si, xi, yi):
     endN[:,-2:] = endNTemp[:,-2:]
 
 
-    alpha, beta = naturalToCartesian(xi,yi)
+    # alpha, beta = naturalToCartesian(xi,yi)
 
-    Dx=np.sqrt((np.dot(Ns,xi))**2+(np.dot(Ns,yi))**2)/(JacDet)
-    Dy=np.sqrt((np.dot(Nr,xi))**2+(np.dot(Nr,yi))**2)/(JacDet)
-    # print('Alpha: ', alpha)
-    # print('beta: ', beta)
-    # print('Dx: ', Dx)
-    # print('Dy: ', Dy)
-    transformMat = np.array([[np.sin(beta)*Dx, -np.sin(alpha)*Dy], [-np.cos(beta)*Dx, np.cos(alpha)*Dy]])
+    # Dx=np.sqrt((np.dot(Ns,xi))**2+(np.dot(Ns,yi))**2)/(JacDet)
+    # Dy=np.sqrt((np.dot(Nr,xi))**2+(np.dot(Nr,yi))**2)/(JacDet)
+
+    # transformMat = np.array([[np.sin(beta)*Dx, -np.sin(alpha)*Dy], [-np.cos(beta)*Dx, np.cos(alpha)*Dy]])
+    transformMat = JacInv
 
     Bs = transformMat@Bs
 

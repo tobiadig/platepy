@@ -35,7 +35,6 @@ B =  np.array([[1,2], [3,4]])
 C = np.array([[1,2], [3,4]])
 
 
-
 #%%
 import numpy as np
 N1 = lambda r, s: 1*np.ones(len(r))
@@ -153,3 +152,5 @@ N4r = 0.25*(1-GPs) + 0.5*GPr*(1-GPs) -0.25*(1-GPs**2) + 0.5*GPr*(1-GPs**2)
 N4 = 0.25*(1+GPr)*(1-GPs) - 0.25*(1-GPr**2)*(1-GPs) - 0.25*(1-GPs**2)*(1+GPr) - 0.25*(1-GPr**2)*(1-GPs**2)
 print('N4: ', N4)
 print('N4r: ',N4r)
+#%%
+# %%

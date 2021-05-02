@@ -22,7 +22,7 @@ from rotationMatrix import *
 import time
 from tqdm import tqdm
 
-def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1, elementDefinition=None, internalForcePosition = 'nodes'):
+def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1, elementDefinition=None, internalForcePosition = 'nodes', smoothedValues = False):
     ''' Input/Output descriptions
     ElemType:  or Quadratic or MITC + Reduced or Normal Integration
         self: PlateModel class, where the geometry and the mesh are initialized
@@ -223,6 +223,9 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         node=int(constraint[0])
         rDofsBool[node*3-3:node*3] = constraint[1:].astype(bool)
 
+    rDofsInt = np.array(range(0,nGDofs))[rDofsBool]
+    # print('rDofs: ', rDofsInt)
+
     #remove discarted nodes
     allDofs =np.arange(0,nGDofs)
     fDofsBool = np.invert(rDofsBool)
@@ -232,7 +235,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     kMatFree = kMatFree[:,fDofsInt]
 
     fVecFree = sparseForceGlobal[fDofsInt]
-    # print('force vector: ', sparseForceGlobal.toarray())
+    # print('force vector: ', pd.DataFrame(sparseForceGlobal.toarray()))
 
     # SOLVE
     Uf = sparse.linalg.spsolve(kMatFree,fVecFree)
@@ -242,6 +245,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     
     uGlob=np.zeros((nGDofs,1))
     uGlob[fDofsInt]=Uf
+    # print('uGlob: ', pd.DataFrame(uGlob))
     # if elementDegree == 'MITC9':
     # uGlob = uGlob[discartedDisplacements]
     
@@ -254,9 +258,11 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     # print('m1size: ', M1.shape)
     # print('uGlob shape: ', uGlob.shape)
     globalForce = (sparseGlobalMatrix*uGlobSparse).toarray()
+    # print('globalForce: ', globalForce)
 
     # elaborate and store results
     reactionForces = globalForce[rDofsBool]
+    
     nodes = self.mesh.nodesArray.to_numpy()
 
     outPos = np.zeros((nodes.shape[0],2))
@@ -275,7 +281,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     Df = self.plates[0].Df 
     Dc = self.plates[0].Dc
     nodesArray = self.mesh.nodesArray
-    bendingMoments, shearForces, internalForcesPositions = getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, Dc, nodesArray)
+    bendingMoments, shearForces, internalForcesPositions = getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, Dc, nodesArray, smoothedValues)
     self.results.bendingMoments=bendingMoments*resultsScaleIntForces[0]
     self.results.internalForcesPositions=internalForcesPositions
     self.results.shearForces = shearForces*resultsScaleIntForces[1]
