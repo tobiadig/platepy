@@ -21,7 +21,7 @@ def importModel():
 
     a=10
     b=10
-    h=0.1
+    h=0.001
     plateDict = {}
     plateDict["outlineCoords"]=np.array([[0,0], [a,0], [a,b], [0,b],[0,0]])
     plateDict["thickness"] = h
@@ -34,7 +34,7 @@ def importModel():
     wallDict["outlineCoords"] = np.array([[0,0], [a,0],[a,b],[0,b],[0,0]])
     wallDict["high"] = 3 # m
     wallDict["body"] = C25_30
-    wallDict["support"] = Support(np.array([1, 1, 1]))
+    wallDict["support"] = Support(np.array([1, 1, 0]))
     wallDict["thickness"] = 0.5 # m
     wall1 = Wall(wallDict)
 

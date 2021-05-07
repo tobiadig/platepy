@@ -148,9 +148,9 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
                 fLocal[0:3] = p.magnitude*L/2
                 fLocal[3:] = p.magnitude*L/2
             elif nNodes == 3:
-                fLocal[0:3] = p.magnitude*L/4
-                fLocal[3:6] = p.magnitude*L/4
-                fLocal[6:] = p.magnitude*L/2
+                fLocal[0:3] = p.magnitude*L*(1/6)
+                fLocal[3:6] = p.magnitude*L*(1/6)
+                fLocal[6:] = p.magnitude*L*(2/3)
             # # create rotation matrix
             Ri = []
             RiInit = False

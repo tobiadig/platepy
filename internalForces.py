@@ -54,25 +54,47 @@ def getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, 
             if elementType =='L' :
                 ri = np.array([-1, 1, 1, -1])
                 si = np.array([-1,-1,1,1])
-                sigma = np.zeros(len(vLoc))
+                sigma = np.zeros((2,4))
                 for i in range(0, len(ri)):
                     N, Bf,Bc, detJ = getShapeFunctionForElementType(elementType,np.array([ri[i]]), np.array([si[i]]), xi, yi)
                     Bf = Bf[0,:,:]
                     Bc = Bc[0,:,:]
                     bendingMomentsSum[coherentElemNodes[i],0:3] += np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*1
-                    shearForcesSum[coherentElemNodes[i],0:2] += np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*1 
-                    sigma[i] = np.matmul(Dc, np.matmul(Bc, vLoc))[0,0]
                     bendingMomentsSum[coherentElemNodes[i],3] += 1
-                    shearForcesSum[coherentElemNodes[i],2] += 1
+                    sigma[:,i] = np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]
 
-                if smoothedValues == True:
-                    gaussPoints, gaussWeights =  getGaussQuadrature('rectangular',4)
+                if smoothedValues == False:
+                    shearForcesSum[coherentElemNodes,2] += 1
+                    shearForcesSum[coherentElemNodes,0:2] += sigma.transpose()
+
+                elif smoothedValues == True:
+                    gaussPoints, gaussWeights =  getGaussQuadrature('rectangular',9)
+                    Ksmooth = np.zeros((4,4))
+                    fSmooth = np.zeros(4)
 
                     for i in range(0, gaussPoints.shape[0]):
-                        ri = gaussPoints[:,0]
-                        si = gaussPoints
-                        N, Bf,Bc, detJ = getShapeFunctionForElementType(elementType,np.array([ri[i]]), np.array([si[i]]), xi, yi)
+                        ri = gaussPoints[i,0]
+                        si = gaussPoints[i,1]
+                        wi = gaussWeights[i]
+                        N, Bf,Bc, detJ = getShapeFunctionForElementType(elementType,np.array([ri]), np.array([si]), xi, yi)
+                        N=N[0,0, 0::3]
+                        Bf = Bf[0,:,:]
+                        Bc = Bc[0,:,:]
+                        m1 = np.expand_dims(N,axis=0)
+                        m2 = np.expand_dims(N,axis=1)
+                        sigmax = np.expand_dims(sigma[0,:], axis = 1)
+                        Ksmooth += wi*m2@m1*detJ
 
+
+                        deb = wi*m2@m1@sigmax*detJ
+                        fSmooth += deb[:,0]
+
+                    fSmooth = np.expand_dims(fSmooth, 1)
+                    sigmaSmooth = np.linalg.inv(Ksmooth)@fSmooth
+
+                    sigma[0,:] = sigmaSmooth[:,0]
+                    shearForcesSum[coherentElemNodes,2] += 1
+                    shearForcesSum[coherentElemNodes,0:2] += sigma.transpose()
 
             elif elementType =='MITC4':
                 ri = np.array([1, -1, -1, 1])
@@ -80,8 +102,8 @@ def getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, 
 
                 for i in range(0, len(ri)):
                     N, Bf,Bc, detJ = getShapeFunctionForElementType(elementType,ri[i], si[i], xi, yi)
-                    bendingMomentsSum[coherentElemNodes[i],0:3] += np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*-1
-                    shearForcesSum[coherentElemNodes[i],0:2] += np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*-1 
+                    bendingMomentsSum[coherentElemNodes[i],0:3] += np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*1
+                    shearForcesSum[coherentElemNodes[i],0:2] += np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*1 
                     bendingMomentsSum[coherentElemNodes[i],3] += 1
                     shearForcesSum[coherentElemNodes[i],2] += 1 
             elif elementType=='Q':
@@ -108,7 +130,7 @@ def getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, 
         shearForces = shearForcesSum[:,0:2]/shearForcesSum[:,2, None]
         
     elif internalForcePosition == 'intPoints':
-        nGaussPoints = 201
+        nGaussPoints = 4
         bendingMoments = np.zeros((len(elementsList)*nGaussPoints,3))
         internalForcesPositions = np.zeros((len(elementsList)*nGaussPoints,2))
         shearForces = np.zeros((len(elementsList)*nGaussPoints,2))
@@ -134,6 +156,24 @@ def getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, 
                     Nval = N[0, 0::3]
                     bendingMoments[k*nGaussPoints+i,0:3] = np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*1
                     shearForces[k*nGaussPoints+i,0:2] = np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*1 
+                    xr = Nval@xi
+                    yr = Nval@yi
+                    internalForcesPositions[k*nGaussPoints+i,0]=xr
+                    internalForcesPositions[k*nGaussPoints+i,1]=yr
+            elif elementType == 'Q':
+                # ri =np.linspace(-1, 1, num=nGaussPoints)
+                # si = np.ones(nGaussPoints)/np.sqrt(3)
+                gaussPoints, gaussWeights =  getGaussQuadrature('rectangular',4)
+                for i in range(0,nGaussPoints):
+                    ri = gaussPoints[i,0]
+                    si = gaussPoints[i,1]
+                    wi = gaussWeights[i]
+                    N, Bf,Bc, detJ = getQuadraticShapeFunctions(ri, si, xi, yi)
+                    # N, Bf,Bc, detJ = getQuadraticShapeFunctions(ri[i], si[i], xi, yi)
+                    Nval=N[0, 0::3]
+
+                    bendingMoments[k*nGaussPoints+i,0:3] = np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*1
+                    shearForces[k*nGaussPoints+i,0:2] = np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*-1 
                     xr = Nval@xi
                     yr = Nval@yi
                     internalForcesPositions[k*nGaussPoints+i,0]=xr

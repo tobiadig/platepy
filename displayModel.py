@@ -141,7 +141,7 @@ def myTextPlot(self,x,y,z, theTitle = ''):
 def myTextOnMeshPlot(self,x,y,z, theTitle = ''):
     fig, outAx = plotMesh(self, plotNodes=False, plotStrucElements=False)
     for i,a in enumerate(z):
-        outAx.text(x[i], y[i], '{:.3f}'.format(a)) # number of Nachkomastellen to be displayed
+        outAx.text(x[i], y[i], '{:.2f}'.format(a)) # number of Nachkomastellen to be displayed
         outAx.scatter(x[i], y[i], marker = ".", facecolor = "k",zorder=0)
 
     outAx.set_title(theTitle)
@@ -192,7 +192,7 @@ def myIsoPlot(self,x,y,z, theTitle = ''):
     outAx.set_title(theTitle)
     return fig,outAx
 
-def plotMesh(self, plotNodes = True, plotStrucElements = True):
+def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = False):
     if plotStrucElements:
         fig,outAx = plotInputGeometry(self)
     else:
@@ -222,6 +222,12 @@ def plotMesh(self, plotNodes = True, plotStrucElements = True):
         for node in nodes:
             outAx.scatter(node[0], node[1], facecolor='k', marker='.')
             outAx.text(node[0], node[1], k)
+            k+=1
+    if plotPoints:
+        k=1
+        for node in nodes:
+            outAx.scatter(node[0], node[1], facecolor='k', marker='.')
+            # outAx.text(node[0], node[1], k)
             k+=1
     return fig, outAx 
 
