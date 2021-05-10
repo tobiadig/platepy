@@ -38,9 +38,9 @@ def convergenceAnalysis(self, analyticalValue,nEdgeNodes, elemTypes, meshDistort
             #     savingPath = os.path.join(myPath, imgName)
             #     plt.savefig(savingPath)
             
-            # if n<30:
-            #     plotMesh(self)
-            #     plt.show()
+            if n<30:
+                plotMesh(self)
+                plt.show()
             solveModel(self, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3/1000**4, elementDefinition=elemType, internalForcePosition = 'center')
             # plotResults(patchTestModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[] ,shearForcesToPlot=[])
             # plt.show()
@@ -139,7 +139,6 @@ elemTypes = ['L-R', 'Q-R']
 patchTestModel.walls[0].support=Support(np.array([1, 1, 0]))
 ax=plt.axes()
 outRes = convergenceAnalysis(patchTestModel,-analyticalValue, nEdgeNodes = [3, 5, 9, 17, 33, 65, 129], elemTypes = elemTypes, meshDistortion=False, distVal = 120 )
-
 nAnalysis = len(elemTypes)
 for i in range(0,nAnalysis):
     x=np.log10(outRes[i::nAnalysis,0])
@@ -163,7 +162,7 @@ plt.savefig(savingPath)
 
 tableName =imgName[0:-3]+'csv'
 savingPath = os.path.join(myPath, tableName)
-myTable = np.array([x,y])
+myTable = outRes
 np.savetxt(savingPath, myTable, delimiter = ',')
 #%%L-Q distorted
 patchTestModel.walls[0].support=Support(np.array([1, 1, 0]))
@@ -191,7 +190,7 @@ savingPath = os.path.join(myPath, imgName)
 plt.savefig(savingPath)
 tableName =imgName[0:-3]+'csv'
 savingPath = os.path.join(myPath, tableName)
-myTable = np.array([x,y])
+myTable = outRes
 np.savetxt(savingPath, myTable, delimiter = ',')
 #%% MITC4-9 regular
 elemTypes = ['MITC4-N', 'MITC9-N']
@@ -219,7 +218,7 @@ savingPath = os.path.join(myPath, imgName)
 plt.savefig(savingPath)
 tableName =imgName[0:-3]+'csv'
 savingPath = os.path.join(myPath, tableName)
-myTable = np.array([x,y])
+myTable = outRes
 np.savetxt(savingPath, myTable, delimiter = ',')
 #%%MITC4-9 distorted
 elemTypes = ['MITC4-N', 'MITC9-N']
@@ -247,5 +246,5 @@ savingPath = os.path.join(myPath, imgName)
 plt.savefig(savingPath)
 tableName =imgName[0:-3]+'csv'
 savingPath = os.path.join(myPath, tableName)
-myTable = np.array([x,y])
+myTable = outRes
 np.savetxt(savingPath, myTable, delimiter = ',')

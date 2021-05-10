@@ -12,13 +12,13 @@ sampleModel=cubusGeometry.importModel()
 # create mesh
 from generateMesh import *
 # generateMesh(sampleModel, showGmshMesh=False, elementType='QUAD', meshSize=5e-1)
-generateMesh(sampleModel, showGmshMesh=False, elementType='QUAD', nEdgeNodes=51, order ='quadratic')
+generateMesh(sampleModel, showGmshMesh=False, elementType='QUAD', nEdgeNodes=21, order ='linear')
 
 # compute
 from solveModel import *
 elemTypes = ['L-R', 'MITC4-N', 'Q-R', 'MITC9-N']
-solveModel(sampleModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3,elementDefinition=elemTypes[2], internalForcePosition = 'intPoints')
+solveModel(sampleModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e-3,elementDefinition=elemTypes[1], internalForcePosition = 'nodes')
 
 # display results
-plotResults(sampleModel,displacementPlot='isolines', verticalDisplacement=False, bendingMomentsToPlot=['x', 'y', 'xy'],shearForcesToPlot=['x'])
+plotResults(sampleModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=[])
 plt.show()

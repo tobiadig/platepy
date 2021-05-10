@@ -141,8 +141,8 @@ def myTextPlot(self,x,y,z, theTitle = ''):
 def myTextOnMeshPlot(self,x,y,z, theTitle = ''):
     fig, outAx = plotMesh(self, plotNodes=False, plotStrucElements=False)
     for i,a in enumerate(z):
-        outAx.text(x[i], y[i], '{:.2f}'.format(a)) # number of Nachkomastellen to be displayed
-        outAx.scatter(x[i], y[i], marker = ".", facecolor = "k",zorder=0)
+        outAx.text(x[i]+0.03, y[i]+0.03, '{:.2f}'.format(a)) # number of Nachkomastellen to be displayed
+        outAx.scatter(x[i], y[i], marker = ".", facecolor = "r",zorder=0)
 
     outAx.set_title(theTitle)
     return fig, outAx
@@ -215,18 +215,18 @@ def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = Fals
         yValues[0:-1] = elemCoords[0:nEdges,1]
         yValues[-1] = elemCoords[0,1]
 
-        outAx.plot(xValues, yValues, color='violet', zorder=-1)
+        outAx.plot(xValues, yValues, color='k', zorder=-1)
     #plot nodes:
     k=1
     if plotNodes:
         for node in nodes:
-            outAx.scatter(node[0], node[1], facecolor='k', marker='.')
-            outAx.text(node[0], node[1], k)
+            outAx.scatter(node[0], node[1], facecolor='r', marker='.')
+            outAx.text(node[0]+0.03, node[1]+0.03, k)
             k+=1
     if plotPoints:
         k=1
         for node in nodes:
-            outAx.scatter(node[0], node[1], facecolor='k', marker='.')
+            outAx.scatter(node[0], node[1], facecolor='r', marker='.')
             # outAx.text(node[0], node[1], k)
             k+=1
     return fig, outAx 
