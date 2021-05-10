@@ -57,14 +57,15 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     k=0
     for element in tqdm(elementsList):
     # for element in elementsList:
+        plateOfTheElement = element.whichPlate
         elemNodes = element.connectivity
         coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
         nNodes = element.nNodes
         elemNodesRotations = nodesRotations.loc[elemNodes].to_numpy()
         xi=element.coordinates[:,0]
         yi=element.coordinates[:,1]
-        Df = self.plates[0].Df   
-        Dc = self.plates[0].Dc
+        Df = self.plates[plateOfTheElement].Df   
+        Dc = self.plates[plateOfTheElement].Dc
 
         kLocalNotRotated,fLocal = GetLocalMatrix(xi, yi, Df,Dc,p,nNodes , elementDefinition)
 

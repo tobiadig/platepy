@@ -30,7 +30,7 @@ class PlateModel:
         self.results = None
         self.axes = {}
 
-    def addPlate(self, newPlate):  
+    def addPlate(self, newPlate, isUnterZug = False):  
         '''
         add a plate element of class "Plate" to the model
         '''
@@ -55,14 +55,18 @@ class PlateModel:
         linesTags = [0]*nLines
         for i in range(0, nLines):
             linesTags[i] = gmsh.model.geo.addLine(pointTags[i], pointTags[i+1])
+        
         curveLoopTag = gmsh.model.geo.addCurveLoop(linesTags)
         planeSurfaceTag= gmsh.model.geo.addPlaneSurface([curveLoopTag])
         newPlate.tag=planeSurfaceTag
+        newPlate.isUnterZug = isUnterZug
 
         # create physical group
         physicalTag = gmsh.model.addPhysicalGroup(2, [planeSurfaceTag])
         newPlate.physicalGroup = (2, physicalTag) # assign a tuple to the plate with: (dim, physTag)
 
+        gmsh.model.geo.synchronize()
+        gmsh.model.geo.removeAllDuplicates()
         gmsh.model.geo.synchronize()
 
     def addWall(self, newWall):
@@ -184,6 +188,7 @@ class Plate:
         self.elementComposition = []
         self.nodeComposition = []
         self.tag=None
+        self.isUnterZug = False
 
         E=self.body.eModule
         G=self.body.gModule
@@ -198,6 +203,8 @@ class Plate:
     def plot(self, axGeometry):
         coords = self.outlineCoords
         axGeometry.plot(coords[:,0],coords[:,1], color='gray')
+        if self.isUnterZug:
+            axGeometry.fill_between(coords[0:2,0], coords[0:2,1], y2=coords[2:4,1],color='yellow')
 
 class Wall:
     def __init__(self, inputDict):

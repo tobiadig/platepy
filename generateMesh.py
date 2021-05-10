@@ -30,7 +30,6 @@ def distortMesh(nodesArray, alpha):
     return newNodesArray
 
 def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, nEdgeNodes = 0, order='linear', meshDistortion = False, distVal = 100):
-
     ''' Input/Output descriptions
         self: PlateModel class, where the geometry is initialized
         meshInput: options for the creation of the mesh
@@ -39,9 +38,10 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
         following information are also generated and stored:
         nodes coordinates and orientation, element connectivity, boundary conditions
     '''
+
     gmsh.model.mesh.clear()
     if elementType == 'QUAD':
-        gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 1) #0: simple, 1: blossom (default), 2: simple full-quad, 3: blossom full-quad
+        gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 3) #0: simple, 1: blossom (default), 2: simple full-quad, 3: blossom full-quad
         for i in range(0, len(self.plates)):
             gmsh.model.geo.mesh.setRecombine(2, self.plates[i].tag)
     elif elementType != 'TRI':
@@ -108,34 +108,35 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
         nodesArrayPd = distortMesh(nodesArrayPd, distVal)
     
     elementsList = []
-    _, elemTags, _ = gmsh.model.mesh.getElements(2)
+    # _, elemTags, _ = gmsh.model.mesh.getElements(2)
+    k=1
 
     for i in range(0, len(self.plates)):
-        gmsh.model.mesh.getElements(2.self.plates[i].tag)
-    
-    k=1
-    for elemTag in elemTags[0]:
-        elemType, nodeTags = gmsh.model.mesh.getElement(elemTag)
-        newElement = Element()
-        newElement.tag = elemTag
+        _, elemTags, _ = gmsh.model.mesh.getElements(2,self.plates[i].tag)
+        for elemTag in elemTags[0]:
+            elemType, nodeTags = gmsh.model.mesh.getElement(elemTag)
+            newElement = Element()
+            newElement.tag = elemTag
+            newElement.whichPlate = i
+            # print('element ',elemTag,' belongs to plate ',i)
 
-        if elementType == 'QUAD':
-            newElement.shape = 4
-        else:
-            newElement.shape =3       
+            if elementType == 'QUAD':
+                newElement.shape = 4
+            else:
+                newElement.shape =3       
 
-        newElement.nNodes  = len(nodeTags)
-        newElement.connectivity  = nodeTags
+            newElement.nNodes  = len(nodeTags)
+            newElement.connectivity  = nodeTags
 
-        newElement.coherentConnectivity = gmshToCoherentNodesNumeration.loc[nodeTags]
+            newElement.coherentConnectivity = gmshToCoherentNodesNumeration.loc[nodeTags]
 
-        # old = nodesArray[nodeTags-1,:]
+            # old = nodesArray[nodeTags-1,:]
 
-        newElement.coordinates = nodesArrayPd.loc[nodeTags].to_numpy()
+            newElement.coordinates = nodesArrayPd.loc[nodeTags].to_numpy()
 
-        newElement.whichPlate  = 1 
-        elementsList.append(newElement)
-        k+=1
+
+            elementsList.append(newElement)
+            k+=1
 
     #assemble 2D elements for line load
 
