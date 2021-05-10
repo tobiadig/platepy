@@ -57,7 +57,7 @@ class PlateModel:
             linesTags[i] = gmsh.model.geo.addLine(pointTags[i], pointTags[i+1])
         curveLoopTag = gmsh.model.geo.addCurveLoop(linesTags)
         planeSurfaceTag= gmsh.model.geo.addPlaneSurface([curveLoopTag])
-        newPlate.elementComposition.append(planeSurfaceTag)
+        newPlate.tag=planeSurfaceTag
 
         # create physical group
         physicalTag = gmsh.model.addPhysicalGroup(2, [planeSurfaceTag])
@@ -183,6 +183,7 @@ class Plate:
         self.physicalGroup = None
         self.elementComposition = []
         self.nodeComposition = []
+        self.tag=None
 
         E=self.body.eModule
         G=self.body.gModule

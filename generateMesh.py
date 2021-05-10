@@ -42,7 +42,8 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
     gmsh.model.mesh.clear()
     if elementType == 'QUAD':
         gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 1) #0: simple, 1: blossom (default), 2: simple full-quad, 3: blossom full-quad
-        gmsh.model.geo.mesh.setRecombine(2, 1)
+        for i in range(0, len(self.plates)):
+            gmsh.model.geo.mesh.setRecombine(2, self.plates[i].tag)
     elif elementType != 'TRI':
         raise TypeError(meshInput.elementType, "not recognised")
     
@@ -105,17 +106,16 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
     # distort the mesh a bit
     if meshDistortion:
         nodesArrayPd = distortMesh(nodesArrayPd, distVal)
-
+    
     elementsList = []
-    _, elemTags, _ = gmsh.model.mesh.getElements(2)  
+    _, elemTags, _ = gmsh.model.mesh.getElements(2)
 
+    for i in range(0, len(self.plates)):
+        gmsh.model.mesh.getElements(2.self.plates[i].tag)
+    
     k=1
     for elemTag in elemTags[0]:
         elemType, nodeTags = gmsh.model.mesh.getElement(elemTag)
-
-
-
-
         newElement = Element()
         newElement.tag = elemTag
 
