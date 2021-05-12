@@ -25,6 +25,43 @@ def GetLocalMatrix(xi, yi, Df,Dc, p,nNodes, elementDefinition):
         kLocal, fLocal = getQuadraticMatrix(xi, yi, Df, Dc, p, nNodes, elementIntegration)
     elif elementType == 'MITC9':
         kLocal, fLocal = getMITC9Matrix(xi, yi, Df, Dc, p, nNodes)
+    elif elementType == 'timoBeam':
+        kLocal, fLocal = gettimoBeamMatrix(xi, yi,Dc, Db, Ds, p, nNodes)
+
+    return kLocal, fLocal
+
+
+def gettimoBeamMatrix(xi, yi,Dc, Db, Ds, p, nNodes):
+    '''
+    Dc = EA
+    Db = EIz
+    Ds = k G A
+    '''
+    #two degrees of freedom per node...
+    #analythical solution for two-noded element!
+    # force = 0 (dont need that)
+    L = np.sqrt((xi[0]-xi[1])**2 + (yi[0]-yi[1])**2)
+
+    Kb = Db/L*np.array([[0,0,0,0],
+                        [0,1,0,-1],
+                        [0,0,0,0],
+                        [0,-1,0,1]])
+
+    Ks = Ds/L*np.array([[1,   L/2,    -1,    L/2],
+                        [L/2, L**2/3, -L/2,  L**2/6],
+                        [-1, -L/2,     1,   -L/2],
+                        [L/2, L**2/6, -L/2,  L**2/3]])
+
+    Kc = Dc/L*np.array([[1, -1],
+                    [-1, 1]])
+
+
+    kLocal = np.zeros((6,6))
+    bsCoeff=np.array([1,2,4,5])
+    cCoeff=np.array([0,3])
+    kLocal[np.ix_(bsCoeff,bsCoeff)] = Kb+Ks
+    kLocal[np.ix_(cCoeff,cCoeff)] = Kc
+    fLocal = np.array([0,p/2,0,0,p/2,0])
 
     return kLocal, fLocal
 

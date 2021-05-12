@@ -29,7 +29,7 @@ def distortMesh(nodesArray, alpha):
     newNodesArray = pd.DataFrame(newNodes, index = myIndex)
     return newNodesArray
 
-def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, nEdgeNodes = 0, order='linear', meshDistortion = False, distVal = 100):
+def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, elementType = 'QUAD', meshSize=5e-2, nEdgeNodes = 0, order='linear', meshDistortion = False, distVal = 100):
     ''' Input/Output descriptions
         self: PlateModel class, where the geometry is initialized
         meshInput: options for the creation of the mesh
@@ -41,7 +41,7 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
 
     gmsh.model.mesh.clear()
     if elementType == 'QUAD':
-        gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 3) #0: simple, 1: blossom (default), 2: simple full-quad, 3: blossom full-quad
+        gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 2) #0: simple, 1: blossom (default), 2: simple full-quad, 3: blossom full-quad
         for i in range(0, len(self.plates)):
             gmsh.model.geo.mesh.setRecombine(2, self.plates[i].tag)
     elif elementType != 'TRI':
@@ -75,6 +75,8 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
 
 
     # mesh generation
+    if showGmshGeometryBeforeMeshing:
+        gmsh.fltk.run()
     try:
         gmsh.model.mesh.generate()
         gmsh.model.geo.synchronize()
@@ -98,7 +100,7 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
     nodeTagsModel , nodeCoords, _ = gmsh.model.mesh.getNodes()
 
     nodesArray = np.array(nodeCoords).reshape((-1,3))
-    # print('old: ', nodesArray)
+    # print('old: ', nodesArray)tanjadahlia
     nodesArrayPd = pd.DataFrame(nodesArray, index = nodeTagsModel)
     nodesRotationsPd = pd.DataFrame(np.zeros(nodeTagsModel.size), index =nodeTagsModel)
     gmshToCoherentNodesNumeration = pd.DataFrame(range(0,len(nodeTagsModel)), index = nodeTagsModel)
@@ -208,26 +210,86 @@ def generateMesh(self,showGmshMesh=False, elementType = 'QUAD', meshSize=5e-2, n
         BCs[count, 0] = a
         BCs[count,1:] = BCsDic[a]
 
-        #generate BCs
-    # iterate over walls and columns
-    # isBCSinitiated = False
-    # for wall in self.walls:
-    #     nodeTags, _ = gmsh.model.mesh.getNodesForPhysicalGroup(wall.physicalGroup[0],wall.physicalGroup[1])
-    #     BCsTemp = np.zeros((len(nodeTags), 4))
-    #     BCsTemp[:,0]=nodeTags
-    #     BCsTemp[:,1]=np.ones(len(nodeTags))*wall.support.supportCondition[0]
-    #     BCsTemp[:,2]=np.ones(len(nodeTags))*wall.support.supportCondition[1]
-    #     BCsTemp[:,3]=np.ones(len(nodeTags))*wall.support.supportCondition[2]  
 
-    #     if not(isBCSinitiated):
-    #         isBCSinitiated=True
-    #         BCs = BCsTemp
-    #     else:
-    #         BCs = np.append(BCs,BCsTemp, axis=0)
 
-    # store result in a mesh class and then in plateModel
+    nextNode = int(np.max(nodeTagsModel)+1)
+    nextCoherentNode = int(nodesArray.shape[0])
+
+    # print('gmshToCoherentNodesNumeration: ',gmshToCoherentNodesNumeration)
+    # print('nodesArray: ', nodesArray)
+    # print('nodesArrayPd: ', nodesArrayPd)
     # print('nodesRotationsPd: ', nodesRotationsPd)
+    for uz in self.downStandBeams:
+        dim = uz.physicalGroup[0]
+        nodesUZ, coord = gmsh.model.mesh.getNodesForPhysicalGroup(dim,uz.physicalGroup[1])
+        print('nodesUZ: ', nodesUZ)
+        
+        nNodesUZ = len(nodesUZ)
+        newNodesUZ = np.array(range(nextNode, nextNode+nNodesUZ), dtype=int)
+        coherentNodesUZ = np.array(range(nextCoherentNode, nextCoherentNode+nNodesUZ), dtype=int)
+        tempDF = pd.DataFrame(coherentNodesUZ, index=newNodesUZ)
+        gmshToCoherentNodesNumeration = gmshToCoherentNodesNumeration.append(tempDF)
+        gmshToCoherentNodesNumeration.index = gmshToCoherentNodesNumeration.index.astype(int)
+        nextCoherentNode += nNodesUZ
+        nextNode = nextNode+nNodesUZ
+        tempNodesArray = nodesArrayPd.loc[nodesUZ].to_numpy()
+        nodesArray = np.append(nodesArray, tempNodesArray, axis=0)
+        nodesArrayPd = nodesArrayPd.append(pd.DataFrame(tempNodesArray, index=newNodesUZ))
+        nodesArrayPd.index = nodesArrayPd.index.astype(int)
 
+        uzNodesToNodesNumeration = pd.DataFrame(newNodesUZ, index = nodesUZ)
+
+        uzNodesToNodesNumeration.index = uzNodesToNodesNumeration.index.astype(int)
+
+        nodesRotationsPd = nodesRotationsPd.append(pd.DataFrame(np.zeros(nNodesUZ), index =newNodesUZ))
+        nodesRotationsPd.index = nodesRotationsPd.index.astype(int)
+        enitiesTags = gmsh.model.getEntitiesForPhysicalGroup(dim,uz.physicalGroup[1])
+
+        for uzLine in enitiesTags:
+            # nodeTags, coord, _ = gmsh.model.mesh.getNodes(dim, uzLine, includeBoundary=True)
+            # coord = coord.reshape(-1,3)
+            elementTypes, elementTags, nodeTags = gmsh.model.mesh.getElements(dim,uzLine)
+            for elemTag in elementTags[0]:
+                elementType, nodeTags = gmsh.model.mesh.getElement(elemTag)
+                newElement = Element()
+                newElement.tag = elemTag
+
+                newElement.nNodes  = len(nodeTags)
+                realNodeTags = uzNodesToNodesNumeration.loc[nodeTags].to_numpy()[:,0]
+                newElement.connectivity  = realNodeTags
+                newElement.coherentConnectivity = gmshToCoherentNodesNumeration.loc[realNodeTags]
+                realCoherentNodeTags=gmshToCoherentNodesNumeration.loc[realNodeTags].to_numpy()[:,0]
+
+                newElement.coordinates = nodesArrayPd.loc[nodeTags].to_numpy()
+
+                newElement.whichPlate  = 1  
+                elementsList.append(newElement)
+
+            # start and en nodes are blocked
+                p1Tag = realCoherentNodeTags[0]
+
+                p2Tag = realCoherentNodeTags[1]
+                coord = nodesArray[realCoherentNodeTags,0:2]
+
+                lineDirection = coord[:,1] -coord[:,1]
+
+                #particular directions (np.arctan not defined)
+                if lineDirection[0]==0 and lineDirection[1]>0:
+                    lineRot = np.pi/2
+                elif lineDirection[0]==0 and lineDirection[1]<0:
+                    lineRot = np.pi/2*3
+                elif lineDirection[0]==0 and lineDirection[1]==0:
+                    lineRot = np.pi/2*0
+                else:
+                    lineRot = np.arctan(lineDirection[1]/lineDirection[0])
+                
+                nodesRotationsPd.loc[realCoherentNodeTags] = lineRot
+
+        # print('nodesRotation in mesh gen: ', nodesRotationsPd)
+    # print('gmshToCoherentNodesNumeration: ',gmshToCoherentNodesNumeration)
+    # print('nodesArray: ', nodesArray)
+    # print('nodesArrayPd: ', nodesArrayPd)
+    # print('nodesRotationsPd: ', nodesRotationsPd)
     self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs)
 
 def setMesh(self, nodesArray, elements, BCs, load = None):

@@ -109,6 +109,42 @@ class PlateModel:
         
         gmsh.model.geo.synchronize()
 
+    def addDownStandBeam(self, newDSB):
+
+        if not(self.isInitialized):
+            gmsh.initialize()
+            gmsh.model.add(self.name)
+            self.isInitialized =True
+
+        self.downStandBeams.append(newDSB)
+        
+        #create points according to the given coordinates
+        nPoints = len(newDSB.outlineCoords)
+        pointTags = [0]*nPoints
+        i=0
+        for newPoint in newDSB.outlineCoords:
+            pointTags[i] = gmsh.model.geo.addPoint(newPoint[0], newPoint[1], 0)
+            i=i+1
+
+        #create lines
+        nLines = nPoints*1-1
+        linesTags = [0]*nLines
+        for i in range(0, nLines):
+            linesTags[i] = gmsh.model.geo.addLine(pointTags[i], pointTags[i+1])
+        
+        #create physical group
+        physicalTag = gmsh.model.addPhysicalGroup(1, linesTags)
+        newDSB.physicalGroup = (1, physicalTag)
+
+        gmsh.model.geo.synchronize()
+        gmsh.model.geo.removeAllDuplicates()
+        gmsh.model.geo.synchronize()
+
+        entities = np.array(gmsh.model.getEntities(1))
+        for line in linesTags:
+            if line in entities[:,1]:
+                gmsh.model.mesh.embed(1, [line], 2, 1) 
+
     def addColumn(self, newColumn):
         '''
             add column to the plateMode
@@ -252,6 +288,16 @@ class Column:
         self.elementComposition = None
         self.nodeComposition = None
         self.isInPlate = isInPlate
+
+class downStandBeam:
+    def __init__(self, inputDict):
+        self.outlineCoords = inputDict["outlineCoords"]
+        self.body = inputDict["body"]
+        self.crossSection = inputDict["crossSection"]
+        self.physicalGroup = None
+        self.elementComposition = []
+        self.nodeComposition = None
+        self.elementsList = None
 
     def plot(self, ax):
         x = self.outlineCoords[0,0]

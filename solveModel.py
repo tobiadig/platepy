@@ -64,17 +64,27 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         elemNodesRotations = nodesRotations.loc[elemNodes].to_numpy()
         xi=element.coordinates[:,0]
         yi=element.coordinates[:,1]
-        Df = self.plates[plateOfTheElement].Df   
-        Dc = self.plates[plateOfTheElement].Dc
+        if nNodes>2:
+            Df = self.plates[plateOfTheElement].Df
+            Dc = self.plates[plateOfTheElement].Dc
+            kLocalNotRotated,fLocal = GetLocalMatrix(xi, yi, Df,Dc,p,nNodes , elementDefinition)
+        else:
+            Emod = self.downStandBeams[0].body.eModule
+            Gmod = self.downStandBeams[0].body.gModule
+            crossA = self.downStandBeams[0].crossSection.A
+            crossI = self.downStandBeams[0].crossSection.Iy
+            Dc =Emod*crossA
+            Db = Emod*crossI
+            Ds = 5/6*Gmod*crossA
+            kLocalNotRotated, fLocal = gettimoBeamMatrix(xi, yi,Dc, Db, Ds, 0, nNodes)
 
-        kLocalNotRotated,fLocal = GetLocalMatrix(xi, yi, Df,Dc,p,nNodes , elementDefinition)
 
         # if the load is a line load IGNORE fLocal (set to zero), the force vector will be calculated in the next loop
         # bad solution, hopefully it works #TODO: adjust forces
         if p.case != "area":
             fLocal = np.zeros((fLocal.size,1))
 
-        R = getRotationMatrix(elementType, elemNodesRotations)
+        R = getRotationMatrix(elementType, elemNodesRotations) #TODO: check if thats correct
 
         element.rotationMatrix = R
 
