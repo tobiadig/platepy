@@ -414,7 +414,6 @@ def getMITCShapefunctions(ri, si, xi, yi):
     ROTab = np.array([[np.sin(beta), -np.sin(alpha)], 
                         [-np.cos(beta), np.cos(alpha)]])
 
-
     Ax = xi[0] - xi[1] - xi[2] + xi[3]
     Ay = yi[0] - yi[1] - yi[2] + yi[3]
 

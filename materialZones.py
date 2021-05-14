@@ -11,7 +11,7 @@ distributedLoad = Load('area',np.array([-1, 0, 0]))
 a=10
 b=10
 b1=4.75
-b2=b1+0.2
+b2=b1+0.6
 h=0.2
 plateDict = {}
 plateDict["outlineCoords"]=np.array([[0,0], [a,0], [a,b1], [0,b1],[0,0]])
@@ -47,9 +47,7 @@ firstModel.addWall(wall1)
 
 firstModel.addPlate(unterZug, isUnterZug=True)
 firstModel.addWall(wall2)
-
 firstModel.addPlate(plate2)
-
 firstModel.addLoad(distributedLoad)
 
 #%%
@@ -63,7 +61,7 @@ from displayModel import *
 
 # create mesh
 from generateMesh import *
-generateMesh(firstModel, showGmshMesh=False, elementType='QUAD', meshSize=2e-1)
+generateMesh(firstModel, showGmshMesh=True, elementType='QUAD', meshSize=2e-1)
 # generateMesh(sampleModel, showGmshMesh=True, elementType='QUAD', nEdgeNodes=11, order ='linear')
 
 # compute
@@ -72,5 +70,5 @@ elemTypes = ['L-R', 'MITC4-N', 'Q-R', 'MITC9-N']
 solveModel(firstModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3,elementDefinition=elemTypes[1], internalForcePosition = 'nodes')
 
 # display results
-plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=[])
+plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=['y'])
 plt.show()

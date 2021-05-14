@@ -17,12 +17,16 @@ from localMatrixes import *
 from internalForces import *
 from slicingFunctions import *
 from rotationMatrix import *
+from scipy.linalg import ldl
+from scipy.linalg import solve
+# from scipy.linalg import cho_factor
+# from scipy.linalg import cho_solve
 
 # for debug purposes
 import time
 from tqdm import tqdm
 
-def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1, elementDefinition=None, internalForcePosition = 'nodes', smoothedValues = False):
+def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1, elementDefinition=None, internalForcePosition = 'nodes', smoothedValues = False, solveMethod = 'sparse', computeMoments=True):
     ''' Input/Output descriptions
     ElemType:  or Quadratic or MITC + Reduced or Normal Integration
         self: PlateModel class, where the geometry and the mesh are initialized
@@ -244,18 +248,51 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 
     kMatFree = sparseGlobalMatrix[fDofsInt,:]
     kMatFree = kMatFree[:,fDofsInt]
+    # np.savetxt('Kfree.csv', kMatFree.toarray(), delimiter=',')
 
     fVecFree = sparseForceGlobal[fDofsInt]
     # print('force vector: ', pd.DataFrame(sparseForceGlobal.toarray()))
 
-    # SOLVE
-    Uf = sparse.linalg.spsolve(kMatFree,fVecFree)
-    Uf=Uf.reshape(-1,1)
+    #slice A matrix
+
+
+
+    if solveMethod == 'cho':
+        A=self.mesh.AmatList[0]
+
+        A=A[:,fDofsInt]
+        b=np.zeros(A.shape[0])
+        nConstraints = A.shape[0]
+        nFreeDofs = A.shape[1]
+        kMatFreeNp = kMatFree.toarray()
+        fVecFreeNp = fVecFree.toarray()
+        rightSide = np.zeros(nFreeDofs+nConstraints)
+        rightSide[0:nFreeDofs]=fVecFree.toarray()[:,0]
+        M = block_diag(kMatFreeNp, np.zeros((nConstraints,nConstraints)))
+        M[-nConstraints:,0:nFreeDofs] = A
+        M[0:nFreeDofs, -nConstraints:] = A.T
+        # np.savetxt('Mmat.csv', M, delimiter=',')
+        # np.savetxt('Kmat.csv', kMatFreeNp, delimiter=',')
+        # np.savetxt('Amat.csv', A, delimiter=',')
+
+        lu, d, perm = ldl(M)
+
+        y = solve(lu, rightSide)
+        x=solve(d@lu.T, y)
+
+        Uf = x[0:-nConstraints]
+        uGlob=np.zeros((nGDofs,1))
+        uGlob[fDofsInt]=np.expand_dims(Uf, axis=1)
+
+    elif solveMethod == 'sparse':
+        Uf = sparse.linalg.spsolve(kMatFree,fVecFree)
+        Uf=Uf.reshape(-1,1)
+        uGlob=np.zeros((nGDofs,1))
+        uGlob[fDofsInt]=Uf
 
     # global displacement and force vector
     
-    uGlob=np.zeros((nGDofs,1))
-    uGlob[fDofsInt]=Uf
+
     # print('uGlob: ', pd.DataFrame(uGlob))
     # if elementDegree == 'MITC9':
     # uGlob = uGlob[discartedDisplacements]
@@ -273,29 +310,36 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 
     # elaborate and store results
     reactionForces = globalForce[rDofsBool]
+
     
     nodes = self.mesh.nodesArray.to_numpy()
+    if solveMethod == 'cho':
+        uGlob = uGlob[:-nConstraints*3,:]
+        nodes = nodes[:-nConstraints,:]
 
     outPos = np.zeros((nodes.shape[0],2))
     values = np.zeros((nodes.shape[0],3))
     outPos[:,0:2]=nodes[:,0:2]
     keepedDisplacements = keepedDisplacements[0::3]
     vDisp = uGlob[0::3,0]
-
-    vDisp = vDisp[keepedDisplacements]
-    outPos = outPos[keepedDisplacements, :]  #TODO: only works for vertical displacements!
+    if solveMethod != 'cho':
+        vDisp = vDisp[keepedDisplacements]
+        outPos = outPos[keepedDisplacements, :]  #TODO: only works for vertical displacements!
     values[:,1]=uGlob[1::3,0]
     values[:,2]=uGlob[2::3,0]
     self.results = Result(outPos,vDisp, values[:,1], values[:,2],resultsScale=(resultsScaleVertDisp,resultsScaleIntForces))
 
     #compute MOMENTS
-    Df = self.plates[0].Df 
-    Dc = self.plates[0].Dc
-    nodesArray = self.mesh.nodesArray
-    bendingMoments, shearForces, internalForcesPositions = getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, Dc, nodesArray, smoothedValues)
-    self.results.bendingMoments=bendingMoments*resultsScaleIntForces[0]
-    self.results.internalForcesPositions=internalForcesPositions
-    self.results.shearForces = shearForces*resultsScaleIntForces[1]
+    if computeMoments:
+        Df = self.plates[0].Df 
+        Dc = self.plates[0].Dc
+        nodesArray = self.mesh.nodesArray
+        bendingMoments, shearForces, internalForcesPositions = getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, Dc, nodesArray, smoothedValues)
+        self.results.bendingMoments=bendingMoments*resultsScaleIntForces[0]
+        self.results.internalForcesPositions=internalForcesPositions
+        self.results.shearForces = shearForces*resultsScaleIntForces[1]
+
+    
     return outPos, values
 
 class Result:

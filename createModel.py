@@ -294,10 +294,12 @@ class downStandBeam:
         self.outlineCoords = inputDict["outlineCoords"]
         self.body = inputDict["body"]
         self.crossSection = inputDict["crossSection"]
+        self.thickness = inputDict["thickness"]
         self.physicalGroup = None
         self.elementComposition = []
         self.nodeComposition = None
         self.elementsList = None
+        self.Amat = None
 
     def plot(self, ax):
         x = self.outlineCoords[0,0]

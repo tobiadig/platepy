@@ -219,6 +219,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     # print('nodesArray: ', nodesArray)
     # print('nodesArrayPd: ', nodesArrayPd)
     # print('nodesRotationsPd: ', nodesRotationsPd)
+    AmatList = []
     for uz in self.downStandBeams:
         dim = uz.physicalGroup[0]
         nodesUZ, coord = gmsh.model.mesh.getNodesForPhysicalGroup(dim,uz.physicalGroup[1])
@@ -241,8 +242,35 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
 
         uzNodesToNodesNumeration.index = uzNodesToNodesNumeration.index.astype(int)
 
+        coherentNodesPlate = gmshToCoherentNodesNumeration.loc[nodesUZ].to_numpy()[:,0]
         nodesRotationsPd = nodesRotationsPd.append(pd.DataFrame(np.zeros(nNodesUZ), index =newNodesUZ))
         nodesRotationsPd.index = nodesRotationsPd.index.astype(int)
+
+        #NEED TO CREATE THE CONSTRAINT MATRIX BEAM - PLATE!
+        nDofs = nodesArray.shape[0]*3
+        nConstraints = len(newNodesUZ)*3
+        A=np.zeros((nConstraints, nDofs))
+
+        hp = self.plates[0].thickness
+        hb = uz.thickness
+
+        for i, plateNode in enumerate(coherentNodesPlate):
+            uzNode = coherentNodesUZ[i]
+            a1 = np.zeros(nDofs)
+            a2 = np.zeros(nDofs)
+            a3 = np.zeros(nDofs)
+
+            a1[plateNode*3] = -1
+            a1[uzNode*3+1] = 1
+            a2[plateNode*3+1] = -1
+            a2[uzNode*3+2] = 1
+            a3[plateNode*3+1] = -(hb+hp)*0.5
+            a3[uzNode*3] = 1
+
+            A[3*i:3*i+3, :] = np.array([a1, a2, a3])
+        
+        AmatList.append(A)
+
         enitiesTags = gmsh.model.getEntitiesForPhysicalGroup(dim,uz.physicalGroup[1])
 
         for uzLine in enitiesTags:
@@ -291,6 +319,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     # print('nodesArrayPd: ', nodesArrayPd)
     # print('nodesRotationsPd: ', nodesRotationsPd)
     self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs)
+    self.mesh.AmatList = AmatList
 
 def setMesh(self, nodesArray, elements, BCs, load = None):
     elementsList = []
@@ -329,6 +358,7 @@ class Mesh:
         self.elementsList=elementsList
         self.BCs = BCs
         self.load = None
+        self.AmatList = None
 
 class Element:
     '''

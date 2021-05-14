@@ -34,13 +34,14 @@ wall2 = Wall(wallDict)
 wallDict["outlineCoords"] = np.array([[0,0.5*b], [a,0.5*b]])
 wall3 = Wall(wallDict)
 
-bUZ = 0.3
-hUZ = 3*h
+bUZ = 0.5
+hUZ = 0.1*h
 uzCrossSection = CrossSection(bUZ*hUZ, bUZ*hUZ**3/12,0)
 unterZugDict = {}
 unterZugDict["outlineCoords"] = np.array([[0,0.5*b], [a,0.5*b]])
 unterZugDict["body"] = C25_30
 unterZugDict["crossSection"] = uzCrossSection
+unterZugDict["thickness"] = 0.5
 unterZug = downStandBeam(unterZugDict)
 
 firstModel = PlateModel("plateModel1")
@@ -63,14 +64,15 @@ from displayModel import *
 
 # create mesh
 from generateMesh import *
-generateMesh(firstModel, showGmshMesh=False,showGmshGeometryBeforeMeshing=False, elementType='QUAD', meshSize=5e-0, order ='linear')
+generateMesh(firstModel, showGmshMesh=True,showGmshGeometryBeforeMeshing=False, elementType='QUAD', meshSize=2e-1, order ='linear')
 # generateMesh(sampleModel, showGmshMesh=True, elementType='QUAD', nEdgeNodes=11, order ='linear')
 
 # compute
 from solveModel import *
 elemTypes = ['L-R', 'MITC4-N', 'Q-R', 'MITC9-N']
-solveModel(firstModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3,elementDefinition=elemTypes[1], internalForcePosition = 'nodes')
+solveModel(firstModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3,elementDefinition=elemTypes[1], internalForcePosition = 'nodes', solveMethod = 'cho', computeMoments=False)
 
 # display results
 plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=[])
 plt.show()
+
