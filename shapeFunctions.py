@@ -1,13 +1,14 @@
 import numpy as np
 from getGaussQuadrature import *
 def getShapeFunctionForElementType(elementType,ri, si, xi, yi):
-    if elementType=='L':
+    nNodes = len(xi)
+    if (elementType=='DB' and nNodes == 4) or (elementType == 'timo'):
         N, Bb,Bs, detJ = getLinearVectorizedShapeFunctions(ri, si, xi, yi)
-    elif elementType == 'Q':
+    elif elementType == 'DB' and nNodes == 9:
         N, Bb,Bs, detJ = getQuadraticShapeFunctions(ri, si, xi, yi)
-    elif elementType == 'MITC4':
+    elif elementType == 'MITC' and nNodes == 4:
         N, Bb,Bs, detJ = getMITCShapefunctions(ri, si, xi, yi)
-    elif elementType == 'MITC9':
+    elif elementType == 'MITC' and nNodes == 9:
         N, Bb,Bs, detJ = getMITC9Shapefunctions(ri, si, xi, yi)
 
     return N, Bb,Bs, detJ
@@ -46,15 +47,13 @@ def getLinearVectorizedShapeFunctions(ri, si, xi, yi):
         # Define shape function derivatives, derive deformation matrix
         N1r = lambda r, s: -0.25*(1-s)
         N2r = lambda r, s: 0.25*(1-s)
-        N3r = lambda r, s: 0.25*(1+s)
-        N4r = lambda r, s: -0.25*(1+s)
+
 
         N1s = lambda r, s: -0.25*(1-r)
         N2s = lambda r, s: -0.25*(1+r)
-        N3s = lambda r, s: 0.25*(1+r)
-        N4s = lambda r, s: 0.25*(1-r)
 
-        NrsFun = lambda r,s: np.array([[N1r(r, s), N1s(r, s)], [N2r(r, s), N2s(r, s)], [N3r(r, s), N3s(r, s)],[N4r(r, s), N4s(r, s)]])
+
+        NrsFun = lambda r,s: np.array([[N1r(r, s), N1s(r, s)], [N2r(r, s), N2s(r, s)]])
         NrsVal=np.array(NrsFun(ri,si))
         NrsVal = np.moveaxis(NrsVal,-1,0)
         # matmul treat NrsVal as stack of matrixes residing in the LAST 2 indexes
@@ -64,17 +63,17 @@ def getLinearVectorizedShapeFunctions(ri, si, xi, yi):
         invJ = np.linalg.inv(J)
 
         NrsVal = np.matmul(NrsVal,invJ)
-        Bf=np.zeros((nPoints,3,3*elemType))
+        Bf=np.zeros((nPoints,1,3*elemType))
         Bf[:,0,1::3]=NrsVal[:,:,0]
-        Bf[:,1,2::3]=NrsVal[:,:,1]
-        Bf[:,2,1::3]=NrsVal[:,:,1]
-        Bf[:,2,2::3]=NrsVal[:,:,0]
+        # Bf[:,1,2::3]=NrsVal[:,:,1]
+        # Bf[:,2,1::3]=NrsVal[:,:,1]
+        # Bf[:,2,2::3]=NrsVal[:,:,0]
 
-        Bc=np.zeros((nPoints,2,3*elemType))
+        Bc=np.zeros((nPoints,1,3*elemType))
         Bc[:,0,0::3]=NrsVal[:,:,0]
         Bc[:,0,1::3]=Nval
-        Bc[:,1,0::3]=NrsVal[:,:,1]
-        Bc[:,1,2::3]=Nval
+        # Bc[:,1,0::3]=NrsVal[:,:,1]
+        # Bc[:,1,2::3]=Nval
 
     elif elemType==3:
         # Define shape functions
@@ -140,7 +139,7 @@ def getLinearVectorizedShapeFunctions(ri, si, xi, yi):
         N[:,0, 0::3]=Nval
         N[:,1, 1::3]=Nval
         N[:,2, 2::3]=Nval
- 
+
         # Define shape function derivatives, derive deformation matrix
         N1r = lambda r, s: -0.25*(1-s)
         N2r = lambda r, s: 0.25*(1-s)

@@ -20,11 +20,13 @@ plateDict["body"]=C25_30
 plateDict["stiffnessFactor"] = 1
 plate1 = Plate(plateDict)
 
+
+
 wallDict = {}
 wallDict["outlineCoords"] = np.array([[0,0],[0,0.5*b], [0,b]])
 wallDict["high"] = 3 # m
 wallDict["body"] = C25_30
-wallDict["support"] = Support(np.array([1, 1, 1]))
+wallDict["support"] = Support(np.array([1, 0, 1]))
 wallDict["thickness"] = 0.5 # m
 wall1 = Wall(wallDict)
 
@@ -35,8 +37,8 @@ wallDict["outlineCoords"] = np.array([[0,0.5*b], [a,0.5*b]])
 wall3 = Wall(wallDict)
 
 bUZ = 0.5
-hUZ = 0.1*h
-uzCrossSection = CrossSection(bUZ*hUZ, bUZ*hUZ**3/12,0)
+hUZ = 0.7*h
+uzCrossSection = CrossSection(bUZ*hUZ, bUZ*hUZ**3/12,0, bUZ)
 unterZugDict = {}
 unterZugDict["outlineCoords"] = np.array([[0,0.5*b], [a,0.5*b]])
 unterZugDict["body"] = C25_30
@@ -64,15 +66,14 @@ from displayModel import *
 
 # create mesh
 from generateMesh import *
-generateMesh(firstModel, showGmshMesh=True,showGmshGeometryBeforeMeshing=False, elementType='QUAD', meshSize=2e-1, order ='linear')
+elemDefinitions = ['DB-4-R', 'MITC-4-N', 'DB-9-R', 'MITC-9-N']
+generateMesh(firstModel, showGmshMesh=True,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], meshSize=8e-1, order ='linear')
 # generateMesh(sampleModel, showGmshMesh=True, elementType='QUAD', nEdgeNodes=11, order ='linear')
 
 # compute
 from solveModel import *
-elemTypes = ['L-R', 'MITC4-N', 'Q-R', 'MITC9-N']
-solveModel(firstModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3,elementDefinition=elemTypes[1], internalForcePosition = 'nodes', solveMethod = 'cho', computeMoments=False)
+solveModel(firstModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3, internalForcePosition = 'center', solveMethod = 'cho', computeMoments=True)
 
 # display results
-plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=[])
+plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=['x'],shearForcesToPlot=['x', 'y'])
 plt.show()
-

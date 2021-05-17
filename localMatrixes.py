@@ -2,7 +2,7 @@ import numpy as np
 from shapeFunctions import *
 from getGaussQuadrature import *
 
-def GetLocalMatrix(xi, yi, Df,Dc, p,nNodes, elementDefinition):
+def GetLocalMatrix(xi, yi, Df,Dc, p,nNodes, elementType, elementIntegration):
     ''' Input/Output descriptions
     ElemType: Quadrangluar or Triangular or Beam + Linear or Quadratic or MITC + Reduced or Normal Integration
         xi, yi: element's nodes coordinates
@@ -13,20 +13,18 @@ def GetLocalMatrix(xi, yi, Df,Dc, p,nNodes, elementDefinition):
         return:
         kLocal, fLocal
     '''
-    temp = elementDefinition.split('-')
-    elementType = temp[0]
-    elementIntegration = temp[1]
 
-    if elementType == 'L':
+
+    if elementType == 'DB' and nNodes==4:
         kLocal, fLocal = getLinearMatrix(xi, yi, Df, Dc, p, nNodes, elementIntegration)
-    elif elementType == 'MITC4':
+    elif elementType == 'MITC' and nNodes==4:
         kLocal, fLocal = getMITC4Matrix(xi, yi, Df, Dc, p, nNodes)
-    elif elementType == 'Q':
+    elif elementType == 'DB' and nNodes==9:
         kLocal, fLocal = getQuadraticMatrix(xi, yi, Df, Dc, p, nNodes, elementIntegration)
-    elif elementType == 'MITC9':
+    elif elementType == 'MITC' and nNodes==9:
         kLocal, fLocal = getMITC9Matrix(xi, yi, Df, Dc, p, nNodes)
-    elif elementType == 'timoBeam':
-        kLocal, fLocal = gettimoBeamMatrix(xi, yi,Dc, Db, Ds, p, nNodes)
+    elif elementType == 'timo':
+        raise Exception
 
     return kLocal, fLocal
 

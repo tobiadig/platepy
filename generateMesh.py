@@ -7,6 +7,7 @@ Purpose of module: generates the mesh and stores it as attribute of the plateMod
 #%% Basic modules
 import numpy as np
 import pandas as pd
+import copy
 
 import gmsh # To create CAD model and mesh
 def distortMesh(nodesArray, alpha):
@@ -29,7 +30,7 @@ def distortMesh(nodesArray, alpha):
     newNodesArray = pd.DataFrame(newNodes, index = myIndex)
     return newNodesArray
 
-def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, elementType = 'QUAD', meshSize=5e-2, nEdgeNodes = 0, order='linear', meshDistortion = False, distVal = 100):
+def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, elementDefinition=None, meshSize=5e-2, nEdgeNodes = 0, order='linear', meshDistortion = False, distVal = 100):
     ''' Input/Output descriptions
         self: PlateModel class, where the geometry is initialized
         meshInput: options for the creation of the mesh
@@ -38,14 +39,19 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         following information are also generated and stored:
         nodes coordinates and orientation, element connectivity, boundary conditions
     '''
+    temp = elementDefinition.split('-')
+
+    elementType = temp[0]
+    elementShape = int(temp[1])
+    elementIntegration = temp[2]
 
     gmsh.model.mesh.clear()
-    if elementType == 'QUAD':
+    if elementShape == 4:
         gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 2) #0: simple, 1: blossom (default), 2: simple full-quad, 3: blossom full-quad
         for i in range(0, len(self.plates)):
             gmsh.model.geo.mesh.setRecombine(2, self.plates[i].tag)
-    elif elementType != 'TRI':
-        raise TypeError(meshInput.elementType, "not recognised")
+    elif elementShape != 3:
+        raise Exception
     
     gmsh.option.setNumber("Mesh.Algorithm", 8)  # (1: MeshAdapt, 2: Automatic, 3: Initial mesh only, 5: Delaunay, 6: Frontal-Delaunay (default), 7: BAMG, 8: Frontal-Delaunay for Quads, 9: Packing of Parallelograms)
     gmsh.model.geo.synchronize()
@@ -121,11 +127,9 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
             newElement.tag = elemTag
             newElement.whichPlate = i
             # print('element ',elemTag,' belongs to plate ',i)
-
-            if elementType == 'QUAD':
-                newElement.shape = 4
-            else:
-                newElement.shape =3       
+            newElement.type = elementType
+            newElement.shape = elementShape
+            newElement.integration = elementIntegration
 
             newElement.nNodes  = len(nodeTags)
             newElement.connectivity  = nodeTags
@@ -135,10 +139,10 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
             # old = nodesArray[nodeTags-1,:]
 
             newElement.coordinates = nodesArrayPd.loc[nodeTags].to_numpy()
-
-
             elementsList.append(newElement)
             k+=1
+
+    plateElementsList = copy.deepcopy(elementsList)
 
     #assemble 2D elements for line load
 
@@ -210,8 +214,6 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         BCs[count, 0] = a
         BCs[count,1:] = BCsDic[a]
 
-
-
     nextNode = int(np.max(nodeTagsModel)+1)
     nextCoherentNode = int(nodesArray.shape[0])
 
@@ -221,9 +223,10 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     # print('nodesRotationsPd: ', nodesRotationsPd)
     AmatList = []
     for uz in self.downStandBeams:
+        uzElementsList = []
         dim = uz.physicalGroup[0]
         nodesUZ, coord = gmsh.model.mesh.getNodesForPhysicalGroup(dim,uz.physicalGroup[1])
-        print('nodesUZ: ', nodesUZ)
+        # print('nodesUZ: ', nodesUZ)
         
         nNodesUZ = len(nodesUZ)
         newNodesUZ = np.array(range(nextNode, nextNode+nNodesUZ), dtype=int)
@@ -290,8 +293,12 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
 
                 newElement.coordinates = nodesArrayPd.loc[nodeTags].to_numpy()
 
-                newElement.whichPlate  = 1  
+                newElement.whichPlate  = 1
+                newElement.shape =2
+                newElement.type = 'timo'
+                newElement.integration = 'R'
                 elementsList.append(newElement)
+                uzElementsList.append(newElement)
 
             # start and en nodes are blocked
                 p1Tag = realCoherentNodeTags[0]
@@ -312,6 +319,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
                     lineRot = np.arctan(lineDirection[1]/lineDirection[0])
                 
                 nodesRotationsPd.loc[realCoherentNodeTags] = lineRot
+        uz.elementsList = uzElementsList
 
         # print('nodesRotation in mesh gen: ', nodesRotationsPd)
     # print('gmshToCoherentNodesNumeration: ',gmshToCoherentNodesNumeration)
@@ -320,6 +328,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     # print('nodesRotationsPd: ', nodesRotationsPd)
     self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs)
     self.mesh.AmatList = AmatList
+    self.mesh.plateElementsList = plateElementsList
 
 def setMesh(self, nodesArray, elements, BCs, load = None):
     elementsList = []
@@ -374,3 +383,5 @@ class Element:
         self.BbMat = None
         self.rotationMatrix = None
         self.coherentConnectivity = None #rearranges nodes with a sequential nummeration
+        self.type = None
+        self.integration = None

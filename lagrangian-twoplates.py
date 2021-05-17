@@ -10,44 +10,53 @@ C25_30 = Concrete(ConcreteDict)
 distributedLoad = Load('area',np.array([-1, 0, 0]))
 a=10
 b=10
-b1=4.75
-b2=b1+0.6
 h=0.2
+
 plateDict = {}
-plateDict["outlineCoords"]=np.array([[0,0], [a,0], [a,b1], [0,b1],[0,0]])
+plateDict["outlineCoords"]=np.array([[0,0], [a,0],[a,0.5*b], [0,0.5*b],[0,0]])
 plateDict["thickness"] = h
 plateDict["surfaceLevel"] = 0
 plateDict["body"]=C25_30
 plateDict["stiffnessFactor"] = 1
 plate1 = Plate(plateDict)
 
-plateDict["thickness"] = h*4
-plateDict["outlineCoords"]=np.array([[0,b1], [a,b1], [a,b2], [0,b2],[0,b1]])
-unterZug = Plate(plateDict)
-
-plateDict["thickness"] = h
-plateDict["outlineCoords"]=np.array([[0,b2], [a,b2], [a,b], [0,b],[0,b2]])
-
+plateDict["outlineCoords"]=np.array([[a,0.5*b], [a,b], [0,b],[0,0.5*b],[a,0.5*b]])
 plate2 = Plate(plateDict)
 
+
 wallDict = {}
-wallDict["outlineCoords"] = np.array([[0,0], [0,b1],[0,b2],[0,b]])
+wallDict["outlineCoords"] = np.array([[0,0],[0,0.5*b], [0,b]])
 wallDict["high"] = 3 # m
 wallDict["body"] = C25_30
-wallDict["support"] = Support(np.array([1, 1, 1]))
+wallDict["support"] = Support(np.array([1, 0, 1]))
 wallDict["thickness"] = 0.5 # m
 wall1 = Wall(wallDict)
 
-wallDict["outlineCoords"] = np.array([[a,0], [a,b1],[a,b2],[a,b]])
+wallDict["outlineCoords"] = np.array([[a,0],[a,0.5*b], [a,b]])
 wall2 = Wall(wallDict)
+
+wallDict["outlineCoords"] = np.array([[0,0.5*b], [a,0.5*b]])
+wall3 = Wall(wallDict)
+
+bUZ = 0.5
+hUZ = 0.7*h
+uzCrossSection = CrossSection(bUZ*hUZ, bUZ*hUZ**3/12,0, bUZ)
+unterZugDict = {}
+unterZugDict["outlineCoords"] = np.array([[0,0.5*b], [a,0.5*b]])
+unterZugDict["body"] = C25_30
+unterZugDict["crossSection"] = uzCrossSection
+unterZugDict["thickness"] = 0.5
+unterZug = downStandBeam(unterZugDict)
 
 firstModel = PlateModel("plateModel1")
 firstModel.addPlate(plate1)
-firstModel.addWall(wall1)
-
-firstModel.addPlate(unterZug, isUnterZug=True)
-firstModel.addWall(wall2)
 firstModel.addPlate(plate2)
+
+firstModel.addWall(wall1)
+firstModel.addWall(wall2)
+# firstModel.addWall(wall3)
+firstModel.addDownStandBeam(unterZug)
+
 firstModel.addLoad(distributedLoad)
 
 #%%
@@ -67,9 +76,8 @@ generateMesh(firstModel, showGmshMesh=True,showGmshGeometryBeforeMeshing=False, 
 
 # compute
 from solveModel import *
-
-solveModel(firstModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3, internalForcePosition = 'center', solveMethod = 'sparse', computeMoments=True)
+solveModel(firstModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3, internalForcePosition = 'center', solveMethod = 'cho', computeMoments=True)
 
 # display results
-plotResults(firstModel,displacementPlot='3d', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=['y'])
+plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=['x'],shearForcesToPlot=['x', 'y'])
 plt.show()

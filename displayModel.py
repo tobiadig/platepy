@@ -27,6 +27,9 @@ def plotInputGeometry(self, figaspect = 1):
 
     for column in self.columns:
         column.plot(axGeometry)
+        
+    for uz in self.downStandBeams:
+        uz.plot(axGeometry)
 
     self.axes['InputGeometry'] = axGeometry
     return fig,axGeometry
@@ -115,7 +118,7 @@ def plotInternalForce(self,plotType,theTitle, x,y,z,saveImage):
             fig.savefig(buf, format="png")
             data5 = base64.b64encode(buf.getbuffer()).decode("ascii")
             # plt.savefig(r'C:\Users\Diggelmann\Desktop\FEMFlask\static\images\new_plot.png')
-            outFig.append(data5)
+            # outFig.append(data5)
     elif plotType == '3d':
         fig=plt.figure()
         axOut = fig.gca(projection='3d')

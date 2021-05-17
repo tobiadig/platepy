@@ -4,11 +4,13 @@ pd.set_option('display.max_rows', None)
 from shapeFunctions import *
 from slicingFunctions import *
 
-def getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, Dc, nodesArray, smoothedValues):
+def  getInternalForcesDSB(elementsList,uDownStandBeam,internalForcePosition, downStandBeam):
     if internalForcePosition == 'center':
-        bendingMoments = np.zeros((len(elementsList),3))
+        Nforces = np.zeros((len(elementsList)))
+        Vforces =  np.zeros((len(elementsList)))
+        Mforces = np.zeros((len(elementsList)))
         internalForcesPositions = np.zeros((len(elementsList),2))
-        shearForces = np.zeros((len(elementsList),2))
+        
         for k,element in enumerate(elementsList):
             elemNodes = element.connectivity
             coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
@@ -19,7 +21,47 @@ def getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, 
             ym = np.average(yi)
             internalForcesPositions[k,0]=xm
             internalForcesPositions[k,1]=ym
-            if elementType == 'L':
+
+            ri = np.array([0])
+            si = np.array([0])
+            N, Bf,Bc, detJ = getLinearVectorizedShapeFunctions(ri, si, xi, yi)
+            Bf = Bf[0,:,:]
+            Bc = Bc[0,:,:]
+            kCoeff, discartedDOF = getKCoeff('timo', coherentElemNodes)
+
+            Emod = downStandBeam.body.eModule
+            Gmod = downStandBeam.body.gModule
+            crossA = downStandBeam.crossSection.A
+            crossI = downStandBeam.crossSection.Iy
+            Dc =Emod*crossA
+            Db = Emod*crossI
+            Ds = 5/6*Gmod*crossA
+
+            vLoc = np.matmul(element.rotationMatrix, uDownStandBeam[kCoeff])
+            Nforces[k] = Dc*Bf@vLoc
+            Mforces[k] = Db*Bf@vLoc
+            Vforces[k]= Ds*Bc@vLoc
+
+    return Nforces, Vforces, Mforces
+
+def getInternalForces(elementsList,uGlob,internalForcePosition, Df, Dc, nodesArray, smoothedValues):
+
+    if internalForcePosition == 'center':
+        bendingMoments = np.zeros((len(elementsList),3))
+        internalForcesPositions = np.zeros((len(elementsList),2))
+        shearForces = np.zeros((len(elementsList),2))
+        for k,element in enumerate(elementsList):
+            elemNodes = element.connectivity
+            coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
+            elementType = element.type
+            nNodes=element.nNodes
+            xi=element.coordinates[:,0]
+            yi=element.coordinates[:,1]
+            xm = np.average(xi)
+            ym = np.average(yi)
+            internalForcesPositions[k,0]=xm
+            internalForcesPositions[k,1]=ym
+            if elementType == 'DB' and nNodes ==4:
                 ri = np.array([0])
                 si = np.array([0])
             else:
@@ -41,6 +83,7 @@ def getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, 
         shearForcesSum = np.zeros((nodesArray.shape[0],2+1))
         internalForcesPositions = nodesArray.to_numpy()[:,0:2]
         for k,element in enumerate(elementsList):
+            elementType = element.type
             elemNodes = element.connectivity
             coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
             nNodes=element.nNodes
@@ -51,7 +94,7 @@ def getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, 
             # for i in range(0,3):
             #     kCoeff[0+i::3]=coherentElemNodes*3+i
             vLoc = np.matmul(element.rotationMatrix, uGlob[kCoeff])
-            if elementType =='L' :
+            if elementType =='L' : #TODO: not up to date
                 ri = np.array([-1, 1, 1, -1])
                 si = np.array([-1,-1,1,1])
                 sigma = np.zeros((2,4))
@@ -84,14 +127,10 @@ def getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, 
                         m2 = np.expand_dims(N,axis=1)
                         sigmax = np.expand_dims(sigma[0,:], axis = 1)
                         Ksmooth += wi*m2@m1*detJ
-
-
                         deb = wi*m2@m1@sigmax*detJ
                         fSmooth += deb[:,0]
-
                     fSmooth = np.expand_dims(fSmooth, 1)
                     sigmaSmooth = np.linalg.inv(Ksmooth)@fSmooth
-
                     sigma[0,:] = sigmaSmooth[:,0]
                     shearForcesSum[coherentElemNodes,2] += 1
                     shearForcesSum[coherentElemNodes,0:2] += sigma.transpose()
@@ -135,6 +174,7 @@ def getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, 
         internalForcesPositions = np.zeros((len(elementsList)*nGaussPoints,2))
         shearForces = np.zeros((len(elementsList)*nGaussPoints,2))
         for k,element in enumerate(elementsList):
+            elementType = element.type
             elemNodes = element.connectivity
             coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
             nNodes=element.nNodes
@@ -145,7 +185,7 @@ def getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, 
             for i in range(0,3):
                 kCoeff[0+i::3]=coherentElemNodes*3+i
             vLoc = np.matmul(element.rotationMatrix, uGlob[kCoeff])
-            if elementType == 'L':
+            if elementType == 'DB' and nNodes == 4:
                 ri =np.linspace(-1, 1, num=nGaussPoints)
                 si = np.zeros(nGaussPoints)
                 allN, allBf,allBc, alldetJ =getLinearVectorizedShapeFunctions(ri, si, xi, yi)
@@ -160,7 +200,7 @@ def getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, 
                     yr = Nval@yi
                     internalForcesPositions[k*nGaussPoints+i,0]=xr
                     internalForcesPositions[k*nGaussPoints+i,1]=yr
-            elif elementType == 'Q':
+            elif elementType == 'DB' and nNodes == 9:
                 # ri =np.linspace(-1, 1, num=nGaussPoints)
                 # si = np.ones(nGaussPoints)/np.sqrt(3)
                 gaussPoints, gaussWeights =  getGaussQuadrature('rectangular',4)

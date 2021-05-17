@@ -2,12 +2,12 @@ import numpy as np
 
 def getKCoeff(elementType, coherentElemNodes):
     nNodes = len(coherentElemNodes)
-    if elementType in ['L', 'Q', 'MITC4']:
+    if (elementType == 'DB') or (elementType == 'MITC' and nNodes == 4)or (elementType == 'timo'):
         kCoeff = np.zeros((3*nNodes),dtype=int)
         for i in range(0,3):
             kCoeff[0+i::3]=coherentElemNodes*3+i
         discartedDOF = None
-    elif elementType in ['MITC9']:
+    elif elementType == 'MITC' and nNodes ==9:
         kCoeffTemp = np.zeros((3*nNodes),dtype=int)
         for i in range(0,3):
             kCoeffTemp[0+i::3]=coherentElemNodes*3+i

@@ -289,22 +289,10 @@ class Column:
         self.nodeComposition = None
         self.isInPlate = isInPlate
 
-class downStandBeam:
-    def __init__(self, inputDict):
-        self.outlineCoords = inputDict["outlineCoords"]
-        self.body = inputDict["body"]
-        self.crossSection = inputDict["crossSection"]
-        self.thickness = inputDict["thickness"]
-        self.physicalGroup = None
-        self.elementComposition = []
-        self.nodeComposition = None
-        self.elementsList = None
-        self.Amat = None
-
     def plot(self, ax):
         x = self.outlineCoords[0,0]
         y= self.outlineCoords[0,1]
-        d = self.width/2
+        d = self.crossSection.width/2
         x1=x-d
         x2=x+d
         y1 = y-d
@@ -315,6 +303,44 @@ class downStandBeam:
 
         ax.plot(xi,yi, color='b')
         ax.scatter(x,y,marker="D")
+
+class downStandBeam:
+    def __init__(self, inputDict):
+        self.outlineCoords = inputDict["outlineCoords"]
+        self.body = inputDict["body"]
+        self.crossSection = inputDict["crossSection"]
+        self.thickness = inputDict["thickness"]
+        self.physicalGroup = None
+        self.elementsList = []
+        self.nodeComposition = None
+        self.elementsList = None
+        self.Amat = None
+
+
+    def plot(self, axGeometry):
+        coords = self.outlineCoords
+        axGeometry.plot(coords[:,0],coords[:,1], color='grey', linestyle='dashed' )
+        for i in range(0, coords.shape[0]-1):
+            p1 = coords[i]
+            p2 = coords[i+1]
+            d = self.thickness/2
+
+            wallDir = p2 - p1
+            length = np.dot(wallDir, wallDir)**0.5
+            normWallDir = -np.array([wallDir[1], wallDir[0]])/length
+            l1 = np.zeros((2,2))
+            l2 = np.zeros((2,2))
+
+            l1[0,:] = p1 + d*normWallDir
+            l1[1,:] = p2 + d*normWallDir
+
+            l2[0,:] = p1 - d*normWallDir
+            l2[1,:] = p2 - d*normWallDir
+            linWidth = 0.7
+            axGeometry.plot(l1[:,0],l1[:,1], color='grey', linewidth = linWidth)
+            axGeometry.plot(l2[:,0],l2[:,1], color='grey', linewidth = linWidth)
+            axGeometry.fill_between(l1[:,0], l2[:,1], l1[:,1],color='yellow')
+
 
 class Concrete:
     def __init__(self, inputDict):
@@ -328,10 +354,11 @@ class Support:
         self.supportCondition = supportCondition
 
 class CrossSection:
-    def __init__(self, A, Iy, Iz):
+    def __init__(self, A, Iy, Iz, b):
         self.A = A
         self.Iy = Iy
         self.Iz = Iz
+        self.width = b
 
 class Load:
     def __init__(self,case, magnitude):

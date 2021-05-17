@@ -19,6 +19,7 @@ from slicingFunctions import *
 from rotationMatrix import *
 from scipy.linalg import ldl
 from scipy.linalg import solve
+import copy
 # from scipy.linalg import cho_factor
 # from scipy.linalg import cho_solve
 
@@ -26,16 +27,12 @@ from scipy.linalg import solve
 import time
 from tqdm import tqdm
 
-def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1, elementDefinition=None, internalForcePosition = 'nodes', smoothedValues = False, solveMethod = 'sparse', computeMoments=True):
+def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1, internalForcePosition = 'nodes', smoothedValues = False, solveMethod = 'sparse', computeMoments=True):
     ''' Input/Output descriptions
     ElemType:  or Quadratic or MITC + Reduced or Normal Integration
         self: PlateModel class, where the geometry and the mesh are initialized
         reducedIntegration: to manage the number of Gauss integration points
     '''
-    temp = elementDefinition.split('-')
-    elementType = temp[0]
-    elementIntegration = temp[1]
-
     # Loop over elements and assemble stiffness matrices
     nodes=self.mesh.nodesArray
     nNodesTotal = nodes.shape[0]
@@ -61,6 +58,8 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     k=0
     for element in tqdm(elementsList):
     # for element in elementsList:
+        elementType=element.type
+        elementIntegration = element.integration
         plateOfTheElement = element.whichPlate
         elemNodes = element.connectivity
         coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
@@ -68,10 +67,10 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         elemNodesRotations = nodesRotations.loc[elemNodes].to_numpy()
         xi=element.coordinates[:,0]
         yi=element.coordinates[:,1]
-        if nNodes>2:
+        if elementType!='timo':
             Df = self.plates[plateOfTheElement].Df
             Dc = self.plates[plateOfTheElement].Dc
-            kLocalNotRotated,fLocal = GetLocalMatrix(xi, yi, Df,Dc,p,nNodes , elementDefinition)
+            kLocalNotRotated,fLocal = GetLocalMatrix(xi, yi, Df,Dc,p,nNodes , elementType, elementIntegration)
         else:
             Emod = self.downStandBeams[0].body.eModule
             Gmod = self.downStandBeams[0].body.gModule
@@ -91,6 +90,8 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         R = getRotationMatrix(elementType, elemNodesRotations) #TODO: check if thats correct
 
         element.rotationMatrix = R
+        if elementType!='timo':
+            self.mesh.plateElementsList[k].rotationMatrix = R
 
         # #rotate stiffness matrix
         kTemp = np.matmul(kLocalNotRotated, R)
@@ -118,6 +119,8 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 
         startIndexForce += kCoeff.size
         k+=1
+
+    
 
     #if line load, assemble HERE load vector
     if p.case == 'line':
@@ -314,8 +317,10 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     
     nodes = self.mesh.nodesArray.to_numpy()
     if solveMethod == 'cho':
-        uGlob = uGlob[:-nConstraints*3,:]
-        nodes = nodes[:-nConstraints,:]
+        uDownStandBeam = uGlob
+        # nodesDownStandBeam = nodes
+        uGlob = uGlob[:-nConstraints,:]
+        nodes = nodes[:int(-nConstraints/3),:]
 
     outPos = np.zeros((nodes.shape[0],2))
     values = np.zeros((nodes.shape[0],3))
@@ -332,14 +337,22 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     #compute MOMENTS
     if computeMoments:
         Df = self.plates[0].Df 
-        Dc = self.plates[0].Dc
+        Dc = self.plates[0].Dc #TODO: only plate 0
         nodesArray = self.mesh.nodesArray
-        bendingMoments, shearForces, internalForcesPositions = getInternalForces(elementType,elementsList,uGlob,internalForcePosition, Df, Dc, nodesArray, smoothedValues)
+        mitcList = self.mesh.plateElementsList
+
+        bendingMoments, shearForces, internalForcesPositions = getInternalForces(mitcList,uGlob,internalForcePosition, Df, Dc, nodesArray, smoothedValues)
         self.results.bendingMoments=bendingMoments*resultsScaleIntForces[0]
         self.results.internalForcesPositions=internalForcesPositions
         self.results.shearForces = shearForces*resultsScaleIntForces[1]
 
-    
+        if len(self.downStandBeams) > 0:
+            uzList = self.downStandBeams[0].elementsList
+            bendingMomentsDSB, shearForcesDSB, internalForcesPositionsDSB = getInternalForcesDSB(uzList,uDownStandBeam,internalForcePosition, self.downStandBeams[0])
+            self.results.bendingMomentsDSB=bendingMomentsDSB*resultsScaleIntForces[0]
+            self.results.internalForcesPositionsDSB=internalForcesPositionsDSB
+            self.results.shearForcesDSB = shearForcesDSB*resultsScaleIntForces[1]
+
     return outPos, values
 
 class Result:
@@ -356,6 +369,10 @@ class Result:
         self.internalForcesPositions = None
         self.shearForces = None
         self.resultsScale = resultsScale
+
+        self.bendingMomentsDSB=None
+        self.internalForcesPositionsDSB=None
+        self.shearForcesDSB = None
 
         z=np.abs(wVert)
         iMax = np.argmax(z)
