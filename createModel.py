@@ -30,7 +30,7 @@ class PlateModel:
         self.results = None
         self.axes = {}
 
-    def addPlate(self, newPlate, isUnterZug = False):  
+    def addPlate(self, newPlate):  
         '''
         add a plate element of class "Plate" to the model
         '''
@@ -59,7 +59,6 @@ class PlateModel:
         curveLoopTag = gmsh.model.geo.addCurveLoop(linesTags)
         planeSurfaceTag= gmsh.model.geo.addPlaneSurface([curveLoopTag])
         newPlate.tag=planeSurfaceTag
-        newPlate.isUnterZug = isUnterZug
 
         # create physical group
         physicalTag = gmsh.model.addPhysicalGroup(2, [planeSurfaceTag])
@@ -110,7 +109,6 @@ class PlateModel:
         gmsh.model.geo.synchronize()
 
     def addDownStandBeam(self, newDSB):
-
         if not(self.isInitialized):
             gmsh.initialize()
             gmsh.model.add(self.name)
@@ -214,27 +212,38 @@ class PlateModel:
         self.mesh = None
 
 class Plate:
-    def __init__(self, inputDict):
+    def __init__(self, inputDict, isUnterZug=False, t=0):
         self.outlineCoords = inputDict["outlineCoords"]
         self.thickness = inputDict["thickness"]
         self.surfaceLevel = inputDict["surfaceLevel"]
         self.body = inputDict["body"]
         self.stiffnessFactor = inputDict["stiffnessFactor"]
+
         self.physicalGroup = None
         self.elementComposition = []
         self.nodeComposition = []
         self.tag=None
-        self.isUnterZug = False
+        self.isUnterZug = isUnterZug
 
         E=self.body.eModule
         G=self.body.gModule
         nu=self.body.nu
         h=self.thickness
-        self.Df=h**3/12*E/(1-nu**2)*np.array([[1, nu, 0],
-                                                [nu, 1, 0],
-                                                [0, 0, (1-nu)/2]])
+        if not(isUnterZug):
+            self.Df=h**3/12*E/(1-nu**2)*np.array([[1, nu, 0],
+                                                    [nu, 1, 0],
+                                                    [0, 0, (1-nu)/2]])
 
-        self.Dc = 5/6*h*np.array([[G,0],[0,G]]) #alpha = 5/6 according to ferreira p. 162
+            self.Dc = 5/6*h*np.array([[G,0],[0,G]]) #alpha = 5/6 according to ferreira p. 162
+        elif isUnterZug:
+            self.Dc = 5/6*h*np.array([[G,0],[0,G]])
+            self.Df =  1/12*E*np.array([[(h)**3, 0,    0],
+                                        [0,        (t)**3, 0],
+                                        [0,         0,   t**3*1/2]])
+            # self.Df=h**3/12*E/(1-nu**2)*np.array([[1, nu, 0],
+            #                                         [nu, 1, 0],
+            #                                         [0, 0, (1-nu)/2]])
+            # self.Dc = 5/6*h*np.array([[G,0],[0,G]]) #alpha = 5/6 according to ferreira p. 162
 
     def plot(self, axGeometry):
         coords = self.outlineCoords
@@ -315,6 +324,10 @@ class downStandBeam:
         self.nodeComposition = None
         self.elementsList = None
         self.Amat = None
+        self.uzNodesToNodesNumeration = None
+        self.coherentNodesPlate = None
+        self.coherentNodesUZ = None
+        self.newNodesUZ = None
 
 
     def plot(self, axGeometry):
@@ -323,7 +336,7 @@ class downStandBeam:
         for i in range(0, coords.shape[0]-1):
             p1 = coords[i]
             p2 = coords[i+1]
-            d = self.thickness/2
+            d = self.crossSection.width/2
 
             wallDir = p2 - p1
             length = np.dot(wallDir, wallDir)**0.5

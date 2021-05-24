@@ -16,32 +16,34 @@ def convergenceAnalysis(self, analyticalValue,nEdgeNodes, elemTypes, meshDistort
         for elemType in elemTypes:
 
             self.clearMesh()
-            t = elemType.split('-')[0]
-            if t =='L' or t=='MITC4':
+            t = int(elemType.split('-')[1])
+            if t ==4:
                 myOrder = 'linear'
-            elif t == 'Q'or t=='MITC9':
+            elif t == 9:
                 myOrder = 'quadratic'
             else:
                 raise TypeError('something went wrong')
-            generateMesh(self, showGmshMesh=False, elementType='QUAD', nEdgeNodes=n, order=myOrder, meshDistortion=meshDistortion, distVal=distVal)
-            # if meshDistortion and (n==9):
-            #     plotMesh(self, plotStrucElements=False, plotNodes=False, plotPoints=True)
-            #     figRatio = 1
-            #     figSize = 5
-            #     currentFig = plt.gcf()
-            #     currentAx = plt.gca()
-            #     currentFig.set_size_inches(figRatio*figSize,1*figSize)
-            #     # currentAx.set_xlim(xlim1, xlim2)
-            #     # currentAx.set_ylim(ylim1, ylim2)
-            #     plt.axis('off')
-            #     imgName = 'mesh'+t+ '.svg'
-            #     savingPath = os.path.join(myPath, imgName)
-            #     plt.savefig(savingPath)
+
+            elemDefinitions = ['DB-4-R', 'MITC-4-N', 'DB-9-R', 'MITC-9-N']
+            generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, elementDefinition=elemType, nEdgeNodes = n, order=myOrder, meshDistortion = meshDistortion, distVal=distVal)
+            if meshDistortion and (n==9):
+                plotMesh(self, plotStrucElements=False, plotNodes=False, plotPoints=True)
+                figRatio = 1
+                figSize = 5
+                currentFig = plt.gcf()
+                currentAx = plt.gca()
+                currentFig.set_size_inches(figRatio*figSize,1*figSize)
+                # currentAx.set_xlim(xlim1, xlim2)
+                # currentAx.set_ylim(ylim1, ylim2)
+                plt.axis('off')
+                imgName = 'mesh'+str(t)+ '.pdf'
+                savingPath = os.path.join(myPath, imgName)
+                plt.savefig(savingPath)
             
-            if n<30:
-                plotMesh(self)
-                plt.show()
-            solveModel(self, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3/1000**4, elementDefinition=elemType, internalForcePosition = 'center')
+            # if n<30:
+            #     plotMesh(self)
+            #     plt.show()
+            solveModel(self, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3/1000**4, internalForcePosition = 'center')
             # plotResults(patchTestModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[] ,shearForcesToPlot=[])
             # plt.show()
             outRes[k,1] = np.abs(patchTestModel.results.wMax[2]-analyticalValue)/np.abs(analyticalValue)
@@ -132,8 +134,6 @@ xlim2 = 10.1
 ylim1 = -0.1
 ylim2 = 10.1
 
-
-
 #%% L-Q regular
 elemTypes = ['L-R', 'Q-R']
 patchTestModel.walls[0].support=Support(np.array([1, 1, 0]))
@@ -166,9 +166,9 @@ myTable = outRes
 np.savetxt(savingPath, myTable, delimiter = ',')
 #%%L-Q distorted
 patchTestModel.walls[0].support=Support(np.array([1, 1, 0]))
-elemTypes = ['L-R', 'Q-R']
+elemTypes = ['DB-4-R', 'DB-9-R']
 ax=plt.axes()
-outRes = convergenceAnalysis(patchTestModel,-analyticalValue, nEdgeNodes = [3, 5, 9, 17, 33, 65, 129], elemTypes = elemTypes, meshDistortion=True, distVal = 120 )
+outRes = convergenceAnalysis(patchTestModel,-analyticalValue, nEdgeNodes = [3, 5, 9], elemTypes = elemTypes, meshDistortion=True, distVal = 120 )
 
 nAnalysis = len(elemTypes)
 for i in range(0,nAnalysis):

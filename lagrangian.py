@@ -26,7 +26,7 @@ wallDict = {}
 wallDict["outlineCoords"] = np.array([[0,0],[0,0.5*b], [0,b]])
 wallDict["high"] = 3 # m
 wallDict["body"] = C25_30
-wallDict["support"] = Support(np.array([1, 0, 1]))
+wallDict["support"] = Support(np.array([1, 0, 0]))
 wallDict["thickness"] = 0.5 # m
 wall1 = Wall(wallDict)
 
@@ -51,7 +51,7 @@ firstModel.addPlate(plate1)
 firstModel.addWall(wall1)
 firstModel.addWall(wall2)
 # firstModel.addWall(wall3)
-firstModel.addDownStandBeam(unterZug)
+# firstModel.addDownStandBeam(unterZug)
 
 firstModel.addLoad(distributedLoad)
 
@@ -67,13 +67,13 @@ from displayModel import *
 # create mesh
 from generateMesh import *
 elemDefinitions = ['DB-4-R', 'MITC-4-N', 'DB-9-R', 'MITC-9-N']
-generateMesh(firstModel, showGmshMesh=True,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], meshSize=8e-1, order ='linear')
+generateMesh(firstModel, showGmshMesh=True,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], meshSize=4e-1, order ='linear')
 # generateMesh(sampleModel, showGmshMesh=True, elementType='QUAD', nEdgeNodes=11, order ='linear')
 
 # compute
 from solveModel import *
-solveModel(firstModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3, internalForcePosition = 'center', solveMethod = 'cho', computeMoments=True)
+solveModel(firstModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3, internalForcePosition = 'center', solveMethod = 'sparse', computeMoments=True)
 
 # display results
-plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=['x'],shearForcesToPlot=['x', 'y'])
+plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=[])
 plt.show()

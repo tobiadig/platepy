@@ -24,9 +24,8 @@ def  getInternalForcesDSB(elementsList,uDownStandBeam,internalForcePosition, dow
 
             ri = np.array([0])
             si = np.array([0])
-            N, Bf,Bc, detJ = getLinearVectorizedShapeFunctions(ri, si, xi, yi)
-            Bf = Bf[0,:,:]
-            Bc = Bc[0,:,:]
+            N, Bc,Bb,Bs, detJ = getLinearVectorizedShapeFunctions(ri, si, xi, yi)
+
             kCoeff, discartedDOF = getKCoeff('timo', coherentElemNodes)
 
             Emod = downStandBeam.body.eModule
@@ -38,11 +37,11 @@ def  getInternalForcesDSB(elementsList,uDownStandBeam,internalForcePosition, dow
             Ds = 5/6*Gmod*crossA
 
             vLoc = np.matmul(element.rotationMatrix, uDownStandBeam[kCoeff])
-            Nforces[k] = Dc*Bf@vLoc
-            Mforces[k] = Db*Bf@vLoc
-            Vforces[k]= Ds*Bc@vLoc
+            Nforces[k] = Dc*Bc@vLoc
+            Mforces[k] = Db*Bb@vLoc
+            Vforces[k]= Ds*Bs@vLoc
 
-    return Nforces, Vforces, Mforces
+    return Nforces, Vforces, Mforces, internalForcesPositions
 
 def getInternalForces(elementsList,uGlob,internalForcePosition, Df, Dc, nodesArray, smoothedValues):
 

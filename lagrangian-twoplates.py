@@ -1,3 +1,4 @@
+#%%
 import numpy as np
 from createModel import *
 ConcreteDict = {}
@@ -28,7 +29,7 @@ wallDict = {}
 wallDict["outlineCoords"] = np.array([[0,0],[0,0.5*b], [0,b]])
 wallDict["high"] = 3 # m
 wallDict["body"] = C25_30
-wallDict["support"] = Support(np.array([1, 0, 1]))
+wallDict["support"] = Support(np.array([1, 1, 0]))
 wallDict["thickness"] = 0.5 # m
 wall1 = Wall(wallDict)
 
@@ -66,12 +67,12 @@ pd.set_option("display.max_rows", None, "display.max_columns", None)
 
 # import sample plate and show it
 import cubusGeometry
-from displayModel import *
+from displayModel import * 
 
 # create mesh
 from generateMesh import *
 elemDefinitions = ['DB-4-R', 'MITC-4-N', 'DB-9-R', 'MITC-9-N']
-generateMesh(firstModel, showGmshMesh=True,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], meshSize=8e-1, order ='linear')
+generateMesh(firstModel, showGmshMesh=False,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], meshSize=5e-1, order ='linear')
 # generateMesh(sampleModel, showGmshMesh=True, elementType='QUAD', nEdgeNodes=11, order ='linear')
 
 # compute
@@ -79,5 +80,27 @@ from solveModel import *
 solveModel(firstModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3, internalForcePosition = 'center', solveMethod = 'cho', computeMoments=True)
 
 # display results
-plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=['x'],shearForcesToPlot=['x', 'y'])
+plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=[])
+
+#%%
+
+M = firstModel.results.bendingMomentsDSB
+coords = firstModel.results.internalForcesPositionsDSB
+V = firstModel.results.shearForcesDSB
+N=firstModel.results.normalForcesDSB
+
+ax1=plt.axes()
+ax1.plot(coords[:,0], M)
+ax1.set_title('M')
 plt.show()
+
+ax2=plt.axes()
+ax2.plot(coords[:,0],V)
+ax2.set_title('V')
+plt.show()
+
+ax2=plt.axes()
+ax2.plot(coords[:,0],N)
+ax2.set_title('N')
+plt.show()
+

@@ -14,7 +14,6 @@ def GetLocalMatrix(xi, yi, Df,Dc, p,nNodes, elementType, elementIntegration):
         kLocal, fLocal
     '''
 
-
     if elementType == 'DB' and nNodes==4:
         kLocal, fLocal = getLinearMatrix(xi, yi, Df, Dc, p, nNodes, elementIntegration)
     elif elementType == 'MITC' and nNodes==4:
@@ -53,14 +52,12 @@ def gettimoBeamMatrix(xi, yi,Dc, Db, Ds, p, nNodes):
     Kc = Dc/L*np.array([[1, -1],
                     [-1, 1]])
 
-
     kLocal = np.zeros((6,6))
     bsCoeff=np.array([1,2,4,5])
     cCoeff=np.array([0,3])
     kLocal[np.ix_(bsCoeff,bsCoeff)] = Kb+Ks
     kLocal[np.ix_(cCoeff,cCoeff)] = Kc
     fLocal = np.array([0,p/2,0,0,p/2,0])
-
     return kLocal, fLocal
 
 def getLinearMatrix(xi, yi, Df, Dc, p, nNodes, elementIntegration):

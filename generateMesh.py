@@ -8,11 +8,10 @@ Purpose of module: generates the mesh and stores it as attribute of the plateMod
 import numpy as np
 import pandas as pd
 import copy
-
 import gmsh # To create CAD model and mesh
 def distortMesh(nodesArray, alpha):
     myIndex = nodesArray.index.to_numpy()
-
+    
     nodesArrayNumpy = nodesArray.to_numpy()
     v1=np.ones(nodesArrayNumpy.shape[0])
     x0 = nodesArrayNumpy[:,0]
@@ -22,7 +21,7 @@ def distortMesh(nodesArray, alpha):
     newNodes = np.zeros(nodesArray.shape)
     newNodes[:,0] = x0+(v1-np.abs(2*x0/a-1))*(2*y0/a-v1)*alpha
     newNodes[:,1] = y0+2*(v1-np.abs(2*y0/a-1))*(2*x0/a-v1)*alpha
-
+    
     # xMask = np.logical_or(x0==0, x0==a)
     # yMask = np.logical_or(y0==0, y0==a)
     # newNodes[xMask,0] = x0[xMask]
@@ -45,8 +44,9 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     elementShape = int(temp[1])
     elementIntegration = temp[2]
 
+
     gmsh.model.mesh.clear()
-    if elementShape == 4:
+    if elementShape == 4 or elementShape == 9 :
         gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 2) #0: simple, 1: blossom (default), 2: simple full-quad, 3: blossom full-quad
         for i in range(0, len(self.plates)):
             gmsh.model.geo.mesh.setRecombine(2, self.plates[i].tag)
@@ -190,15 +190,15 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
 
             #particular directions (np.arctan not defined)
             if lineDirection[0]==0 and lineDirection[1]>0:
-                lineRot = np.pi/2
+                lineRot = np.pi/2*0
             elif lineDirection[0]==0 and lineDirection[1]<0:
-                lineRot = np.pi/2*3
+                lineRot = np.pi/2*3*0
             else:
-                lineRot = np.arctan(lineDirection[1]/lineDirection[0])
+                lineRot = np.arctan(lineDirection[1]/lineDirection[0])*0
             
-            nodesRotationsPd.loc[nodeTags[:-2]] = lineRot
+            nodesRotationsPd.loc[nodeTags[:]] = lineRot
 
-            for node in nodeTags[:-2]:
+            for node in nodeTags[:]:
                 BCsDic[node] = wall.support.supportCondition
         # print('nodesRotation in mesh gen: ', nodesRotationsPd)
 
@@ -214,6 +214,8 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         BCs[count, 0] = a
         BCs[count,1:] = BCsDic[a]
 
+
+
     nextNode = int(np.max(nodeTagsModel)+1)
     nextCoherentNode = int(nodesArray.shape[0])
 
@@ -227,28 +229,46 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         dim = uz.physicalGroup[0]
         nodesUZ, coord = gmsh.model.mesh.getNodesForPhysicalGroup(dim,uz.physicalGroup[1])
         # print('nodesUZ: ', nodesUZ)
-        
         nNodesUZ = len(nodesUZ)
         newNodesUZ = np.array(range(nextNode, nextNode+nNodesUZ), dtype=int)
+        uz.newNodesUZ = newNodesUZ
+        # print('newNodesUZ: ', newNodesUZ)
         coherentNodesUZ = np.array(range(nextCoherentNode, nextCoherentNode+nNodesUZ), dtype=int)
+        uz.coherentNodesUZ = coherentNodesUZ
         tempDF = pd.DataFrame(coherentNodesUZ, index=newNodesUZ)
+
         gmshToCoherentNodesNumeration = gmshToCoherentNodesNumeration.append(tempDF)
         gmshToCoherentNodesNumeration.index = gmshToCoherentNodesNumeration.index.astype(int)
         nextCoherentNode += nNodesUZ
         nextNode = nextNode+nNodesUZ
         tempNodesArray = nodesArrayPd.loc[nodesUZ].to_numpy()
+        # print('tempNodesArray ',tempNodesArray)
         nodesArray = np.append(nodesArray, tempNodesArray, axis=0)
+        # print('nodesArray ',nodesArray)
         nodesArrayPd = nodesArrayPd.append(pd.DataFrame(tempNodesArray, index=newNodesUZ))
+        # print('nodesArrayPd ',nodesArrayPd)
         nodesArrayPd.index = nodesArrayPd.index.astype(int)
-
         uzNodesToNodesNumeration = pd.DataFrame(newNodesUZ, index = nodesUZ)
 
+        
         uzNodesToNodesNumeration.index = uzNodesToNodesNumeration.index.astype(int)
+        # print('uzNodesToNodesNumeration',uzNodesToNodesNumeration)
+        uz.uzNodesToNodesNumeration = uzNodesToNodesNumeration
 
         coherentNodesPlate = gmshToCoherentNodesNumeration.loc[nodesUZ].to_numpy()[:,0]
+        uz.coherentNodesPlate = coherentNodesPlate
         nodesRotationsPd = nodesRotationsPd.append(pd.DataFrame(np.zeros(nNodesUZ), index =newNodesUZ))
         nodesRotationsPd.index = nodesRotationsPd.index.astype(int)
 
+
+
+
+    for uz in self.downStandBeams:
+        newNodesUZ = uz.newNodesUZ
+        uzNodesToNodesNumeration = uz.uzNodesToNodesNumeration 
+        coherentNodesPlate = uz.coherentNodesPlate
+        coherentNodesUZ = uz.coherentNodesUZ
+        dim = uz.physicalGroup[0]
         #NEED TO CREATE THE CONSTRAINT MATRIX BEAM - PLATE!
         nDofs = nodesArray.shape[0]*3
         nConstraints = len(newNodesUZ)*3
@@ -262,12 +282,18 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
             a1 = np.zeros(nDofs)
             a2 = np.zeros(nDofs)
             a3 = np.zeros(nDofs)
+            if elementType == 'DB':
+                correspondingRotationDOF = 1
+                mult = -1
+            elif elementType == 'MITC':
+                correspondingRotationDOF = 2
+                mult = -1
 
             a1[plateNode*3] = -1
             a1[uzNode*3+1] = 1
-            a2[plateNode*3+1] = -1
+            a2[plateNode*3+correspondingRotationDOF] = -1*mult 
             a2[uzNode*3+2] = 1
-            a3[plateNode*3+1] = -(hb+hp)*0.5
+            a3[plateNode*3+correspondingRotationDOF] = -(hb+hp)*0.5*mult
             a3[uzNode*3] = 1
 
             A[3*i:3*i+3, :] = np.array([a1, a2, a3])
@@ -287,6 +313,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
 
                 newElement.nNodes  = len(nodeTags)
                 realNodeTags = uzNodesToNodesNumeration.loc[nodeTags].to_numpy()[:,0]
+
                 newElement.connectivity  = realNodeTags
                 newElement.coherentConnectivity = gmshToCoherentNodesNumeration.loc[realNodeTags]
                 realCoherentNodeTags=gmshToCoherentNodesNumeration.loc[realNodeTags].to_numpy()[:,0]
@@ -300,25 +327,26 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
                 elementsList.append(newElement)
                 uzElementsList.append(newElement)
 
-            # start and en nodes are blocked
                 p1Tag = realCoherentNodeTags[0]
 
                 p2Tag = realCoherentNodeTags[1]
                 coord = nodesArray[realCoherentNodeTags,0:2]
 
-                lineDirection = coord[:,1] -coord[:,1]
+                lineDirection = coord[1,:] -coord[0,:]
 
                 #particular directions (np.arctan not defined)
                 if lineDirection[0]==0 and lineDirection[1]>0:
-                    lineRot = np.pi/2
-                elif lineDirection[0]==0 and lineDirection[1]<0:
-                    lineRot = np.pi/2*3
-                elif lineDirection[0]==0 and lineDirection[1]==0:
                     lineRot = np.pi/2*0
+                elif lineDirection[0]==0 and lineDirection[1]<0:
+                    lineRot = np.pi/2*3*0
+                elif lineDirection[1]==0 and lineDirection[0]>0:
+                    lineRot = 0*0
+                elif lineDirection[1]==0 and lineDirection[0]<0:
+                    lineRot = np.pi
                 else:
                     lineRot = np.arctan(lineDirection[1]/lineDirection[0])
                 
-                nodesRotationsPd.loc[realCoherentNodeTags] = lineRot
+                nodesRotationsPd.loc[realNodeTags] = lineRot
         uz.elementsList = uzElementsList
 
         # print('nodesRotation in mesh gen: ', nodesRotationsPd)

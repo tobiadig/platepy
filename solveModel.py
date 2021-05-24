@@ -35,8 +35,10 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     '''
     # Loop over elements and assemble stiffness matrices
     nodes=self.mesh.nodesArray
+    # print('solver nodes: ',nodes)
     nNodesTotal = nodes.shape[0]
     nodesRotations = self.mesh.nodesRotations # both dataframes
+    # print('rotations: ', nodesRotations)
     # print('nodesRotation in solve model: ', nodesRotations)
     elementsList = self.mesh.elementsList
     nElements = len(elementsList)
@@ -81,13 +83,12 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
             Ds = 5/6*Gmod*crossA
             kLocalNotRotated, fLocal = gettimoBeamMatrix(xi, yi,Dc, Db, Ds, 0, nNodes)
 
-
         # if the load is a line load IGNORE fLocal (set to zero), the force vector will be calculated in the next loop
         # bad solution, hopefully it works #TODO: adjust forces
         if p.case != "area":
             fLocal = np.zeros((fLocal.size,1))
 
-        R = getRotationMatrix(elementType, elemNodesRotations) #TODO: check if thats correct
+        R = getRotationMatrix(elementType, elemNodesRotations) 
 
         element.rotationMatrix = R
         if elementType!='timo':
@@ -96,13 +97,15 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         # #rotate stiffness matrix
         kTemp = np.matmul(kLocalNotRotated, R)
         kLocal = np.matmul(R.transpose(), kTemp)
+
+
         nMatrixDofs = kLocal.size
         kCoeff, discartedDOF = getKCoeff(elementType, coherentElemNodes)
         if discartedDOF != None:
             discartedDOFs[k]=discartedDOF
         rows, columns = getRowsColumns(kCoeff, nMatrixDofs)
 
-            # coefficients of the DOFs and assignment of the stiffness matrix / force vector
+        # coefficients of the DOFs and assignment of the stiffness matrix / force vector
     
         # create vectors to assemble sparse matrixes
         rowsForStiffnessSparseMatrix[startIndexStiffness:startIndexStiffness+rows.size] = rows
@@ -119,8 +122,6 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 
         startIndexForce += kCoeff.size
         k+=1
-
-    
 
     #if line load, assemble HERE load vector
     if p.case == 'line':
@@ -261,8 +262,13 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 
 
     if solveMethod == 'cho':
-        A=self.mesh.AmatList[0]
-
+        A = []
+        for myA in self.mesh.AmatList:
+            if len(A) == 0:
+                A=myA
+            else:
+                A= np.concatenate((A, myA))
+        # print(pd.DataFrame(A))
         A=A[:,fDofsInt]
         b=np.zeros(A.shape[0])
         nConstraints = A.shape[0]
@@ -279,6 +285,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         # np.savetxt('Amat.csv', A, delimiter=',')
 
         lu, d, perm = ldl(M)
+
 
         y = solve(lu, rightSide)
         x=solve(d@lu.T, y)
@@ -348,10 +355,11 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 
         if len(self.downStandBeams) > 0:
             uzList = self.downStandBeams[0].elementsList
-            bendingMomentsDSB, shearForcesDSB, internalForcesPositionsDSB = getInternalForcesDSB(uzList,uDownStandBeam,internalForcePosition, self.downStandBeams[0])
-            self.results.bendingMomentsDSB=bendingMomentsDSB*resultsScaleIntForces[0]
-            self.results.internalForcesPositionsDSB=internalForcesPositionsDSB
-            self.results.shearForcesDSB = shearForcesDSB*resultsScaleIntForces[1]
+            Nforces, Vforces, Mforces, internalForcesPositions = getInternalForcesDSB(uzList,uDownStandBeam,internalForcePosition, self.downStandBeams[0])
+            self.results.bendingMomentsDSB=Mforces*resultsScaleIntForces[0]
+            self.results.internalForcesPositionsDSB=internalForcesPositions
+            self.results.shearForcesDSB = Vforces*resultsScaleIntForces[1]
+            self.results.normalForcesDSB = Nforces*resultsScaleIntForces[1]
 
     return outPos, values
 
@@ -373,6 +381,7 @@ class Result:
         self.bendingMomentsDSB=None
         self.internalForcesPositionsDSB=None
         self.shearForcesDSB = None
+        self.normalForcesDSB = None
 
         z=np.abs(wVert)
         iMax = np.argmax(z)

@@ -30,50 +30,48 @@ def getLinearVectorizedShapeFunctions(ri, si, xi, yi):
     nodeCoordinates[:,1]=yi
 
     if elemType==2:
+        L = np.sqrt((xi[1]-xi[0])**2+(yi[1]-yi[0])**2)
         # Define shape functions
-        N1 = lambda r, s: 0.5*(1-r)
-        N2 = lambda r, s: 0.5*(1+r)
+        N1 = lambda r: 0.5*(1-r)
+        N2 = lambda r: 0.5*(1+r)
 
         # Form the shape function matrix
-        Nfun= lambda r, s: [N1(r,s), N2(r,s)]
-        Nval=np.array(Nfun(ri, si))
-        Nval=np.moveaxis(Nval, -1, 0)
+        Nfun= lambda r: [N1(r), N2(r)]
+        Nval=np.array(Nfun(ri))
 
-        N=np.zeros((nPoints,3, 3*elemType))
-        N[:,0, 0::3]=Nval
-        N[:,1, 1::3]=Nval
-        N[:,2, 2::3]=Nval
+        N=np.zeros((3, 3*elemType))
+        N[0, 0::3]=Nval[:,0]
+        N[1, 1::3]=Nval[:,0]
+        N[2, 2::3]=Nval[:,0]
 
         # Define shape function derivatives, derive deformation matrix
-        N1r = lambda r, s: -0.25*(1-s)
-        N2r = lambda r, s: 0.25*(1-s)
+        N1r = lambda r: -0.5
+        N2r = lambda r: 0.5
 
 
-        N1s = lambda r, s: -0.25*(1-r)
-        N2s = lambda r, s: -0.25*(1+r)
 
-
-        NrsFun = lambda r,s: np.array([[N1r(r, s), N1s(r, s)], [N2r(r, s), N2s(r, s)]])
-        NrsVal=np.array(NrsFun(ri,si))
-        NrsVal = np.moveaxis(NrsVal,-1,0)
+        NrsFun = lambda r: np.array([N1r(r), N2r(r)])
+        NrsVal=np.array(NrsFun(ri))
         # matmul treat NrsVal as stack of matrixes residing in the LAST 2 indexes
 
-        J=np.matmul(nodeCoordinates.transpose(), NrsVal)
-        detJ = np.linalg.det(J)
-        invJ = np.linalg.inv(J)
 
-        NrsVal = np.matmul(NrsVal,invJ)
-        Bf=np.zeros((nPoints,1,3*elemType))
-        Bf[:,0,1::3]=NrsVal[:,:,0]
-        # Bf[:,1,2::3]=NrsVal[:,:,1]
-        # Bf[:,2,1::3]=NrsVal[:,:,1]
-        # Bf[:,2,2::3]=NrsVal[:,:,0]
+        detJ = L
+        invJ = 2/L
 
-        Bc=np.zeros((nPoints,1,3*elemType))
-        Bc[:,0,0::3]=NrsVal[:,:,0]
-        Bc[:,0,1::3]=Nval
-        # Bc[:,1,0::3]=NrsVal[:,:,1]
-        # Bc[:,1,2::3]=Nval
+        NrsVal = NrsVal*invJ
+
+        Bb=np.zeros((1,3*elemType))
+        Bb[0,2::3]=NrsVal[:]
+
+        Bs=np.zeros((1,3*elemType))
+        Bs[0,1::3]=NrsVal[:]
+        Bs[0,2::3]=Nval[:,0]*-1
+
+
+        Bc=np.zeros((1,3*elemType))
+        Bc[0,0::3]=NrsVal[:]
+
+        return N, Bc,Bb,Bs, detJ
 
     elif elemType==3:
         # Define shape functions

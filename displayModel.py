@@ -184,11 +184,11 @@ def myIsoPlot(self,x,y,z, theTitle = ''):
     iMMax = np.argmax(z)
     iMMin = np.argmin(z)
 
-    zMinString = '{:.2f}'.format(z[iMMin])
+    zMinString = '{:.3f}'.format(z[iMMin])
     if np.abs(z[iMMin])>0.1:
         outAx.text(x[iMMin],y[iMMin], zMinString,color='r', bbox=dict(facecolor='w', edgecolor='red'), zorder=1000)
 
-    zMaxString = '{:.2f}'.format(z[iMMax])
+    zMaxString = '{:.3f}'.format(z[iMMax])
     if np.abs(z[iMMax])>0.1:
         outAx.text(x[iMMax],y[iMMax], zMaxString,color='b', bbox=dict(facecolor='w', edgecolor='blue'), zorder=1000)
 
@@ -206,7 +206,9 @@ def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = Fals
     elementsList = self.mesh.elementsList
     for element in elementsList:
         elemNodes = element.coherentConnectivity.to_numpy()[:,0]
-        nEdges = element.shape
+        # nEdges = element.shape
+        nEdges = 4
+        
 
         elemCoords = element.coordinates
         xValues = np.zeros((nEdges+1,))
@@ -217,7 +219,6 @@ def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = Fals
 
         yValues[0:-1] = elemCoords[0:nEdges,1]
         yValues[-1] = elemCoords[0,1]
-
         outAx.plot(xValues, yValues, color='k', zorder=-1)
     #plot nodes:
     k=1
