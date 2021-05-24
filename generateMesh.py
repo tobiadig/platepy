@@ -92,6 +92,13 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         print('gmsh mesh generation failed')
         raise
 
+
+
+
+
+
+
+
     if order == 'quadratic':
         gmsh.model.mesh.setOrder(2)
         gmsh.model.geo.synchronize()
@@ -118,6 +125,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     elementsList = []
     # _, elemTags, _ = gmsh.model.mesh.getElements(2)
     k=1
+    getElementByTagDictionary ={}
 
     for i in range(0, len(self.plates)):
         _, elemTags, _ = gmsh.model.mesh.getElements(2,self.plates[i].tag)
@@ -140,6 +148,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
 
             newElement.coordinates = nodesArrayPd.loc[nodeTags].to_numpy()
             elementsList.append(newElement)
+            getElementByTagDictionary[elemTag] = newElement
             k+=1
 
     plateElementsList = copy.deepcopy(elementsList)
@@ -357,6 +366,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs)
     self.mesh.AmatList = AmatList
     self.mesh.plateElementsList = plateElementsList
+    self.mesh.getElementByTagDictionary = getElementByTagDictionary
 
 def setMesh(self, nodesArray, elements, BCs, load = None):
     elementsList = []
@@ -396,6 +406,7 @@ class Mesh:
         self.BCs = BCs
         self.load = None
         self.AmatList = None
+        self.getElementByTagDictionary = None
 
 class Element:
     '''

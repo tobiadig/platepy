@@ -58,8 +58,9 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     startIndexStiffness = 0
     startIndexForce = 0
     k=0
-    for element in tqdm(elementsList):
-    # for element in elementsList:
+    # for element in tqdm(elementsList):
+    for element in elementsList:
+
         elementType=element.type
         elementIntegration = element.integration
         plateOfTheElement = element.whichPlate
@@ -339,7 +340,9 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         outPos = outPos[keepedDisplacements, :]  #TODO: only works for vertical displacements!
     values[:,1]=uGlob[1::3,0]
     values[:,2]=uGlob[2::3,0]
+    
     self.results = Result(outPos,vDisp, values[:,1], values[:,2],resultsScale=(resultsScaleVertDisp,resultsScaleIntForces))
+    self.results.uGlobPlate = uGlob
 
     #compute MOMENTS
     if computeMoments:
@@ -382,6 +385,10 @@ class Result:
         self.internalForcesPositionsDSB=None
         self.shearForcesDSB = None
         self.normalForcesDSB = None
+
+        self.schnittList = {}
+
+        self.uGlobPlate = None
 
         z=np.abs(wVert)
         iMax = np.argmax(z)

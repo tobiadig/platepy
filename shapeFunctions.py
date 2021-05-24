@@ -198,6 +198,7 @@ def getQuadraticShapeFunctions(ri, si, xi, yi):
     elemType = len(xi)
 
     if elemType==3:
+        nPoints = len(ri)
         # Define shape functions
         N1 = lambda r, s: 0.5*r*(r-1)
         N2 = lambda r, s: 1-r**2

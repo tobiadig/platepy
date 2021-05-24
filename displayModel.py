@@ -235,6 +235,123 @@ def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = Fals
             k+=1
     return fig, outAx 
 
+def plotBeamComponent(self,lineName, verticalDisplacement = True, bendingMomentsToPlot = [], shearForcesToPlot = []):
+    outAxis = []
+    outFig = []
+    valPoss = ['x', 'y', 'xy']
+    
+    outVal = np.zeros(6, dtype=bool)
+    outVal[0]=verticalDisplacement
+    for i, a in enumerate(valPoss):
+        if a in bendingMomentsToPlot:
+            outVal[i+1] = True
+        if a in shearForcesToPlot:
+            outVal[i+4] = True
+
+    schnitt = self.results.schnittList[lineName]
+    x=schnitt.arrayEvaluationPoints[:,0]
+    y=schnitt.arrayEvaluationPoints[:,1]
+    lineDir = np.array([x[-1]-x[0],y[-1]-y[0]])
+    lineDir = lineDir/np.sqrt(lineDir[0]**2+lineDir[1]**2)
+    normLineDir = np.array([lineDir[1], -lineDir[0]])
+    zPoints = np.zeros((x.shape[0],2))
+
+
+    if outVal[0]: #plot vertical displacements
+        z= schnitt.wVert
+        zPoints[:,0] = z*normLineDir[0]
+        zPoints[:,1] = z*normLineDir[1]
+
+        theTitle='w'
+        fig, axOut = plotSchnittValues(self,theTitle, x,y,zPoints)
+
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut)
+
+    if outVal[1]: #plot Mx
+        z = schnitt.bendingMoments[:,0]
+        zPoints[:,0] = x+z*normLineDir[0]
+        zPoints[:,1] = y+z*normLineDir[1]
+        theTitle='Mx'
+        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,zPoints)
+
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut)
+
+    if outVal[2]: # plot My
+
+        z= schnitt.bendingMoments[:,1]
+        theTitle='My'
+        fig, axOut = plotSchnittValues(self,theTitle, x,y,z)
+
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut) 
+
+    if outVal[3]:  # plot Mxy
+
+        z= schnitt.bendingMoments[:,2]
+        theTitle='Mxy'
+        fig, axOut = plotSchnittValues(self,theTitle, x,y,z)
+
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut) 
+
+    if outVal[4]: # plot Vx
+
+        z = schnitt.shearForces[:,0]
+        theTitle='Vx'
+        fig, axOut = plotSchnittValues(self,theTitle, x,y,z)
+
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut) 
+
+    if outVal[5]: # plot Vy
+
+        z = schnitt.shearForces[:,1]
+        theTitle='Vy'
+        fig, axOut = plotSchnittValues(self,theTitle, x,y,z)
+
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut) 
+
+    return outFig, outAxis
+
+
+def plotSchnittValues(self,theTitle, x,y,z,zPoints):
+    fig,outAx = plotInputGeometry(self)
+
+    iMMax = np.argmax(z)
+    iMMin = np.argmin(z)
+
+    zMinString = '{:.3f}'.format(z[iMMin])
+    if np.abs(z[iMMin])>0.1:
+        outAx.text(x[iMMin],y[iMMin], zMinString,color='r', bbox=dict(facecolor='w', edgecolor='red'), zorder=1000)
+
+    zMaxString = '{:.3f}'.format(z[iMMax])
+    if np.abs(z[iMMax])>0.1:
+        outAx.text(x[iMMax],y[iMMax], zMaxString,color='b', bbox=dict(facecolor='w', edgecolor='blue'), zorder=1000)
+
+    # magValue = 1/np.max(np.abs(z))
+    magValue = 1
+
+    outAx.plot(x,y,color='k')
+    outAx.plot(zPoints[:,0]*magValue, zPoints[:,1]*magValue, color='grey')
+
+
+    # xLim = np.array([np.min(x), np.max(x)])
+    # yLim = np.array([np.min(y), np.max(y)])
+    # a=xLim[1]-xLim[0]
+    # b= yLim[1]-yLim[0]
+
+    # # fig.set_size_inches(10*a,10*b)
+    # marginWidth = 0.1
+    # outAx.set_xlim(xLim[0]-marginWidth*a, xLim[1]+marginWidth*a)
+    # outAx.set_ylim(yLim[0]-marginWidth*b, yLim[1]+marginWidth*b)
+
+
+    # outAx.set_title(theTitle)
+    return fig,outAx
+
 
 
 
