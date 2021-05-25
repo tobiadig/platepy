@@ -154,3 +154,6 @@ print('N4: ', N4)
 print('N4r: ',N4r)
 #%%
 # %%
+import numpy as np
+
+# x = np.linspace(-0.5, 0.5, num=)

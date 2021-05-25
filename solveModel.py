@@ -58,8 +58,8 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     startIndexStiffness = 0
     startIndexForce = 0
     k=0
-    # for element in tqdm(elementsList):
-    for element in elementsList:
+    for element in tqdm(elementsList):
+    # for element in elementsList:
 
         elementType=element.type
         elementIntegration = element.integration
@@ -355,6 +355,8 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         self.results.bendingMoments=bendingMoments*resultsScaleIntForces[0]
         self.results.internalForcesPositions=internalForcesPositions
         self.results.shearForces = shearForces*resultsScaleIntForces[1]
+        self.results.resultsScaleVertDisp = resultsScaleVertDisp
+
 
         if len(self.downStandBeams) > 0:
             uzList = self.downStandBeams[0].elementsList
@@ -379,7 +381,7 @@ class Result:
         self.bendingMoments = None
         self.internalForcesPositions = None
         self.shearForces = None
-        self.resultsScale = resultsScale
+        self.resultsScaleVertDisp = None
 
         self.bendingMomentsDSB=None
         self.internalForcesPositionsDSB=None

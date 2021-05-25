@@ -29,7 +29,7 @@ def distortMesh(nodesArray, alpha):
     newNodesArray = pd.DataFrame(newNodes, index = myIndex)
     return newNodesArray
 
-def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, elementDefinition=None, meshSize=5e-2, nEdgeNodes = 0, order='linear', meshDistortion = False, distVal = 100):
+def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, elementDefinition=None, meshSize=5e-2, nEdgeNodes = 0, order='linear', meshDistortion = False, distVal = 100, deactivateRotation=False):
     ''' Input/Output descriptions
         self: PlateModel class, where the geometry is initialized
         meshInput: options for the creation of the mesh
@@ -198,12 +198,18 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
             lineDirection = coord[-1,:] -coord[-2,:]
 
             #particular directions (np.arctan not defined)
-            if lineDirection[0]==0 and lineDirection[1]>0:
-                lineRot = np.pi/2*0
-            elif lineDirection[0]==0 and lineDirection[1]<0:
-                lineRot = np.pi/2*3*0
+            if deactivateRotation:
+                rotationKiller = 0
             else:
-                lineRot = np.arctan(lineDirection[1]/lineDirection[0])*0
+                rotationKiller = 1
+
+
+            if lineDirection[0]==0 and lineDirection[1]>0:
+                lineRot = np.pi/2*rotationKiller
+            elif lineDirection[0]==0 and lineDirection[1]<0:
+                lineRot = np.pi/2*3*rotationKiller
+            else:
+                lineRot = np.arctan(lineDirection[1]/lineDirection[0])*rotationKiller
             
             nodesRotationsPd.loc[nodeTags[:]] = lineRot
 

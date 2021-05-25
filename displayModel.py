@@ -251,29 +251,23 @@ def plotBeamComponent(self,lineName, verticalDisplacement = True, bendingMoments
     schnitt = self.results.schnittList[lineName]
     x=schnitt.arrayEvaluationPoints[:,0]
     y=schnitt.arrayEvaluationPoints[:,1]
-    lineDir = np.array([x[-1]-x[0],y[-1]-y[0]])
-    lineDir = lineDir/np.sqrt(lineDir[0]**2+lineDir[1]**2)
-    normLineDir = np.array([lineDir[1], -lineDir[0]])
-    zPoints = np.zeros((x.shape[0],2))
+
 
 
     if outVal[0]: #plot vertical displacements
-        z= schnitt.wVert
-        zPoints[:,0] = z*normLineDir[0]
-        zPoints[:,1] = z*normLineDir[1]
+        z= schnitt.verticalDisplacements
 
         theTitle='w'
-        fig, axOut = plotSchnittValues(self,theTitle, x,y,zPoints)
+        fig, axOut = plotSchnittValues(self,theTitle, x,y,z)
 
         self.axes[theTitle] = axOut
         outAxis.append(axOut)
 
     if outVal[1]: #plot Mx
         z = schnitt.bendingMoments[:,0]
-        zPoints[:,0] = x+z*normLineDir[0]
-        zPoints[:,1] = y+z*normLineDir[1]
+
         theTitle='Mx'
-        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,zPoints)
+        fig, axOut = plotSchnittValues(self,theTitle, x,y,z)
 
         self.axes[theTitle] = axOut
         outAxis.append(axOut)
@@ -317,25 +311,42 @@ def plotBeamComponent(self,lineName, verticalDisplacement = True, bendingMoments
     return outFig, outAxis
 
 
-def plotSchnittValues(self,theTitle, x,y,z,zPoints):
+def plotSchnittValues(self,theTitle, x,y,z):
     fig,outAx = plotInputGeometry(self)
 
-    iMMax = np.argmax(z)
-    iMMin = np.argmin(z)
+    iMMax = np.argmax(np.abs(z))
+    # iMMin = np.argmin(z)
 
-    zMinString = '{:.3f}'.format(z[iMMin])
-    if np.abs(z[iMMin])>0.1:
-        outAx.text(x[iMMin],y[iMMin], zMinString,color='r', bbox=dict(facecolor='w', edgecolor='red'), zorder=1000)
+
+    magValue = 2/np.max(np.abs(z))
+    zNorm = z*magValue
+
+    lineDir = np.array([(x[-1]-x[0]),(y[-1]-y[0])])
+    lineDir = lineDir/np.sqrt(lineDir[0]**2+lineDir[1]**2)
+    normLineDir = np.array([lineDir[1], -lineDir[0]])
+    zPoints = np.zeros((x.shape[0],2))
+    zPoints[:,0] = x+zNorm*normLineDir[0]
+    zPoints[:,1] = y+zNorm*normLineDir[1]
+
+    for i in range(0,x.shape[0]):
+        outAx.plot(np.array([x[i], zPoints[i,0]]),np.array([y[i], zPoints[i,1]]), color = 'grey')
+
+    outAx.plot(x,y,color='k')
+    outAx.plot(zPoints[:,0], zPoints[:,1], color='k')
+
+
+
+
+
+    # zMinString = '{:.3f}'.format(z[iMMin])
+    # if np.abs(z[iMMin])>0.1:
+    #     outAx.text(zPoints[iMMin,0],zPoints[iMMin,1], zMinString,color='r', bbox=dict(facecolor='w', edgecolor='red'), zorder=1000)
 
     zMaxString = '{:.3f}'.format(z[iMMax])
     if np.abs(z[iMMax])>0.1:
-        outAx.text(x[iMMax],y[iMMax], zMaxString,color='b', bbox=dict(facecolor='w', edgecolor='blue'), zorder=1000)
+        outAx.text(zPoints[iMMax,0],zPoints[iMMax,1], zMaxString,color='k', bbox=dict(facecolor='w', edgecolor='grey'), zorder=1000)
 
-    # magValue = 1/np.max(np.abs(z))
-    magValue = 1
 
-    outAx.plot(x,y,color='k')
-    outAx.plot(zPoints[:,0]*magValue, zPoints[:,1]*magValue, color='grey')
 
 
     # xLim = np.array([np.min(x), np.max(x)])
@@ -349,7 +360,7 @@ def plotSchnittValues(self,theTitle, x,y,z,zPoints):
     # outAx.set_ylim(yLim[0]-marginWidth*b, yLim[1]+marginWidth*b)
 
 
-    # outAx.set_title(theTitle)
+    outAx.set_title(theTitle)
     return fig,outAx
 
 

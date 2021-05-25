@@ -27,7 +27,7 @@ wallDict = {}
 wallDict["outlineCoords"]=np.array([[0,0], [a,0],[a,b], [0,b],[0,0]])
 wallDict["high"] = 3 # m
 wallDict["body"] = C25_30
-wallDict["support"] = Support(np.array([1, 0, 0]))
+wallDict["support"] = Support(np.array([1, 0, 1]))
 wallDict["thickness"] = 0.5 # m
 wall1 = Wall(wallDict)
 
@@ -54,7 +54,7 @@ from displayModel import *
 # create mesh
 from generateMesh import *
 elemDefinitions = ['DB-4-R', 'MITC-4-N', 'DB-9-R', 'MITC-9-N']
-generateMesh(firstModel, showGmshMesh=False,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], nEdgeNodes=4, order ='linear')
+generateMesh(firstModel, showGmshMesh=False,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], nEdgeNodes=41, order ='linear', deactivateRotation=False)
 # generateMesh(sampleModel, showGmshMesh=True, elementType='QUAD', nEdgeNodes=11, order ='linear')
 
 # compute
@@ -66,11 +66,17 @@ plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=False, 
 
 
 #%%
-startCoord = (1.67,5)
-endCoord = (8.33,5)
-nEvaluationPoints = 10
-bendingMoments, shearForces, arrayEvaluationPoints  = beamComponents(firstModel,'line1', startCoord, endCoord,nEvaluationPoints)
+# startCoord = (1.67,5)
+# endCoord = (8.33,5)
 
-plotBeamComponent(firstModel,'line1', verticalDisplacement = False, bendingMomentsToPlot = ['x'], shearForcesToPlot = [])
+startCoord = (0.5,2)
+endCoord = (8,9)
 
+nEvaluationPoints = 300
+bendingMoments, shearForces, arrayEvaluationPoints  = beamComponents(firstModel,'line1', startCoord, endCoord,nEvaluationPoints, integrationWidth = 0, nIntegrationPoints=10)
+
+plotBeamComponent(firstModel,'line1', verticalDisplacement = False, bendingMomentsToPlot = [], shearForcesToPlot = ['x'])
+bendingMoments, shearForces, arrayEvaluationPoints  = beamComponents(firstModel,'line1', startCoord, endCoord,nEvaluationPoints, integrationWidth = 1.0, nIntegrationPoints=10)
+
+plotBeamComponent(firstModel,'line1', verticalDisplacement = False, bendingMomentsToPlot = [], shearForcesToPlot = ['x'])
 plt.show()
