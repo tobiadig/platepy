@@ -58,6 +58,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     startIndexStiffness = 0
     startIndexForce = 0
     k=0
+    print('Assembling stiffness matrix')
     for element in tqdm(elementsList):
     # for element in elementsList:
 

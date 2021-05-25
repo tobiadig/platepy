@@ -13,6 +13,7 @@ from mpl_toolkits.mplot3d import Axes3D # 3D plot
 from matplotlib import cm   # contour plot
 import base64
 from io import BytesIO
+from tqdm import tqdm
 
 def plotInputGeometry(self, figaspect = 1):
     w, h = plt.figaspect(1.)
@@ -204,7 +205,8 @@ def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = Fals
 
     #plot lines:
     elementsList = self.mesh.elementsList
-    for element in elementsList:
+    print('Plotting mesh')
+    for element in tqdm(elementsList):
         elemNodes = element.coherentConnectivity.to_numpy()[:,0]
         # nEdges = element.shape
         nEdges = 4
@@ -235,7 +237,7 @@ def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = Fals
             k+=1
     return fig, outAx 
 
-def plotBeamComponent(self,lineName, verticalDisplacement = True, bendingMomentsToPlot = [], shearForcesToPlot = []):
+def plotBeamComponent(self,lineName, verticalDisplacement = True, bendingMomentsToPlot = [], shearForcesToPlot = [], plotOnMesh=False):
     outAxis = []
     outFig = []
     valPoss = ['x', 'y', 'xy']
@@ -252,13 +254,11 @@ def plotBeamComponent(self,lineName, verticalDisplacement = True, bendingMoments
     x=schnitt.arrayEvaluationPoints[:,0]
     y=schnitt.arrayEvaluationPoints[:,1]
 
-
-
     if outVal[0]: #plot vertical displacements
         z= schnitt.verticalDisplacements
 
         theTitle='w'
-        fig, axOut = plotSchnittValues(self,theTitle, x,y,z)
+        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,plotOnMesh)
 
         self.axes[theTitle] = axOut
         outAxis.append(axOut)
@@ -267,7 +267,7 @@ def plotBeamComponent(self,lineName, verticalDisplacement = True, bendingMoments
         z = schnitt.bendingMoments[:,0]
 
         theTitle='Mx'
-        fig, axOut = plotSchnittValues(self,theTitle, x,y,z)
+        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,plotOnMesh)
 
         self.axes[theTitle] = axOut
         outAxis.append(axOut)
@@ -276,7 +276,7 @@ def plotBeamComponent(self,lineName, verticalDisplacement = True, bendingMoments
 
         z= schnitt.bendingMoments[:,1]
         theTitle='My'
-        fig, axOut = plotSchnittValues(self,theTitle, x,y,z)
+        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,plotOnMesh)
 
         self.axes[theTitle] = axOut
         outAxis.append(axOut) 
@@ -285,7 +285,7 @@ def plotBeamComponent(self,lineName, verticalDisplacement = True, bendingMoments
 
         z= schnitt.bendingMoments[:,2]
         theTitle='Mxy'
-        fig, axOut = plotSchnittValues(self,theTitle, x,y,z)
+        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,plotOnMesh)
 
         self.axes[theTitle] = axOut
         outAxis.append(axOut) 
@@ -294,7 +294,7 @@ def plotBeamComponent(self,lineName, verticalDisplacement = True, bendingMoments
 
         z = schnitt.shearForces[:,0]
         theTitle='Vx'
-        fig, axOut = plotSchnittValues(self,theTitle, x,y,z)
+        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,plotOnMesh)
 
         self.axes[theTitle] = axOut
         outAxis.append(axOut) 
@@ -303,7 +303,7 @@ def plotBeamComponent(self,lineName, verticalDisplacement = True, bendingMoments
 
         z = schnitt.shearForces[:,1]
         theTitle='Vy'
-        fig, axOut = plotSchnittValues(self,theTitle, x,y,z)
+        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,plotOnMesh)
 
         self.axes[theTitle] = axOut
         outAxis.append(axOut) 
@@ -311,8 +311,11 @@ def plotBeamComponent(self,lineName, verticalDisplacement = True, bendingMoments
     return outFig, outAxis
 
 
-def plotSchnittValues(self,theTitle, x,y,z):
-    fig,outAx = plotInputGeometry(self)
+def plotSchnittValues(self,theTitle, x,y,z,plotOnMesh):
+    if not plotOnMesh:
+        fig,outAx = plotInputGeometry(self)
+    else:
+        fig, outAx = plotMesh(self, plotNodes=False, plotStrucElements=False, plotPoints =True)
 
     iMMax = np.argmax(np.abs(z))
     # iMMin = np.argmin(z)
