@@ -54,7 +54,7 @@ from displayModel import *
 # create mesh
 from generateMesh import *
 elemDefinitions = ['DB-4-R', 'MITC-4-N', 'DB-9-R', 'MITC-9-N']
-generateMesh(firstModel, showGmshMesh=False,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], nEdgeNodes=6, order ='linear', deactivateRotation=False)
+generateMesh(firstModel, showGmshMesh=False,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], nEdgeNodes=61, order ='linear', deactivateRotation=False)
 # generateMesh(sampleModel, showGmshMesh=True, elementType='QUAD', nEdgeNodes=11, order ='linear')
 
 # compute
@@ -66,17 +66,19 @@ plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=False, 
 
 
 #%%
-# startCoord = (1.67,5)
-# endCoord = (8.33,5)
+startCoord = (5,0)
+endCoord = (5,10)
 
-startCoord = (0.5,2)
-endCoord = (8,9)
 
-nEvaluationPoints = 300
+
+nEvaluationPoints = 1000
 bendingMoments, shearForces, arrayEvaluationPoints  = beamComponents(firstModel,'line1', startCoord, endCoord,nEvaluationPoints, integrationWidth = 0, nIntegrationPoints=10)
 
-plotBeamComponent(firstModel,'line1', verticalDisplacement = False, bendingMomentsToPlot = [], shearForcesToPlot = ['x'], plotOnMesh = True)
+plotBeamComponent(firstModel,'line1', verticalDisplacement = True, bendingMomentsToPlot = [], shearForcesToPlot = [], plotOnMesh = False)
 # bendingMoments, shearForces, arrayEvaluationPoints  = beamComponents(firstModel,'line1', startCoord, endCoord,nEvaluationPoints, integrationWidth = 1.0, nIntegrationPoints=10)
 
 # plotBeamComponent(firstModel,'line1', verticalDisplacement = False, bendingMomentsToPlot = [], shearForcesToPlot = ['x'])
 plt.show()
+
+#%%
+

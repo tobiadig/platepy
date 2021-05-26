@@ -60,6 +60,9 @@ def AnalyticPlateSolutions(pOpts, lOpts, sOpts, inPos):
         quantities, values, outPos = Circ_thin_cSupport_Concntr(pOpts, lOpts, sOpts, inPos)
     elif pOpts.shape == "circular"    and pOpts.depth == "thin"  and pOpts.support == "clamped"         and lOpts.type == "distributed":
         quantities, values, outPos = Circ_thin_cSupport_Distrib(pOpts, lOpts, sOpts, inPos)
+
+    elif pOpts.shape == "rectangular"  and pOpts.depth == "thin"  and pOpts.support == "sSupportwBeams"  and lOpts.type == "distributed":
+        quantities, values, outPos = Rect_thin_sSupportwBeams_Distr(pOpts, lOpts, sOpts, inPos)
     
     else:
         raise ValueError('Requested combination for analytic solution either not feasible or implemented yet')    
@@ -74,6 +77,7 @@ class Material:
         self.nu = nu
         self.h = h
         self.D = E*h**3/(12*(1-nu**2))
+        self.myLambda = None
 
 class POpts:
     def __init__(self):
@@ -287,6 +291,42 @@ def Circ_thin_cSupport_Distrib(pOpts, lOpts, sOpts, inPos):
     pass
 def Circ_thin_cSupport_Concntr(pOpts, lOpts, sOpts, inPos):
     pass
+def Rect_thin_sSupportwBeams_Distr(pOpts, lOpts, sOpts, inPos):
+
+    quantities=[True, False, False, False, False, False, False, False]
+    #Actually: Wz, Rx, Ry, Mx, Mx, Mxy, Vx, Vy)
+    # outQuantities: [w, Mx, My, Mxy, Qx, Qy]
+    nOutputs = 1
+    x = inPos[:,0]
+    y = inPos[:,1]
+    q0 = lOpts.magnitude
+    D = pOpts.material.D
+    nu = pOpts.material.nu
+    myLambda = pOpts.material.myLambda
+    a = pOpts.geometry[0]
+    b = pOpts.geometry[1]
+    nTerms = sOpts.nTerms
+    nPoints = len(x)
+
+    values = np.zeros((nPoints, nOutputs))
+    outPos = np.zeros((nPoints,2, nOutputs))
+    w = np.zeros(nPoints)
+
+    v1=np.ones(nPoints)
+    for m in range(1,nTerms*2+1,2):
+        alpham = m*np.pi*b/(2*a)
+        Am = 4/(m**5*np.pi**5)*\
+            (nu*(1+nu)*np.sinh(alpham)-nu*(1-nu)*alpham*np.cosh(alpham)-m*np.pi*myLambda*(2*np.cosh(alpham) +alpham*np.sinh(alpham)))/ \
+                ((3+nu)*(1-nu)*np.sinh(alpham)*np.cosh(alpham)-(1-nu)**2*alpham+2*m*np.pi*myLambda*np.cosh(alpham)**2)
+
+        Bm = 4/(m**5*np.pi**5)*nu*(1-nu)*np.sinh(alpham)+m*np.pi*myLambda*np.cosh(alpham)/((3+nu)*(1-nu)*np.sinh(alpham)*np.cosh(alpham)-(1-nu)**2*alpham+2*m*np.pi*myLambda*np.cosh(alpham)**2)
+
+        w +=q0*a**4/D* ((4/(m**5*np.pi**5)*v1 +Am*np.cosh(m*np.pi*y/a) + Bm*m*np.pi*y/a*np.sinh(m*np.pi*y/a))*np.sin(m*np.pi*x/a))
+
+    values[:,0] = w
+    outPos[:,:,0] = inPos
+    
+    return quantities, values, outPos
 
 #%% for unit testing! This code is executed if this python file is run!
 if __name__ == "__main__":

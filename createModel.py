@@ -42,13 +42,11 @@ class PlateModel:
         
         self.plates.append(newPlate)    # list of the plates contained in the model
         
-        #create points according to the given coordinates
+        #create points
         nPoints = len(newPlate.outlineCoords)
         pointTags = [0]*nPoints
-        i=0
-        for newPoint in newPlate.outlineCoords:
+        for i, newPoint in enumerate(newPlate.outlineCoords):
             pointTags[i] = gmsh.model.geo.addPoint(newPoint[0], newPoint[1], 0)
-            i=i+1
 
         #create lines
         nLines = nPoints*1-1
@@ -56,6 +54,7 @@ class PlateModel:
         for i in range(0, nLines):
             linesTags[i] = gmsh.model.geo.addLine(pointTags[i], pointTags[i+1])
         
+        #create surface
         curveLoopTag = gmsh.model.geo.addCurveLoop(linesTags)
         planeSurfaceTag= gmsh.model.geo.addPlaneSurface([curveLoopTag])
         newPlate.tag=planeSurfaceTag
@@ -301,7 +300,7 @@ class Column:
     def plot(self, ax):
         x = self.outlineCoords[0,0]
         y= self.outlineCoords[0,1]
-        d = self.crossSection.width/2
+        d = self.width/2
         x1=x-d
         x2=x+d
         y1 = y-d

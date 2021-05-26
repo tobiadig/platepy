@@ -52,6 +52,7 @@ def beamComponents(self,lineName, startCoord, endCoord, nEvaluationPoints,integr
             shearForces[k,0:2] = np.matmul(Dc, np.matmul(Bs, vLoc))[:,0]*1
 
     elif integrationWidth>0:
+        verticalDisplacements = None
         sampleWidth = integrationWidth/nIntegrationPoints
         lineDir = np.array([endCoord[0]-startCoord[0],endCoord[1]-startCoord[1]])
         lineDir = lineDir/np.sqrt(lineDir[0]**2+lineDir[1]**2)
@@ -104,7 +105,7 @@ def beamComponents(self,lineName, startCoord, endCoord, nEvaluationPoints,integr
                 arrayToIntegrate = integrationShearForces[:,j]
                 shearForces[k,j]=trapezoid(arrayToIntegrate,dx=sampleWidth)
 
-    self.results.schnittList[lineName] = Schnitt(bendingMoments, shearForces,None, arrayEvaluationPoints)
+    self.results.schnittList[lineName] = Schnitt(bendingMoments, shearForces,verticalDisplacements, arrayEvaluationPoints)
 
     return bendingMoments, shearForces, arrayEvaluationPoints
 

@@ -39,7 +39,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     nNodesTotal = nodes.shape[0]
     nodesRotations = self.mesh.nodesRotations # both dataframes
     # print('rotations: ', nodesRotations)
-    # print('nodesRotation in solve model: ', nodesRotations)
+    print('nodesRotation in solve model: ', nodesRotations)
     elementsList = self.mesh.elementsList
     nElements = len(elementsList)
     discartedDOFs = np.zeros(nElements, dtype=int)
@@ -271,7 +271,11 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
             else:
                 A= np.concatenate((A, myA))
         # print(pd.DataFrame(A))
-        A=A[:,fDofsInt]
+        try:
+            A=A[:,fDofsInt]
+        except:
+            raise ValueError('Please change solveMethod from "cho" to "sparse"')
+            
         b=np.zeros(A.shape[0])
         nConstraints = A.shape[0]
         nFreeDofs = A.shape[1]
@@ -382,7 +386,7 @@ class Result:
         self.bendingMoments = None
         self.internalForcesPositions = None
         self.shearForces = None
-        self.resultsScaleVertDisp = None
+        self.resultsScaleVertDisp = resultsScale[0]
 
         self.bendingMomentsDSB=None
         self.internalForcesPositionsDSB=None
