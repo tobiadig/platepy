@@ -71,6 +71,8 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
         elemNodesRotations = nodesRotations.loc[elemNodes].to_numpy()
         xi=element.coordinates[:,0]
         yi=element.coordinates[:,1]
+        print('element ',k)
+        print('nodes: ', elemNodes)
         if elementType!='timo':
             Df = self.plates[plateOfTheElement].Df
             Dc = self.plates[plateOfTheElement].Dc

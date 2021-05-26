@@ -93,12 +93,6 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         raise
 
 
-
-
-
-
-
-
     if order == 'quadratic':
         gmsh.model.mesh.setOrder(2)
         gmsh.model.geo.synchronize()
@@ -351,11 +345,11 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
 
                 #particular directions (np.arctan not defined)
                 if lineDirection[0]==0 and lineDirection[1]>0:
-                    lineRot = np.pi/2*0
+                    lineRot = np.pi/2
                 elif lineDirection[0]==0 and lineDirection[1]<0:
-                    lineRot = np.pi/2*3*0
+                    lineRot = np.pi/2*3
                 elif lineDirection[1]==0 and lineDirection[0]>0:
-                    lineRot = 0*0
+                    lineRot = 0
                 elif lineDirection[1]==0 and lineDirection[0]<0:
                     lineRot = np.pi
                 else:

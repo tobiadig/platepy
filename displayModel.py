@@ -213,6 +213,8 @@ def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = Fals
         
 
         elemCoords = element.coordinates
+        if len(elemCoords)<nEdges:
+            continue
         xValues = np.zeros((nEdges+1,))
         yValues = np.zeros((nEdges+1,))
 
