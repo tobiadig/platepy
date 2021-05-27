@@ -39,7 +39,7 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
     nNodesTotal = nodes.shape[0]
     nodesRotations = self.mesh.nodesRotations # both dataframes
     # print('rotations: ', nodesRotations)
-    print('nodesRotation in solve model: ', nodesRotations)
+    # print('nodesRotation in solve model: ', nodesRotations)
     elementsList = self.mesh.elementsList
     nElements = len(elementsList)
     discartedDOFs = np.zeros(nElements, dtype=int)
@@ -99,8 +99,9 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
             self.mesh.plateElementsList[k].rotationMatrix = R
 
         # #rotate stiffness matrix
-        kTemp = np.matmul(kLocalNotRotated, R)
-        kLocal = np.matmul(R.transpose(), kTemp)
+        # kTemp = np.matmul(kLocalNotRotated, R)
+        # kLocal = np.matmul(R.transpose(), kTemp)
+        kLocal = kLocalNotRotated
 
 
         nMatrixDofs = kLocal.size

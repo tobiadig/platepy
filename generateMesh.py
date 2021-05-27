@@ -328,7 +328,8 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
 
         for i, plateNode in enumerate(coherentNodesPlate):
             uzNode = coherentNodesUZ[i]
-            nodeRotation = nodesRotationsPd.loc[uzNode].to_numpy()[0]
+            nodeRotation = nodesRotationsPd.loc[uzNode+1].to_numpy()[0]
+            print(nodesRotationsPd)
             a1 = np.zeros(nDofs)
             a2 = np.zeros(nDofs)
             a3 = np.zeros(nDofs)
@@ -347,7 +348,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
                 mult = 1
             elif elementType == 'MITC' and (nodeRotation > 4.6 and nodeRotation<4.9):
                 correspondingRotationDOF = 1
-                mult = -1
+                mult = 1
             else:
                 raise TypeError('elementype not defined?')
 

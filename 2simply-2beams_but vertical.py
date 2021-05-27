@@ -24,65 +24,50 @@ plateDict["stiffnessFactor"] = 1
 plate1 = Plate(plateDict)
 
 wallDict = {}
-wallDict["outlineCoords"] = np.array([[0,0], [a,0], [a,b], [0,b], [0,0]])
+wallDict["outlineCoords"] = np.array([[0,0], [a,0]])
 wallDict["high"] = 3 # m
 wallDict["body"] = C25_30
 wallDict["support"] = Support(np.array([1, 0, 0]))
-wallDict["thickness"] = 0.05 # m
+wallDict["thickness"] = 0.5 # m
 wall1 = Wall(wallDict)
 
-columnDict = {}
-columnDict["outlineCoords"] = np.array([[0,0]])
-columnDict["high"] = 3
-columnDict["body"] = C25_30
-columnDict["support"] = Support(np.array([1, 0, 0]))
-columnDict["crossSection"] = None
-columnDict["width"] = 0.05
-col1 = Column(columnDict)
+wallDict["outlineCoords"] = np.array([[0,b], [a,b]])
+wall2 = Wall(wallDict)
 
-columnDict["outlineCoords"] = np.array([[a,0]])
-col2 = Column(columnDict)
 
-columnDict["outlineCoords"] = np.array([[a,b]])
-col3 = Column(columnDict)
+beamCoeff = 2
+bUZ = 0.01
 
-columnDict["outlineCoords"] = np.array([[0,b]])
-col4 = Column(columnDict)
-
-beamCoeff = 1
-bUZ = 0.05
 
 hUZ = h*(beamCoeff*a/((1-nu**2)*bUZ))**(1/3)
+# hUZ = h*((beamCoeff*a/((1-nu**2)*bUZ))**(1/3)-1)
 
+# print(hUZ)
 uzCrossSection = CrossSection(bUZ*hUZ*0, bUZ*hUZ**3/12,0, bUZ)
 unterZugDict = {}
+# E = 32e6
+# ConcreteDict["eModule"] = E #kN/m2
+# ConcreteDict["gModule"] =   E/(2*(1+nu)) #kN/m2
+# C25_30 = Concrete(ConcreteDict)
+
 unterZugDict["body"] = C25_30
 unterZugDict["crossSection"] = uzCrossSection
 unterZugDict["thickness"] = hUZ
 
-unterZugDict["outlineCoords"] = np.array([[0,0], [a,0], [a,b], [0,b], [0,0]])
+unterZugDict["outlineCoords"] = np.array([[0,0], [0,b]])
 unterZug1 = downStandBeam(unterZugDict)
 
-# unterZugDict["outlineCoords"] = np.array([[a,b], [a,b]])
-# unterZug2 = downStandBeam(unterZugDict)
-
-# unterZugDict["outlineCoords"] = np.array([[0,b], [a,b]])
-# unterZug3 = downStandBeam(unterZugDict)
-
-# unterZugDict["outlineCoords"] = np.array([[0,b], [a,b]])
-# unterZug4 = downStandBeam(unterZugDict)
+unterZugDict["outlineCoords"] = np.array([[a,0], [a,b]])
+unterZug2 = downStandBeam(unterZugDict)
 
 
 firstModel = PlateModel("plateModel1")
 firstModel.addPlate(plate1)
-firstModel.addColumn(col1)
-firstModel.addColumn(col2)
-firstModel.addColumn(col3)
-firstModel.addColumn(col4)
+firstModel.addWall(wall1)
+firstModel.addWall(wall2)
 
 firstModel.addDownStandBeam(unterZug1)
-# firstModel.addWall(wall1)
-
+firstModel.addDownStandBeam(unterZug2)
 
 firstModel.addLoad(distributedLoad)
 
@@ -98,14 +83,13 @@ from displayModel import *
 # create mesh
 from generateMesh import *
 elemDefinitions = ['DB-4-R', 'MITC-4-N', 'DB-9-R', 'MITC-9-N']
-generateMesh(firstModel, showGmshMesh=False,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], nEdgeNodes=21, order ='linear')
-
-# generateMesh(sampleModel, showGmshMesh=True, elementType='QUAD', nEdgeNodes=11, order ='linear')
+generateMesh(firstModel, showGmshMesh=False,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], \
+    nEdgeNodes=4, order ='linear',deactivateRotation=True)
 
 # compute
 from solveModel import *
 solveModel(firstModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e6*h**3/a**4, internalForcePosition = 'center', solveMethod = 'cho', computeMoments=False)
 
 # display results
-plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=[])
+plotResults(firstModel,displacementPlot='text', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=[])
 plt.show()
