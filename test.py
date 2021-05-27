@@ -155,5 +155,14 @@ print('N4r: ',N4r)
 #%%
 # %%
 import numpy as np
+import pandas as pd
+def assignNumpyArrayToDataFrame(xDF, indexesToModify, newValues):
+    index = xDF.index
+    values = xDF.to_numpy()
+    values[indexesToModify] = newValues
+
+    xDF = pd.DataFrame(values, index=index)
+    return xDF
+
 
 # x = np.linspace(-0.5, 0.5, num=)

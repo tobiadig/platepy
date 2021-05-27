@@ -268,9 +268,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         uz.coherentNodesPlate = coherentNodesPlate
         nodesRotationsPd = nodesRotationsPd.append(pd.DataFrame(np.zeros(nNodesUZ), index =newNodesUZ))
         nodesRotationsPd.index = nodesRotationsPd.index.astype(int)
-
-
-
+        
 
     for uz in self.downStandBeams:
         newNodesUZ = uz.newNodesUZ
@@ -319,6 +317,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
                 elementType, nodeTags = gmsh.model.mesh.getElement(elemTag)
                 newElement = Element()
                 newElement.tag = elemTag
+                newElement.correspondingPlateElements = nodeTags
 
                 newElement.nNodes  = len(nodeTags)
                 realNodeTags = uzNodesToNodesNumeration.loc[nodeTags].to_numpy()[:,0]
@@ -354,8 +353,15 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
                     lineRot = np.pi
                 else:
                     lineRot = np.arctan(lineDirection[1]/lineDirection[0])
+
+
+                plateRots = nodesRotationsPd.loc[nodeTags].to_numpy()
+                # print('before: ',nodesRotationsPd)
                 
                 nodesRotationsPd.loc[realNodeTags] = lineRot
+                # nodesRotationsPd = assignNumpyArrayToDataFrame(nodesRotationsPd, realNodeTags, plateRots, lineRot)
+                # print('after: ',nodesRotationsPd)
+
         uz.elementsList = uzElementsList
 
         # print('nodesRotation in mesh gen: ', nodesRotationsPd)
@@ -374,7 +380,6 @@ def setMesh(self, nodesArray, elements, BCs, load = None):
     k=1
     for element in elements:
         newElement = Element()
-
         newElement.tag = k
 
         newElement.nNodes  = len(element)
@@ -424,3 +429,14 @@ class Element:
         self.coherentConnectivity = None #rearranges nodes with a sequential nummeration
         self.type = None
         self.integration = None
+        self.correspondingPlateElements = None
+
+
+def assignNumpyArrayToDataFrame(xDF, indexesToModify, plateRotations, uzRotation):
+    index = xDF.index
+    values = xDF.to_numpy()
+    nIndexes = len(indexesToModify)
+    values[indexesToModify-1] = uzRotation * np.ones((nIndexes,1)) - plateRotations
+
+    xDF = pd.DataFrame(values, index=index)
+    return xDF

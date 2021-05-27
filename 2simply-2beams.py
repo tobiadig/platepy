@@ -36,7 +36,7 @@ wallDict["outlineCoords"] = np.array([[a,0], [a,b]])
 wall2 = Wall(wallDict)
 
 
-beamCoeff = 1
+beamCoeff = 2
 bUZ = 0.01
 
 
@@ -44,7 +44,7 @@ hUZ = h*(beamCoeff*a/((1-nu**2)*bUZ))**(1/3)
 # hUZ = h*((beamCoeff*a/((1-nu**2)*bUZ))**(1/3)-1)
 
 # print(hUZ)
-uzCrossSection = CrossSection(bUZ*hUZ, bUZ*hUZ**3/12,0, bUZ)
+uzCrossSection = CrossSection(bUZ*hUZ*0, bUZ*hUZ**3/12,0, bUZ)
 unterZugDict = {}
 # E = 32e6
 # ConcreteDict["eModule"] = E #kN/m2
@@ -85,7 +85,7 @@ from displayModel import *
 from generateMesh import *
 elemDefinitions = ['DB-4-R', 'MITC-4-N', 'DB-9-R', 'MITC-9-N']
 generateMesh(firstModel, showGmshMesh=False,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], \
-    nEdgeNodes=4, order ='linear',deactivateRotation=False)
+    nEdgeNodes=21, order ='linear',deactivateRotation=True)
 
 
 
@@ -94,5 +94,5 @@ from solveModel import *
 solveModel(firstModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e6*h**3/a**4, internalForcePosition = 'center', solveMethod = 'cho', computeMoments=False)
 
 # display results
-plotResults(firstModel,displacementPlot='text', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=[])
+plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=[])
 plt.show()

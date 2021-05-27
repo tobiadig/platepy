@@ -14,9 +14,9 @@ def timo_rotMatrix(theta):
     '''
         creates rotation matrix of angle theta for a single node
     '''
-    A = np.array([[np.cos(theta),0, -np.sin(theta)],
-                  [0,            1,  0],
-                  [np.sin(theta),0,  np.cos(theta)]], dtype=float)
+    A = np.array([[np.cos(theta), -np.sin(theta),  0],
+                  [np.sin(theta),  np.cos(theta),  0],
+                  [0,              0,              1]], dtype=float)
 
     return A
 
