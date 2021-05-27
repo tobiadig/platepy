@@ -61,7 +61,7 @@ from displayModel import *
 # create mesh
 from generateMesh import *
 elemDefinitions = ['DB-4-R', 'MITC-4-N', 'DB-9-R', 'MITC-9-N']
-generateMesh(firstModel, showGmshMesh=False,showGmshGeometryBeforeMeshing=True, elementDefinition=elemDefinitions[1], meshSize=4e-1, order ='linear')
+generateMesh(firstModel, showGmshMesh=True,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], meshSize=4e-1, order ='linear')
 # generateMesh(sampleModel, showGmshMesh=True, elementType='QUAD', nEdgeNodes=11, order ='linear')
 
 # compute

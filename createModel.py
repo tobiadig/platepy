@@ -236,13 +236,14 @@ class Plate:
             self.Dc = 5/6*h*np.array([[G,0],[0,G]]) #alpha = 5/6 according to ferreira p. 162
         elif isUnterZug:
             self.Dc = 5/6*h*np.array([[G,0],[0,G]])
-            self.Df =  1/12*E*np.array([[(h)**3, 0,    0],
+            e_uz = (h-t)/2
+            hModified = (h**3+ 6*h*e_uz**2)**(1/3)
+            self.Df =  1/12*E*np.array([[(hModified)**3, 0,    0],
                                         [0,        (t)**3, 0],
                                         [0,         0,   t**3*1/2]])
-            # self.Df=h**3/12*E/(1-nu**2)*np.array([[1, nu, 0],
-            #                                         [nu, 1, 0],
-            #                                         [0, 0, (1-nu)/2]])
-            # self.Dc = 5/6*h*np.array([[G,0],[0,G]]) #alpha = 5/6 according to ferreira p. 162
+            # self.Df =  1/12*E*np.array([[(h)**3, 0,    0],
+            #                             [0,        (t)**3, 0],
+            #                             [0,         0,   t**3*1/2]])
 
     def plot(self, axGeometry):
         coords = self.outlineCoords
