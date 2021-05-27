@@ -49,7 +49,7 @@ col3 = Column(columnDict)
 columnDict["outlineCoords"] = np.array([[0,b]])
 col4 = Column(columnDict)
 
-beamCoeff = 1
+beamCoeff = 5
 bUZ = 0.05
 
 hUZ = h*(beamCoeff*a/((1-nu**2)*bUZ))**(1/3)
@@ -98,7 +98,7 @@ from displayModel import *
 # create mesh
 from generateMesh import *
 elemDefinitions = ['DB-4-R', 'MITC-4-N', 'DB-9-R', 'MITC-9-N']
-generateMesh(firstModel, showGmshMesh=False,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], nEdgeNodes=21, order ='linear')
+generateMesh(firstModel, showGmshMesh=False,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], nEdgeNodes=41, order ='linear')
 
 # generateMesh(sampleModel, showGmshMesh=True, elementType='QUAD', nEdgeNodes=11, order ='linear')
 
