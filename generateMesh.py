@@ -79,7 +79,6 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         print('manual assignment of edge nodes failed')
         raise
 
-
     # mesh generation
     if showGmshGeometryBeforeMeshing:
         gmsh.fltk.run()
@@ -159,14 +158,10 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
                 elementType, nodeTags = gmsh.model.mesh.getElement(elemTag)
                 newElement = Element()
                 newElement.tag = elemTag
-
-
                 newElement.nNodes  = len(nodeTags)
                 newElement.connectivity  = nodeTags
                 newElement.coherentConnectivity = gmshToCoherentNodesNumeration.loc[nodeTags]
-
                 newElement.coordinates = nodesArrayPd.loc[nodeTags].to_numpy()
-
                 newElement.whichPlate  = 1  
                 elements1DList.append(newElement)
                 k+=1
@@ -183,7 +178,6 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         for wallLine in enitiesTags:
             nodeTags, coord, _ = gmsh.model.mesh.getNodes(dim, wallLine, includeBoundary=True)
             coord = coord.reshape(-1,3)
-
             # start and en nodes are blocked
             p1Tag = nodeTags[-2]
             BCsDic[p1Tag] = np.array([1,1,1])
@@ -196,7 +190,6 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
                 rotationKiller = 0
             else:
                 rotationKiller = 1
-
 
             if lineDirection[0]==0 and lineDirection[1]>0:
                 lineRot = np.pi/2*rotationKiller
@@ -222,8 +215,6 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     for count, a in enumerate(BCsDic):
         BCs[count, 0] = a
         BCs[count,1:] = BCsDic[a]
-
-
 
     nextNode = int(np.max(nodeTagsModel)+1)
     nextCoherentNode = int(nodesArray.shape[0])
@@ -259,7 +250,6 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         nodesArrayPd.index = nodesArrayPd.index.astype(int)
         uzNodesToNodesNumeration = pd.DataFrame(newNodesUZ, index = nodesUZ)
 
-        
         uzNodesToNodesNumeration.index = uzNodesToNodesNumeration.index.astype(int)
         # print('uzNodesToNodesNumeration',uzNodesToNodesNumeration)
         uz.uzNodesToNodesNumeration = uzNodesToNodesNumeration
@@ -268,7 +258,6 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         uz.coherentNodesPlate = coherentNodesPlate
         nodesRotationsPd = nodesRotationsPd.append(pd.DataFrame(np.zeros(nNodesUZ), index =newNodesUZ))
         nodesRotationsPd.index = nodesRotationsPd.index.astype(int)
-        
 
     for uz in self.downStandBeams:
         newNodesUZ = uz.newNodesUZ
@@ -289,11 +278,12 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
             a1 = np.zeros(nDofs)
             a2 = np.zeros(nDofs)
             a3 = np.zeros(nDofs)
+
             if elementType == 'DB':
                 correspondingRotationDOF = 1
                 mult = -1
             elif elementType == 'MITC':
-                correspondingRotationDOF = 2
+                correspondingRotationDOF = 1
                 mult = -1
 
             a1[plateNode*3] = -1
@@ -302,7 +292,6 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
             a2[uzNode*3+2] = 1
             a3[plateNode*3+correspondingRotationDOF] = -(hb+hp)*0.5*mult
             a3[uzNode*3] = 1
-
             A[3*i:3*i+3, :] = np.array([a1, a2, a3])
         
         AmatList.append(A)
@@ -344,9 +333,9 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
 
                 #particular directions (np.arctan not defined)
                 if lineDirection[0]==0 and lineDirection[1]>0:
-                    lineRot = np.pi/2
+                    lineRot = np.pi/2*0
                 elif lineDirection[0]==0 and lineDirection[1]<0:
-                    lineRot = np.pi/2*3
+                    lineRot = np.pi/2*3*0
                 elif lineDirection[1]==0 and lineDirection[0]>0:
                     lineRot = 0
                 elif lineDirection[1]==0 and lineDirection[0]<0:
