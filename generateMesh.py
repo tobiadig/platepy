@@ -272,38 +272,13 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
 
         hp = self.plates[0].thickness
         hb = uz.thickness
-
-        for i, plateNode in enumerate(coherentNodesPlate):
-            uzNode = coherentNodesUZ[i]
-            a1 = np.zeros(nDofs)
-            a2 = np.zeros(nDofs)
-            a3 = np.zeros(nDofs)
-
-            if elementType == 'DB':
-                correspondingRotationDOF = 1
-                mult = -1
-            elif elementType == 'MITC':
-                correspondingRotationDOF = 2
-                mult = -1
-
-            a1[plateNode*3] = -1
-            a1[uzNode*3+1] = 1
-            a2[plateNode*3+correspondingRotationDOF] = -1*mult 
-            a2[uzNode*3+2] = 1
-            a3[plateNode*3+correspondingRotationDOF] = -(hb+hp)*0.5*mult
-            a3[uzNode*3] = 1
-            A[3*i:3*i+3, :] = np.array([a1, a2, a3])
-        
-        AmatList.append(A)
-
         enitiesTags = gmsh.model.getEntitiesForPhysicalGroup(dim,uz.physicalGroup[1])
-
         for uzLine in enitiesTags:
             # nodeTags, coord, _ = gmsh.model.mesh.getNodes(dim, uzLine, includeBoundary=True)
             # coord = coord.reshape(-1,3)
             elementTypes, elementTags, nodeTags = gmsh.model.mesh.getElements(dim,uzLine)
             for elemTag in elementTags[0]:
-                elementType, nodeTags = gmsh.model.mesh.getElement(elemTag)
+                _, nodeTags = gmsh.model.mesh.getElement(elemTag)
                 newElement = Element()
                 newElement.tag = elemTag
                 newElement.correspondingPlateElements = nodeTags
@@ -333,9 +308,9 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
 
                 #particular directions (np.arctan not defined)
                 if lineDirection[0]==0 and lineDirection[1]>0:
-                    lineRot = np.pi/2*0
+                    lineRot = np.pi/2
                 elif lineDirection[0]==0 and lineDirection[1]<0:
-                    lineRot = np.pi/2*3*0
+                    lineRot = np.pi/2*3
                 elif lineDirection[1]==0 and lineDirection[0]>0:
                     lineRot = 0
                 elif lineDirection[1]==0 and lineDirection[0]<0:
@@ -350,6 +325,43 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
                 nodesRotationsPd.loc[realNodeTags] = lineRot
                 # nodesRotationsPd = assignNumpyArrayToDataFrame(nodesRotationsPd, realNodeTags, plateRots, lineRot)
                 # print('after: ',nodesRotationsPd)
+
+        for i, plateNode in enumerate(coherentNodesPlate):
+            uzNode = coherentNodesUZ[i]
+            nodeRotation = nodesRotationsPd.loc[uzNode].to_numpy()[0]
+            a1 = np.zeros(nDofs)
+            a2 = np.zeros(nDofs)
+            a3 = np.zeros(nDofs)
+
+            if elementType == 'DB':
+                correspondingRotationDOF = 1
+                mult = -1
+            elif elementType == 'MITC' and (nodeRotation ==0):
+                correspondingRotationDOF = 2
+                mult = -1
+            elif elementType == 'MITC' and (nodeRotation > 3.0 and nodeRotation<3.3):
+                correspondingRotationDOF = 2
+                mult = -1
+            elif elementType == 'MITC' and (nodeRotation > 1.5 and nodeRotation<1.7):
+                correspondingRotationDOF = 1
+                mult = 1
+            elif elementType == 'MITC' and (nodeRotation > 4.6 and nodeRotation<4.9):
+                correspondingRotationDOF = 1
+                mult = -1
+            else:
+                raise TypeError('elementype not defined?')
+
+            a1[plateNode*3] = -1
+            a1[uzNode*3+1] = 1
+            a2[plateNode*3+correspondingRotationDOF] = -1*mult 
+            a2[uzNode*3+2] = 1
+            a3[plateNode*3+correspondingRotationDOF] = -(hb+hp)*0.5*mult
+            a3[uzNode*3] = 1
+            A[3*i:3*i+3, :] = np.array([a1, a2, a3])
+        
+        AmatList.append(A)
+
+
 
         uz.elementsList = uzElementsList
 
