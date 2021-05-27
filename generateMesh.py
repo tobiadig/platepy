@@ -283,7 +283,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
                 correspondingRotationDOF = 1
                 mult = -1
             elif elementType == 'MITC':
-                correspondingRotationDOF = 1
+                correspondingRotationDOF = 2
                 mult = -1
 
             a1[plateNode*3] = -1
