@@ -337,22 +337,27 @@ class downStandBeam:
             p1 = coords[i]
             p2 = coords[i+1]
             d = self.crossSection.width/2
-
+            
             wallDir = p2 - p1
             length = np.dot(wallDir, wallDir)**0.5
             normWallDir = -np.array([wallDir[1], wallDir[0]])/length
             l1 = np.zeros((2,2))
             l2 = np.zeros((2,2))
-
+            
             l1[0,:] = p1 + d*normWallDir
             l1[1,:] = p2 + d*normWallDir
-
+            
             l2[0,:] = p1 - d*normWallDir
             l2[1,:] = p2 - d*normWallDir
             linWidth = 0.7
             axGeometry.plot(l1[:,0],l1[:,1], color='grey', linewidth = linWidth)
             axGeometry.plot(l2[:,0],l2[:,1], color='grey', linewidth = linWidth)
-            axGeometry.fill_between(l1[:,0], l2[:,1], l1[:,1],color='yellow')
+            if l1[0,0] != l1[1,0]:
+                axGeometry.fill_between(l1[:,0], l2[:,1], l1[:,1],color='yellow')
+            else:
+                axGeometry.fill_between(np.array([l1[0,0], l2[0,0]]), np.array([l1[1,1], l2[1,1]]), np.array([l1[0,1], l2[0,1]]),color='yellow')
+
+            dummy = 0
 
 
 class Concrete:

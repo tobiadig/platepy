@@ -1,5 +1,6 @@
 import numpy as np
 from createModel import *
+from beamComponents import *
 E=10920
 nu=0.3
 ConcreteDict = {}
@@ -98,7 +99,8 @@ from displayModel import *
 # create mesh
 from generateMesh import *
 elemDefinitions = ['DB-4-R', 'MITC-4-N', 'DB-9-R', 'MITC-9-N']
-generateMesh(firstModel, showGmshMesh=False,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], nEdgeNodes=41, order ='linear')
+generateMesh(firstModel, showGmshMesh=False,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], \
+    nEdgeNodes=21, order ='linear')
 
 # generateMesh(sampleModel, showGmshMesh=True, elementType='QUAD', nEdgeNodes=11, order ='linear')
 
@@ -107,5 +109,13 @@ from solveModel import *
 solveModel(firstModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e6*h**3/a**4, internalForcePosition = 'center', solveMethod = 'cho', computeMoments=False)
 
 # display results
-plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=[])
+# plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=True, bendingMomentsToPlot=[],shearForcesToPlot=[])
+
+startCoord = (0,0.5)
+endCoord = (1,0.5)
+
+nEvaluationPoints = 100
+bendingMoments, shearForces, arrayEvaluationPoints  = beamComponents(firstModel,'line1', startCoord, endCoord,nEvaluationPoints, integrationWidth = 0, nIntegrationPoints=10)
+
+plotBeamComponent(firstModel,'line1', verticalDisplacement = False, bendingMomentsToPlot = [], shearForcesToPlot = ['x', 'y'], plotOnMesh = True)
 plt.show()

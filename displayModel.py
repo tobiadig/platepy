@@ -211,7 +211,6 @@ def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = Fals
         # nEdges = element.shape
         nEdges = 4
         
-
         elemCoords = element.coordinates
         if len(elemCoords)<nEdges:
             continue
@@ -314,6 +313,7 @@ def plotBeamComponent(self,lineName, verticalDisplacement = True, bendingMoments
 
 
 def plotSchnittValues(self,theTitle, x,y,z,plotOnMesh):
+    maxVal = np.max(self.plates[0].outlineCoords)
     if not plotOnMesh:
         fig,outAx = plotInputGeometry(self)
     else:
@@ -323,7 +323,7 @@ def plotSchnittValues(self,theTitle, x,y,z,plotOnMesh):
     # iMMin = np.argmin(z)
 
 
-    magValue = 2/np.max(np.abs(z))
+    magValue = 0.2*maxVal/np.max(np.abs(z))
     zNorm = z*magValue
 
     lineDir = np.array([(x[-1]-x[0]),(y[-1]-y[0])])
