@@ -151,53 +151,12 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
             p.elements1DList = elements1DList
 
     #generate BCs and nodes directions by iterating over wall segments
+    wallList = self.walls
+    gmshModel = gmsh.model
+    columnsList = self.columns
+    BCs, nodesRotationsPd = getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotation)
 
 
-    BCsDic = {}
-    for wall in self.walls:
-        dim = wall.physicalGroup[0]
-        nodeTags, _ = gmsh.model.mesh.getNodesForPhysicalGroup(dim,wall.physicalGroup[1])
-        enitiesTags = gmsh.model.getEntitiesForPhysicalGroup(dim,wall.physicalGroup[1])
-
-        for wallLine in enitiesTags:
-            nodeTags, coord, _ = gmsh.model.mesh.getNodes(dim, wallLine, includeBoundary=True)
-            coord = coord.reshape(-1,3)
-            # start and end nodes are blocked
-            p1Tag = nodeTags[-2]
-            BCsDic[p1Tag] = np.array([1,1,1])
-            p2Tag = nodeTags[-1]
-            BCsDic[p2Tag] = np.array([1,1,1])
-            lineDirection = coord[-1,:] -coord[-2,:]
-
-            #particular directions (np.arctan not defined)
-            if deactivateRotation:
-                rotationKiller = 0
-            else:
-                rotationKiller = 1
-
-            if lineDirection[0]==0 and lineDirection[1]>0:
-                lineRot = np.pi/2*rotationKiller
-            elif lineDirection[0]==0 and lineDirection[1]<0:
-                lineRot = np.pi/2*3*rotationKiller
-            else:
-                lineRot = np.arctan(lineDirection[1]/lineDirection[0])*rotationKiller
-            
-            nodesRotationsPd.loc[nodeTags[:]] = lineRot
-
-            for node in nodeTags[:]:
-                BCsDic[node] = wall.support
-
-    for col in self.columns:
-        dim = col.physicalGroup[0]
-        nodeTags, _ = gmsh.model.mesh.getNodesForPhysicalGroup(dim,col.physicalGroup[1])
-
-        for node in nodeTags:
-            BCsDic[node] = col.support
-
-    BCs = np.zeros((len(BCsDic), 4))
-    for count, a in enumerate(BCsDic):
-        BCs[count, 0] = a
-        BCs[count,1:] = BCsDic[a]
 
     nextNode = int(np.max(nodeTagsModel)+1)
     nextCoherentNode = int(nodesArray.shape[0])
@@ -370,6 +329,65 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+def getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotation):
+    BCsDic = {}
+    for wall in wallList:
+        dim = wall.physicalGroup[0]
+        nodeTags, _ = gmshModel.mesh.getNodesForPhysicalGroup(dim,wall.physicalGroup[1])
+        enitiesTags = gmshModel.getEntitiesForPhysicalGroup(dim,wall.physicalGroup[1])
+
+        for wallLine in enitiesTags:
+            nodeTags, coord, _ = gmshModel.mesh.getNodes(dim, wallLine, includeBoundary=True)
+            coord = coord.reshape(-1,3)
+            # start and end nodes are blocked
+            p1Tag = nodeTags[-2]
+            BCsDic[p1Tag] = np.array([1,1,1])
+            p2Tag = nodeTags[-1]
+            BCsDic[p2Tag] = np.array([1,1,1])
+            lineDirection = coord[-1,:] -coord[-2,:]
+
+            #particular directions (np.arctan not defined)
+            if deactivateRotation:
+                rotationKiller = 0
+            else:
+                rotationKiller = 1
+
+            if lineDirection[0]==0 and lineDirection[1]>0:
+                lineRot = np.pi/2*rotationKiller
+            elif lineDirection[0]==0 and lineDirection[1]<0:
+                lineRot = np.pi/2*3*rotationKiller
+            else:
+                lineRot = np.arctan(lineDirection[1]/lineDirection[0])*rotationKiller
+            
+            nodesRotationsPd.loc[nodeTags[:]] = lineRot
+
+            for node in nodeTags[:]:
+                BCsDic[node] = wall.support
+
+    for col in columnsList:
+        dim = col.physicalGroup[0]
+        nodeTags, _ = gmshModel.mesh.getNodesForPhysicalGroup(dim,col.physicalGroup[1])
+
+        for node in nodeTags:
+            BCsDic[node] = col.support
+
+    BCs = np.zeros((len(BCsDic), 4))
+    for count, a in enumerate(BCsDic):
+        BCs[count, 0] = a
+        BCs[count,1:] = BCsDic[a]
+
+    return BCs, nodesRotationsPd
 
 
 def setMesh(self, nodesArray, elements, BCs, load = None):
