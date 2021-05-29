@@ -9,25 +9,6 @@ import numpy as np
 import pandas as pd
 import copy
 import gmsh # To create CAD model and mesh
-def distortMesh(nodesArray, alpha):
-    myIndex = nodesArray.index.to_numpy()
-    
-    nodesArrayNumpy = nodesArray.to_numpy()
-    v1=np.ones(nodesArrayNumpy.shape[0])
-    x0 = nodesArrayNumpy[:,0]
-    y0 = nodesArrayNumpy[:,1]
-    a=np.max(x0)
-    
-    newNodes = np.zeros(nodesArray.shape)
-    newNodes[:,0] = x0+(v1-np.abs(2*x0/a-1))*(2*y0/a-v1)*alpha
-    newNodes[:,1] = y0+2*(v1-np.abs(2*y0/a-1))*(2*x0/a-v1)*alpha
-    
-    # xMask = np.logical_or(x0==0, x0==a)
-    # yMask = np.logical_or(y0==0, y0==a)
-    # newNodes[xMask,0] = x0[xMask]
-    # newNodes[yMask,1] = y0[yMask]
-    newNodesArray = pd.DataFrame(newNodes, index = myIndex)
-    return newNodesArray
 
 def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, elementDefinition=None, \
     meshSize=5e-2, nEdgeNodes=0, order='linear', meshDistortion = False, distVal = 100,\
@@ -50,24 +31,21 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
             Return: \n
             *   -
     '''
-    temp = elementDefinition.split('-')
-    elementType = temp[0]
-    elementShape = int(temp[1])
-    elementIntegration = temp[2]
 
-
+    elementType, elementShape, elementIntegration = _getElementDefinition(elementDefinition)
     gmsh.model.mesh.clear()
+
+    # Set recombination rules
     if elementShape == 4 or elementShape == 9 :
         gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 2) #0: simple, 1: blossom (default), 2: simple full-quad, 3: blossom full-quad
         for i in range(0, len(self.plates)):
             gmsh.model.geo.mesh.setRecombine(2, self.plates[i].tag)
     elif elementShape != 3:
         raise Exception
-    
     gmsh.option.setNumber("Mesh.Algorithm", 8)  # (1: MeshAdapt, 2: Automatic, 3: Initial mesh only, 5: Delaunay, 6: Frontal-Delaunay (default), 7: BAMG, 8: Frontal-Delaunay for Quads, 9: Packing of Parallelograms)
     gmsh.model.geo.synchronize()
 
-    # manual assignment of edge nodes
+    # Manual assignment of edge nodes
     try:
         pointTags=gmsh.model.getEntities(0)
         if nEdgeNodes>0:
@@ -77,6 +55,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
             gmsh.model.geo.mesh.setTransfiniteCurve(4, nEdgeNodes)
             gmsh.model.geo.mesh.setTransfiniteSurface(1, "Left", [1, 2, 3, 4])
             gmsh.model.geo.synchronize()
+        # automatically distort mesh with Gmsh, the results are pretty bad
         # elif nEdgeNodes>0 and meshDistortion:
         #     gmsh.model.geo.mesh.setTransfiniteCurve(1, nEdgeNodes, "Progression", progVal)
         #     gmsh.model.geo.mesh.setTransfiniteCurve(2, nEdgeNodes, "Progression", progVal)
@@ -90,9 +69,10 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         print('manual assignment of edge nodes failed')
         raise
 
-    # mesh generation
     if showGmshGeometryBeforeMeshing:
         gmsh.fltk.run()
+
+    # Mesh generation
     try:
         gmsh.model.mesh.generate()
         gmsh.model.geo.synchronize()
@@ -102,7 +82,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         print('gmsh mesh generation failed')
         raise
 
-
+    # select the right order of the elements
     if order == 'quadratic':
         gmsh.model.mesh.setOrder(2)
         gmsh.model.geo.synchronize()
@@ -113,59 +93,50 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     if showGmshMesh:
         gmsh.fltk.run()
 
-    #generate nodes array
+    # Generates nodes array
     nodeTagsModel , nodeCoords, _ = gmsh.model.mesh.getNodes()
 
     nodesArray = np.array(nodeCoords).reshape((-1,3))
-    # print('old: ', nodesArray)
-    nodesArrayPd = pd.DataFrame(nodesArray, index = nodeTagsModel)
+    nodesArrayPd = pd.DataFrame(nodesArray, index = nodeTagsModel) # Why a dataframe? Nodes are not always continuous since sometimes are removed with removeDuplicateNodes. Using a pandas dataframe allows to uniquely call a node with his tag
     nodesRotationsPd = pd.DataFrame(np.zeros(nodeTagsModel.size), index =nodeTagsModel)
     gmshToCoherentNodesNumeration = pd.DataFrame(range(0,len(nodeTagsModel)), index = nodeTagsModel)
+    #gmshNumeration is the one with node Tags, CoherentNumeration is from 0 to nNodes-1
 
-    # distort the mesh a bit
+    # distort the mesh if required
     if meshDistortion:
         nodesArrayPd = distortMesh(nodesArrayPd, distVal)
     
     elementsList = []
-    # _, elemTags, _ = gmsh.model.mesh.getElements(2)
-    k=1
     getElementByTagDictionary ={}
 
+    # Assign all the information to each element object and save it in the elementsList
     for i in range(0, len(self.plates)):
         _, elemTags, _ = gmsh.model.mesh.getElements(2,self.plates[i].tag)
         for elemTag in elemTags[0]:
-            elemType, nodeTags = gmsh.model.mesh.getElement(elemTag)
+            _ , nodeTags = gmsh.model.mesh.getElement(elemTag)
             newElement = Element()
             newElement.tag = elemTag
             newElement.whichPlate = i
             newElement.Db = self.plates[i].Df 
             newElement.Ds = self.plates[i].Dc 
-            # print('element ',elemTag,' belongs to plate ',i)
             newElement.type = elementType
             newElement.shape = elementShape
             newElement.integration = elementIntegration
-
             newElement.nNodes  = len(nodeTags)
             newElement.connectivity  = nodeTags
-
             newElement.coherentConnectivity = gmshToCoherentNodesNumeration.loc[nodeTags]
-
-            # old = nodesArray[nodeTags-1,:]
-
             newElement.coordinates = nodesArrayPd.loc[nodeTags].to_numpy()
+
             elementsList.append(newElement)
             getElementByTagDictionary[elemTag] = newElement
-            k+=1
 
-    plateElementsList = copy.deepcopy(elementsList)
+    plateElementsList = copy.deepcopy(elementsList)  # usefull if there is the need to distinguish plate elements from the downstand bem elements
 
     #assemble 2D elements for line load
-
-    k=1
     for p in self.loads:
         if p.case == 'line':
             tags = gmsh.model.getEntitiesForPhysicalGroup(p.physicalGroup[0],p.physicalGroup[1])
-            elementTypes, elementTags, nodeTags = gmsh.model.mesh.getElements(1,tags[0])   
+            _, elementTags, nodeTags = gmsh.model.mesh.getElements(1,tags[0])   
             elements1DList = []
             for elemTag in elementTags[0]:
                 elementType, nodeTags = gmsh.model.mesh.getElement(elemTag)
@@ -177,11 +148,11 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
                 newElement.coordinates = nodesArrayPd.loc[nodeTags].to_numpy()
                 newElement.whichPlate  = 1  
                 elements1DList.append(newElement)
-                k+=1
             p.elements1DList = elements1DList
 
     #generate BCs and nodes directions by iterating over wall segments
-    
+
+
     BCsDic = {}
     for wall in self.walls:
         dim = wall.physicalGroup[0]
@@ -191,7 +162,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         for wallLine in enitiesTags:
             nodeTags, coord, _ = gmsh.model.mesh.getNodes(dim, wallLine, includeBoundary=True)
             coord = coord.reshape(-1,3)
-            # start and en nodes are blocked
+            # start and end nodes are blocked
             p1Tag = nodeTags[-2]
             BCsDic[p1Tag] = np.array([1,1,1])
             p2Tag = nodeTags[-1]
@@ -215,7 +186,6 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
 
             for node in nodeTags[:]:
                 BCsDic[node] = wall.support
-        # print('nodesRotation in mesh gen: ', nodesRotationsPd)
 
     for col in self.columns:
         dim = col.physicalGroup[0]
@@ -232,41 +202,28 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     nextNode = int(np.max(nodeTagsModel)+1)
     nextCoherentNode = int(nodesArray.shape[0])
 
-    # print('gmshToCoherentNodesNumeration: ',gmshToCoherentNodesNumeration)
-    # print('nodesArray: ', nodesArray)
-    # print('nodesArrayPd: ', nodesArrayPd)
-    # print('nodesRotationsPd: ', nodesRotationsPd)
     AmatList = []
     for uz in self.downStandBeams:
         uzElementsList = []
         dim = uz.physicalGroup[0]
         nodesUZ, coord = gmsh.model.mesh.getNodesForPhysicalGroup(dim,uz.physicalGroup[1])
-        # print('nodesUZ: ', nodesUZ)
         nNodesUZ = len(nodesUZ)
         newNodesUZ = np.array(range(nextNode, nextNode+nNodesUZ), dtype=int)
         uz.newNodesUZ = newNodesUZ
-        # print('newNodesUZ: ', newNodesUZ)
         coherentNodesUZ = np.array(range(nextCoherentNode, nextCoherentNode+nNodesUZ), dtype=int)
         uz.coherentNodesUZ = coherentNodesUZ
         tempDF = pd.DataFrame(coherentNodesUZ, index=newNodesUZ)
-
         gmshToCoherentNodesNumeration = gmshToCoherentNodesNumeration.append(tempDF)
         gmshToCoherentNodesNumeration.index = gmshToCoherentNodesNumeration.index.astype(int)
         nextCoherentNode += nNodesUZ
         nextNode = nextNode+nNodesUZ
         tempNodesArray = nodesArrayPd.loc[nodesUZ].to_numpy()
-        # print('tempNodesArray ',tempNodesArray)
         nodesArray = np.append(nodesArray, tempNodesArray, axis=0)
-        # print('nodesArray ',nodesArray)
         nodesArrayPd = nodesArrayPd.append(pd.DataFrame(tempNodesArray, index=newNodesUZ))
-        # print('nodesArrayPd ',nodesArrayPd)
         nodesArrayPd.index = nodesArrayPd.index.astype(int)
         uzNodesToNodesNumeration = pd.DataFrame(newNodesUZ, index = nodesUZ)
-
         uzNodesToNodesNumeration.index = uzNodesToNodesNumeration.index.astype(int)
-        # print('uzNodesToNodesNumeration',uzNodesToNodesNumeration)
         uz.uzNodesToNodesNumeration = uzNodesToNodesNumeration
-
         coherentNodesPlate = gmshToCoherentNodesNumeration.loc[nodesUZ].to_numpy()[:,0]
         uz.coherentNodesPlate = coherentNodesPlate
         nodesRotationsPd = nodesRotationsPd.append(pd.DataFrame(np.zeros(nNodesUZ), index =newNodesUZ))
@@ -278,7 +235,6 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         coherentNodesPlate = uz.coherentNodesPlate
         coherentNodesUZ = uz.coherentNodesUZ
         dim = uz.physicalGroup[0]
-        #NEED TO CREATE THE CONSTRAINT MATRIX BEAM - PLATE!
         nDofs = nodesArray.shape[0]*3
         nConstraints = len(newNodesUZ)*3
         A=np.zeros((nConstraints, nDofs))
@@ -375,19 +331,46 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         
         AmatList.append(A)
 
-
-
         uz.elementsList = uzElementsList
 
-        # print('nodesRotation in mesh gen: ', nodesRotationsPd)
-    # print('gmshToCoherentNodesNumeration: ',gmshToCoherentNodesNumeration)
-    # print('nodesArray: ', nodesArray)
-    # print('nodesArrayPd: ', nodesArrayPd)
-    # print('nodesRotationsPd: ', nodesRotationsPd)
     self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs)
     self.mesh.AmatList = AmatList
     self.mesh.plateElementsList = plateElementsList
     self.mesh.getElementByTagDictionary = getElementByTagDictionary
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def setMesh(self, nodesArray, elements, BCs, load = None):
     elementsList = []
@@ -448,6 +431,26 @@ class Element:
         self.Db = None
         self.Ds = None
 
+def distortMesh(nodesArray, alpha):
+    '''
+        Displace the nodes in nodesArray according to a distortion function. \n
+        Input: \n
+        * nodesArray: Pandas dataframe of shape n x 3 with the x-y-z coordinates of each node  \n
+        * alpha: Variable in the distortion algorithm, controlling the severeness of the distortion.\n
+        Return: \n
+        *   newNodesArray: Pandas dataframe with the distorted nodes
+    '''
+    myIndex = nodesArray.index.to_numpy()
+    nodesArrayNumpy = nodesArray.to_numpy()
+    v1=np.ones(nodesArrayNumpy.shape[0])
+    x0 = nodesArrayNumpy[:,0]
+    y0 = nodesArrayNumpy[:,1]
+    a=np.max(x0)
+    newNodes = np.zeros(nodesArray.shape)
+    newNodes[:,0] = x0+(v1-np.abs(2*x0/a-1))*(2*y0/a-v1)*alpha
+    newNodes[:,1] = y0+2*(v1-np.abs(2*y0/a-1))*(2*x0/a-v1)*alpha
+    newNodesArray = pd.DataFrame(newNodes, index = myIndex)
+    return newNodesArray
 
 def assignNumpyArrayToDataFrame(xDF, indexesToModify, plateRotations, uzRotation):
     index = xDF.index
@@ -457,3 +460,24 @@ def assignNumpyArrayToDataFrame(xDF, indexesToModify, plateRotations, uzRotation
 
     xDF = pd.DataFrame(values, index=index)
     return xDF
+
+def _getElementDefinition(elementDefinition):
+    '''
+        Extracts information from the elementDefinition String. \n
+        Input: \n
+        * elementDefinition : String defining the desired FE-element in the following form: "type-nNodes-integration". \n
+            \t * type: DB for displacement-based elements or MITC. \n
+            \t * nNodes: number of nodes ( currently 3, 4 or 9). \n
+            \t * integration: Desired Gauss-quadrature for the calculation of the stiffness matrixes. R for reduced or N for normal. \n
+
+        Return: \n
+        * elementType \n
+        * elementShape \n
+        * elementIntegration
+    '''
+    temp = elementDefinition.split('-')
+    elementType = temp[0]
+    elementShape = int(temp[1])
+    elementIntegration = temp[2]
+
+    return elementType, elementShape, elementIntegration

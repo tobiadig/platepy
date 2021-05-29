@@ -7,7 +7,6 @@ Purpose of module: define the classes and methods needed to initialize the model
 
 # basic modules
 import numpy as np
-import matplotlib.pyplot as plt
 import gmsh # To create CAD model and mesh
 
 class PlateModel:   
@@ -26,7 +25,7 @@ class PlateModel:
         self.mesh = None
         self.results = None
         self.axes = {}
-
+        
     def addPlate(self, newPlate):  
         '''
             Add a plate object to the plateModel. \n
@@ -35,35 +34,34 @@ class PlateModel:
             Return: \n
             *   -
         '''
-        if not(self.isInitialized):
+        # Initialize the model if not existent
+        if not(self.isInitialized): 
             gmsh.initialize()
             gmsh.option.setNumber("General.Verbosity",0)
-
             self.isInitialized =True
-        
-        self.plates.append(newPlate)    # list of the plates contained in the model
-        
-        #create points
+        self.plates.append(newPlate)
+
+        # Create points in the Gmsh model
         nPoints = len(newPlate.outlineCoords)
         pointTags = [0]*nPoints
         for i, newPoint in enumerate(newPlate.outlineCoords):
             pointTags[i] = gmsh.model.geo.addPoint(newPoint[0], newPoint[1], 0)
 
-        #create lines
+        # Create lines in the Gmsh model
         nLines = nPoints*1-1
         linesTags = [0]*nLines
         for i in range(0, nLines):
             linesTags[i] = gmsh.model.geo.addLine(pointTags[i], pointTags[i+1])
         
-        #create surface
+        # Create surface in the Gmsh model
         curveLoopTag = gmsh.model.geo.addCurveLoop(linesTags)
         planeSurfaceTag= gmsh.model.geo.addPlaneSurface([curveLoopTag])
         newPlate.tag=planeSurfaceTag
-
-        # create physical group
+        
+        # Assign surface to a physical group
         physicalTag = gmsh.model.addPhysicalGroup(2, [planeSurfaceTag])
         newPlate.physicalGroup = (2, physicalTag) # assign a tuple to the plate with: (dim, physTag)
-
+        
         gmsh.model.geo.synchronize()
         gmsh.model.geo.removeAllDuplicates()
         gmsh.model.geo.synchronize()
@@ -76,6 +74,7 @@ class PlateModel:
             Return: \n
             *   -
         '''
+        # Initialize the model if not existent
         if not(self.isInitialized):
             gmsh.initialize()
             gmsh.model.add(self.name)
@@ -83,7 +82,7 @@ class PlateModel:
 
         self.walls.append(newWall)
         
-        #create points according to the given coordinates
+        # Create points in the Gmsh model
         nPoints = len(newWall.outlineCoords)
         pointTags = [0]*nPoints
         i=0
@@ -91,13 +90,13 @@ class PlateModel:
             pointTags[i] = gmsh.model.geo.addPoint(newPoint[0], newPoint[1], 0)
             i=i+1
 
-        #create lines
+        # Create lines in the Gmsh model
         nLines = nPoints*1-1
         linesTags = [0]*nLines
         for i in range(0, nLines):
             linesTags[i] = gmsh.model.geo.addLine(pointTags[i], pointTags[i+1])
         
-        #create physical group
+        # Assign line to a physical group
         physicalTag = gmsh.model.addPhysicalGroup(1, linesTags)
         newWall.physicalGroup = (1, physicalTag)
 
@@ -105,6 +104,7 @@ class PlateModel:
         gmsh.model.geo.removeAllDuplicates()
         gmsh.model.geo.synchronize()
 
+        # Embed lines into the surface (walls embedded into the plate)
         entities = np.array(gmsh.model.getEntities(1))
         for line in linesTags:
             if line in entities[:,1]:
@@ -120,6 +120,7 @@ class PlateModel:
             Return: \n
             *   -
         '''
+        # Initialize the model if not existent
         if not(self.isInitialized):
             gmsh.initialize()
             gmsh.model.add(self.name)
@@ -127,7 +128,7 @@ class PlateModel:
 
         self.downStandBeams.append(newDSB)
         
-        #create points according to the given coordinates
+        # Create points in the Gmsh model
         nPoints = len(newDSB.outlineCoords)
         pointTags = [0]*nPoints
         i=0
@@ -135,15 +136,15 @@ class PlateModel:
             pointTags[i] = gmsh.model.geo.addPoint(newPoint[0], newPoint[1], 0)
             i=i+1
 
-        #create lines
+        # Create lines in the Gmsh model
         nLines = nPoints*1-1
         linesTags = [0]*nLines
         for i in range(0, nLines):
             linesTags[i] = gmsh.model.geo.addLine(pointTags[i], pointTags[i+1])
         
-        #create physical group
+        # Assign line to a physical group
         physicalTag = gmsh.model.addPhysicalGroup(1, linesTags)
-        newDSB.physicalGroup = (1, physicalTag)
+        newDSB.physicalGroup = (1, physicalTag) #(dimension, physicalTag)
 
         gmsh.model.geo.synchronize()
         gmsh.model.geo.removeAllDuplicates()
@@ -162,14 +163,14 @@ class PlateModel:
             Return: \n
             *   -
         '''
+        # Initialize the model if not existent
         if not(self.isInitialized):
             gmsh.initialize()
             gmsh.model.add(self.name)
             self.isInitialized =True
-
         self.columns.append(newColumn)
 
-        #create points according to the given coordinates
+        # Create points in the Gmsh model
         nPoints = len(newColumn.outlineCoords)
         pointTags = [0]*nPoints
         i=0
@@ -177,7 +178,7 @@ class PlateModel:
             pointTags[i] = gmsh.model.geo.addPoint(newPoint[0], newPoint[1], 0)
             i=i+1
 
-        #creates physical group
+        # Assign point to a physical group
         physicalTag = gmsh.model.addPhysicalGroup(0, pointTags)
         newColumn.physicalGroup = (0, physicalTag)
 
@@ -189,8 +190,10 @@ class PlateModel:
             gmsh.model.mesh.embed(0, pointTags, 2, 1)
             gmsh.model.geo.synchronize()
         else:
-            gmsh.model.mesh.embed(0, pointTags, 1, 3)
-            gmsh.model.geo.synchronize()
+            pass # I didn't manage to embed a point into a line,
+                # user has to define a plate corner where the column will be...
+            # gmsh.model.mesh.embed(0, pointTags, 1, 3)
+            # gmsh.model.geo.synchronize()
 
     def addLoad(self, newLoad):
         '''
@@ -203,7 +206,7 @@ class PlateModel:
         self.loads.append(newLoad)
         
         if newLoad.case =='area':
-            pass
+            pass # in this case the force is by default applied in the solve module
         elif newLoad.case == 'line':
             nPoints = len(newLoad.outlineCoords)
             pointTags = [0]*nPoints
@@ -269,7 +272,7 @@ class Plate:
                                                     [nu, 1, 0],
                                                     [0, 0, (1-nu)/2]])
 
-            self.Dc = 5/6*h*np.array([[G,0],[0,G]]) #alpha = 5/6 according to ferreira p. 162
+            self.Dc = 5/6*h*np.array([[G,0],[0,G]]) #alpha = 5/6 according to Ferreira p. 162
         elif isUnterZug:
             self.Dc = 5/6*h*np.array([[G,0],[0,G]])
             e_uz = (h-t)/2
