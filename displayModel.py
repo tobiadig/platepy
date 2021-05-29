@@ -21,16 +21,16 @@ def plotInputGeometry(self, figaspect = 1):
     fig, axGeometry = plt.subplots(figsize=(w*mult, h*mult))
 
     for plate in self.plates:
-        plate.plot(axGeometry)  
+        plate._plot(axGeometry)  
 
     for wall in self.walls:
-        wall.plot(axGeometry)
+        wall._plot(axGeometry)
 
     for column in self.columns:
-        column.plot(axGeometry)
+        column._plot(axGeometry)
         
     for uz in self.downStandBeams:
-        uz.plot(axGeometry)
+        uz._plot(axGeometry)
 
     self.axes['InputGeometry'] = axGeometry
     return fig,axGeometry
