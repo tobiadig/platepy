@@ -29,17 +29,28 @@ def distortMesh(nodesArray, alpha):
     newNodesArray = pd.DataFrame(newNodes, index = myIndex)
     return newNodesArray
 
-def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, elementDefinition=None, meshSize=5e-2, nEdgeNodes = 0, order='linear', meshDistortion = False, distVal = 100, deactivateRotation=False):
-    ''' Input/Output descriptions
-        self: PlateModel class, where the geometry is initialized
-        meshInput: options for the creation of the mesh
-        return
-        the method generates a mesh using gmsh library. The mesh is stored in the PlateModel class.
-        following information are also generated and stored:
-        nodes coordinates and orientation, element connectivity, boundary conditions
+def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, elementDefinition=None, \
+    meshSize=5e-2, nEdgeNodes=0, order='linear', meshDistortion = False, distVal = 100,\
+        deactivateRotation=False):
+    ''' Generates mesh and stores it in the plateModel object according to the selected options.\n
+            Input: \n
+            * self: plateModel object. \n
+            * showGmshMesh = False: If True, the model is shown through the built-in fltk terminal (after the mesh generation). \n
+            * showGmshMesh = True: If True, the model is shown through the built-in fltk terminal (before the mesh generation). \n
+            * elementDefinition = None: String defining the desired FE-element in the following form: "type-nNodes-integration". \n
+            \t * type: DB for displacement-based elements or MITC. \n
+            \t * nNodes: number of nodes ( currently 3, 4 or 9). \n
+            \t * integration: Desired Gauss-quadrature for the calculation of the stiffness matrixes. R for reduced or N for normal. \n
+            * meshSize = 5e-2: target mesh size around the point entities. If nEdgeNodes > 0, meshSize is ignored. \n
+            * nEdgeNodes = 0: Prescribes the number of nodes on each edge. Plate must be rectangular.
+            * order = "linear": Prescribes the order of the elements. "linear for first 
+            order elements (default) and "quadratic" for second order elements. \n
+            * meshDistortion = False: Boolean, if True a mesh distortion function is applied. \n
+            * distVal = Severeness of the mesh distortion function. \n
+            Return: \n
+            *   -
     '''
     temp = elementDefinition.split('-')
-
     elementType = temp[0]
     elementShape = int(temp[1])
     elementIntegration = temp[2]
@@ -203,7 +214,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
             nodesRotationsPd.loc[nodeTags[:]] = lineRot
 
             for node in nodeTags[:]:
-                BCsDic[node] = wall.support.supportCondition
+                BCsDic[node] = wall.support
         # print('nodesRotation in mesh gen: ', nodesRotationsPd)
 
     for col in self.columns:
@@ -211,7 +222,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         nodeTags, _ = gmsh.model.mesh.getNodesForPhysicalGroup(dim,col.physicalGroup[1])
 
         for node in nodeTags:
-            BCsDic[node] = col.support.supportCondition
+            BCsDic[node] = col.support
 
     BCs = np.zeros((len(BCsDic), 4))
     for count, a in enumerate(BCsDic):

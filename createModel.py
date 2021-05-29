@@ -1,14 +1,13 @@
 ''' Module Information
 -----------------------------------------------------------
-Purpose of module: define the classes and methods needed to initialize the model adn define the geometry
+Purpose of module: define the classes and methods needed to initialize the model and define the geometry.
 -----------------------------------------------------------
-- Copywrite Tobia Diggelmann (ETH Zurich) 24.03.2021
+- Copywrite Tobia Diggelmann (ETH Zurich) 29.05.2021
 '''
 
 # basic modules
 import numpy as np
 import matplotlib.pyplot as plt
-
 import gmsh # To create CAD model and mesh
 
 class PlateModel:   
@@ -39,7 +38,7 @@ class PlateModel:
         if not(self.isInitialized):
             gmsh.initialize()
             gmsh.option.setNumber("General.Verbosity",0)
-            gmsh.model.add(self.name)
+
             self.isInitialized =True
         
         self.plates.append(newPlate)    # list of the plates contained in the model
@@ -246,8 +245,8 @@ class Plate:
         \t * "outlineCoords": n x 2 numpy array with n x-y couples, representing the boundaries of the plate  \n
         \t * "thickness": thickness of the plate \n
         \t * "body": concrete object \n
-        * isUnterZug: Boolean, True if the plate aims to modell a downstand beam (default is False)
-        * t: If the plate aims to modell a downstand beam, thickness of the sorrounding plate (default is 0) \n
+        * isUnterZug = False: Boolean, True if the plate aims to modell a downstand beam (default is False)
+        * t = 0: If the plate aims to modell a downstand beam, thickness of the sorrounding plate (default is 0) \n
         Return: \n
         *   -
     '''
@@ -349,7 +348,7 @@ class Column:
         \t * "outlineCoords": 1 x 2 numpy array with the x and y coordinates of the column.  \n
         \t * "width": Width of the column (square-shaped). \n
         \t * "support": Numpy array of length 3, each element is either 1 or 0 to block or leave free the relative degree of freedom. \n
-        * isInPlate: Boolean, True if the columns is positioned inside a plate (default is False) \n
+        * isInPlate = False: Boolean, True if the columns is positioned inside a plate (default is False) \n
         Return: \n
         *   -
     '''

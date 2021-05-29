@@ -35,7 +35,7 @@ wallDict = {}
 wallDict["outlineCoords"] = np.array([[0,0], [0,bUZ],[0,b-bUZ],[0,b]])
 wallDict["high"] = 3 # m
 wallDict["body"] = C25_30
-wallDict["support"] = Support(np.array([1, 0, 0]))
+wallDict["support"] = np.array([1, 0, 0])
 wallDict["thickness"] = 0.5 # m
 wall1 = Wall(wallDict)
 
@@ -43,7 +43,7 @@ wallDict["outlineCoords"] = np.array([[a,0], [a,bUZ],[a,b-bUZ],[a,b]])
 wall2 = Wall(wallDict)
 
 
-firstModel = PlateModel("plateModel1")
+firstModel = PlateModel()
 firstModel.addPlate(plate1)
 firstModel.addPlate(unterZug1)
 firstModel.addPlate(unterZug2)
