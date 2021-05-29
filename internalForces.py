@@ -43,13 +43,16 @@ def  getInternalForcesDSB(elementsList,uDownStandBeam,internalForcePosition, dow
 
     return Nforces, Vforces, Mforces, internalForcesPositions
 
-def getInternalForces(elementsList,uGlob,internalForcePosition, Df, Dc, nodesArray, smoothedValues):
+def getInternalForces(elementsList,uGlob,internalForcePosition, nodesArray, smoothedValues):
 
     if internalForcePosition == 'center':
         bendingMoments = np.zeros((len(elementsList),3))
         internalForcesPositions = np.zeros((len(elementsList),2))
         shearForces = np.zeros((len(elementsList),2))
         for k,element in enumerate(elementsList):
+
+            Df = element.Db
+            Dc = element.Ds
             elemNodes = element.connectivity
             coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
             elementType = element.type
@@ -82,6 +85,8 @@ def getInternalForces(elementsList,uGlob,internalForcePosition, Df, Dc, nodesArr
         shearForcesSum = np.zeros((nodesArray.shape[0],2+1))
         internalForcesPositions = nodesArray.to_numpy()[:,0:2]
         for k,element in enumerate(elementsList):
+            Df = element.Db
+            Dc = element.Ds
             elementType = element.type
             elemNodes = element.connectivity
             coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
@@ -93,7 +98,7 @@ def getInternalForces(elementsList,uGlob,internalForcePosition, Df, Dc, nodesArr
             # for i in range(0,3):
             #     kCoeff[0+i::3]=coherentElemNodes*3+i
             vLoc = np.matmul(element.rotationMatrix, uGlob[kCoeff])
-            if elementType =='L' : #TODO: not up to date
+            if elementType =='DB' and nNodes ==4 : 
                 ri = np.array([-1, 1, 1, -1])
                 si = np.array([-1,-1,1,1])
                 sigma = np.zeros((2,4))
@@ -134,17 +139,17 @@ def getInternalForces(elementsList,uGlob,internalForcePosition, Df, Dc, nodesArr
                     shearForcesSum[coherentElemNodes,2] += 1
                     shearForcesSum[coherentElemNodes,0:2] += sigma.transpose()
 
-            elif elementType =='MITC4':
+            elif elementType =='MITC' and nNodes ==4:
                 ri = np.array([1, -1, -1, 1])
                 si = np.array([1,1,-1,-1])
 
                 for i in range(0, len(ri)):
                     N, Bf,Bc, detJ = getShapeFunctionForElementType(elementType,ri[i], si[i], xi, yi)
-                    bendingMomentsSum[coherentElemNodes[i],0:3] += np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*1
-                    shearForcesSum[coherentElemNodes[i],0:2] += np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*1 
+                    bendingMomentsSum[coherentElemNodes[i],0:3] += np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*-1
+                    shearForcesSum[coherentElemNodes[i],0:2] += np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*-1 
                     bendingMomentsSum[coherentElemNodes[i],3] += 1
                     shearForcesSum[coherentElemNodes[i],2] += 1 
-            elif elementType=='Q':
+            elif elementType=='DB' and nNodes ==9:
                 ri = np.array([-1, 1, 1, -1, 0, 1, 0, -1, 0])
                 si = np.array([-1, -1, 1, 1, -1, 0, 1, 0, 0])
                 for i in range(0, len(ri)):
@@ -153,7 +158,7 @@ def getInternalForces(elementsList,uGlob,internalForcePosition, Df, Dc, nodesArr
                     shearForcesSum[coherentElemNodes[i],0:2] += np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*-1
                     bendingMomentsSum[coherentElemNodes[i],3] += 1
                     shearForcesSum[coherentElemNodes[i],2] += 1 
-            elif elementType == 'MITC9':
+            elif elementType == 'MITC' and nNodes == 9:
                 ri = np.array([1, -1, -1, 1, 0, -1, 0, 1, 0])
                 si = np.array([1, 1, -1, -1, 1, 0, -1, 0, 0])
                 for i in range(0, len(ri)):
@@ -173,6 +178,8 @@ def getInternalForces(elementsList,uGlob,internalForcePosition, Df, Dc, nodesArr
         internalForcesPositions = np.zeros((len(elementsList)*nGaussPoints,2))
         shearForces = np.zeros((len(elementsList)*nGaussPoints,2))
         for k,element in enumerate(elementsList):
+            Df = element.Db
+            Dc = element.Ds
             elementType = element.type
             elemNodes = element.connectivity
             coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]

@@ -27,7 +27,8 @@ import copy
 import time
 from tqdm import tqdm
 
-def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1, internalForcePosition = 'nodes', smoothedValues = False, solveMethod = 'sparse', computeMoments=True):
+def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1,\
+    internalForcePosition = 'nodes', smoothedValues = False, solveMethod = 'sparse', computeMoments=True, kBendingResistance = 1):
     ''' Input/Output descriptions
     ElemType:  or Quadratic or MITC + Reduced or Normal Integration
         self: PlateModel class, where the geometry and the mesh are initialized
@@ -99,9 +100,9 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
             self.mesh.plateElementsList[k].rotationMatrix = R
 
         # #rotate stiffness matrix
-        # kTemp = np.matmul(kLocalNotRotated, R)
-        # kLocal = np.matmul(R.transpose(), kTemp)
-        kLocal = kLocalNotRotated
+        kTemp = np.matmul(kLocalNotRotated, R)
+        kLocal = np.matmul(R.transpose(), kTemp)
+        # kLocal = kLocalNotRotated
 
 
         nMatrixDofs = kLocal.size
@@ -354,16 +355,28 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 
     #compute MOMENTS
     if computeMoments:
-        Df = self.plates[0].Df 
-        Dc = self.plates[0].Dc #TODO: only plate 0
+
         nodesArray = self.mesh.nodesArray
         mitcList = self.mesh.plateElementsList
 
-        bendingMoments, shearForces, internalForcesPositions = getInternalForces(mitcList,uGlob,internalForcePosition, Df, Dc, nodesArray, smoothedValues)
+        bendingMoments, shearForces, internalForcesPositions = getInternalForces(mitcList,uGlob,internalForcePosition,nodesArray, smoothedValues)
         self.results.bendingMoments=bendingMoments*resultsScaleIntForces[0]
         self.results.internalForcesPositions=internalForcesPositions
         self.results.shearForces = shearForces*resultsScaleIntForces[1]
         self.results.resultsScaleVertDisp = resultsScaleVertDisp
+
+        #compute bending resistances
+        bendingResistance = np.zeros((bendingMoments.shape[0],2,3))
+
+        kBendingResistance
+        bendingResistance[:,0,0] = bendingMoments[:,0] + kBendingResistance*np.abs(bendingMoments[:,2])
+        bendingResistance[:,1,0] = bendingMoments[:,1] + 1/kBendingResistance*np.abs(bendingMoments[:,2])
+        bendingResistance[:,0,1] = -bendingMoments[:,0] + kBendingResistance*np.abs(bendingMoments[:,2])
+        bendingResistance[:,1,1] = -bendingMoments[:,1] + 1/kBendingResistance*np.abs(bendingMoments[:,2])
+        bendingResistance[:,0,2] = np.abs(bendingMoments[:,0]) + kBendingResistance*np.abs(bendingMoments[:,2])
+        bendingResistance[:,1,2] = np.abs(bendingMoments[:,1]) + 1/kBendingResistance*np.abs(bendingMoments[:,2])
+
+        self.results.bendingResistance = bendingResistance
 
 
         if len(self.downStandBeams) > 0:
@@ -379,7 +392,6 @@ def solveModel(self, reducedIntegration = False, resultsScaleIntForces = (1, 1),
 class Result:
     '''
         class which stores all model output
-
     '''
     def __init__(self, outPos, wVert, xRot, yRot, resultsScale = (1,1)):
         self.outPos = outPos
@@ -390,6 +402,8 @@ class Result:
         self.internalForcesPositions = None
         self.shearForces = None
         self.resultsScaleVertDisp = resultsScale[0]
+
+        self.bendingResistance = None
 
         self.bendingMomentsDSB=None
         self.internalForcesPositionsDSB=None

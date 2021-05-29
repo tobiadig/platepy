@@ -22,23 +22,18 @@ plateDict["body"]=C25_30
 plateDict["stiffnessFactor"] = 1
 plate1 = Plate(plateDict)
 
-
 wallDict = {}
 wallDict["outlineCoords"]=np.array([[0,0], [a,0],[a,b], [0,b],[0,0]])
 wallDict["high"] = 3 # m
 wallDict["body"] = C25_30
-wallDict["support"] = Support(np.array([1, 0, 1]))
+wallDict["support"] = Support(np.array([1, 1, 0]))
 wallDict["thickness"] = 0.5 # m
 wall1 = Wall(wallDict)
-
 
 firstModel = PlateModel("plateModel1")
 firstModel.addPlate(plate1)
 
-
 firstModel.addWall(wall1)
-
-
 
 firstModel.addLoad(distributedLoad)
 
@@ -54,27 +49,25 @@ from displayModel import *
 # create mesh
 from generateMesh import *
 elemDefinitions = ['DB-4-R', 'MITC-4-N', 'DB-9-R', 'MITC-9-N']
-generateMesh(firstModel, showGmshMesh=False,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], nEdgeNodes=61, order ='linear', deactivateRotation=False)
+generateMesh(firstModel, showGmshMesh=False,showGmshGeometryBeforeMeshing=False, elementDefinition=elemDefinitions[1], nEdgeNodes=31, order ='linear', deactivateRotation=False)
 # generateMesh(sampleModel, showGmshMesh=True, elementType='QUAD', nEdgeNodes=11, order ='linear')
 
 # compute
 from solveModel import *
-solveModel(firstModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3, internalForcePosition = 'center', solveMethod = 'sparse', computeMoments=True)
+solveModel(firstModel, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1e3, internalForcePosition = 'nodes', solveMethod = 'sparse', computeMoments=True)
 
 # display results
-plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=False, bendingMomentsToPlot=[],shearForcesToPlot=[])
+plotResults(firstModel,displacementPlot='isolines', verticalDisplacement=False, bendingMomentsToPlot=['x','y','xy'],shearForcesToPlot=[],bendingResistancesToPlot=['xAbs','yAbs'])
 
 
 #%%
 startCoord = (5,0)
 endCoord = (5,10)
 
-
-
 nEvaluationPoints = 1000
 bendingMoments, shearForces, arrayEvaluationPoints  = beamComponents(firstModel,'line1', startCoord, endCoord,nEvaluationPoints, integrationWidth = 0, nIntegrationPoints=10)
 
-plotBeamComponent(firstModel,'line1', verticalDisplacement = True, bendingMomentsToPlot = [], shearForcesToPlot = [], plotOnMesh = False)
+# plotBeamComponent(firstModel,'line1', verticalDisplacement = True, bendingMomentsToPlot = [], shearForcesToPlot = [], plotOnMesh = False)
 # bendingMoments, shearForces, arrayEvaluationPoints  = beamComponents(firstModel,'line1', startCoord, endCoord,nEvaluationPoints, integrationWidth = 1.0, nIntegrationPoints=10)
 
 # plotBeamComponent(firstModel,'line1', verticalDisplacement = False, bendingMomentsToPlot = [], shearForcesToPlot = ['x'])

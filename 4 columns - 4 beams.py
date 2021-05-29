@@ -119,3 +119,4 @@ bendingMoments, shearForces, arrayEvaluationPoints  = beamComponents(firstModel,
 
 plotBeamComponent(firstModel,'line1', verticalDisplacement = False, bendingMomentsToPlot = [], shearForcesToPlot = ['x', 'y'], plotOnMesh = True)
 plt.show()
+

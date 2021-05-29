@@ -106,7 +106,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     nodeTagsModel , nodeCoords, _ = gmsh.model.mesh.getNodes()
 
     nodesArray = np.array(nodeCoords).reshape((-1,3))
-    # print('old: ', nodesArray)tanjadahlia
+    # print('old: ', nodesArray)
     nodesArrayPd = pd.DataFrame(nodesArray, index = nodeTagsModel)
     nodesRotationsPd = pd.DataFrame(np.zeros(nodeTagsModel.size), index =nodeTagsModel)
     gmshToCoherentNodesNumeration = pd.DataFrame(range(0,len(nodeTagsModel)), index = nodeTagsModel)
@@ -127,6 +127,8 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
             newElement = Element()
             newElement.tag = elemTag
             newElement.whichPlate = i
+            newElement.Db = self.plates[i].Df 
+            newElement.Ds = self.plates[i].Dc 
             # print('element ',elemTag,' belongs to plate ',i)
             newElement.type = elementType
             newElement.shape = elementShape
@@ -432,6 +434,8 @@ class Element:
         self.type = None
         self.integration = None
         self.correspondingPlateElements = None
+        self.Db = None
+        self.Ds = None
 
 
 def assignNumpyArrayToDataFrame(xDF, indexesToModify, plateRotations, uzRotation):

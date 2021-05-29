@@ -35,18 +35,24 @@ def plotInputGeometry(self, figaspect = 1):
     self.axes['InputGeometry'] = axGeometry
     return fig,axGeometry
 
-def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines', bendingMomentsToPlot = [], shearForcesToPlot = [], saveImage=False):
+def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines', bendingMomentsToPlot = [], shearForcesToPlot = [],bendingResistancesToPlot=[], saveImage=False):
     outAxis = []
     outFig = []
-    valPoss = ['x', 'y', 'xy']
+    valPossM = ['x', 'y', 'xy']
+    valPossV = ['x','y']
+    valPossRes = ['x+', 'y+', 'x-', 'y-', 'xAbs', 'yAbs']
     
-    outVal = np.zeros(6, dtype=bool)
+    outVal = np.zeros(12, dtype=bool)
     outVal[0]=verticalDisplacement
-    for i, a in enumerate(valPoss):
+    for i, a in enumerate(valPossM):
         if a in bendingMomentsToPlot:
             outVal[i+1] = True
+    for i, a in enumerate(valPossV):
         if a in shearForcesToPlot:
             outVal[i+4] = True
+    for i, a in enumerate(valPossRes):
+        if a in bendingResistancesToPlot:
+            outVal[i+6] = True
 
     if outVal[0]: #plot vertical displacements
         x= self.results.outPos[:,0]
@@ -107,7 +113,68 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
         fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
 
         self.axes[theTitle] = axOut
-        outAxis.append(axOut) 
+        outAxis.append(axOut)
+
+    if outVal[6]: #plot Mx+
+        x = self.results.internalForcesPositions[:,0]
+        y = self.results.internalForcesPositions[:,1]
+        z = self.results.bendingResistance[:,0,0]
+        theTitle='Mx+ Resistance'
+        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
+
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut)
+
+    if outVal[7]: #plot My resistance+
+        x = self.results.internalForcesPositions[:,0]
+        y = self.results.internalForcesPositions[:,1]
+        z = self.results.bendingResistance[:,1,0]
+        theTitle='My+ resistance'
+        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
+
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut)
+
+    if outVal[8]: #plot Mx-
+        x = self.results.internalForcesPositions[:,0]
+        y = self.results.internalForcesPositions[:,1]
+        z = self.results.bendingResistance[:,0,1]
+        theTitle='Mx- Resistance'
+        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
+
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut)
+
+    if outVal[9]: #plot My resistance-
+        x = self.results.internalForcesPositions[:,0]
+        y = self.results.internalForcesPositions[:,1]
+        z = self.results.bendingResistance[:,1,1]
+        theTitle='My- resistance'
+        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
+
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut)
+
+    if outVal[10]: #plot Mx abs
+        x = self.results.internalForcesPositions[:,0]
+        y = self.results.internalForcesPositions[:,1]
+        z = self.results.bendingResistance[:,0,2]
+        theTitle='Mx max Resistance'
+        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
+
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut)
+
+    if outVal[11]: #plot My resistance abs
+        x = self.results.internalForcesPositions[:,0]
+        y = self.results.internalForcesPositions[:,1]
+        z = self.results.bendingResistance[:,1,2]
+        theTitle='My max resistance'
+        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
+
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut)
+
 
     return outFig, outAxis
 
@@ -238,18 +305,20 @@ def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = Fals
             k+=1
     return fig, outAx 
 
-def plotBeamComponent(self,lineName, verticalDisplacement = True, bendingMomentsToPlot = [], shearForcesToPlot = [], plotOnMesh=False):
+def plotBeamComponent(self,lineName, verticalDisplacement = True, bendingMomentsToPlot = [], shearForcesToPlot = [],bendingResistancesToPlot=[], plotOnMesh=False):
     outAxis = []
     outFig = []
     valPoss = ['x', 'y', 'xy']
     
-    outVal = np.zeros(6, dtype=bool)
+    outVal = np.zeros(8, dtype=bool)
     outVal[0]=verticalDisplacement
     for i, a in enumerate(valPoss):
         if a in bendingMomentsToPlot:
             outVal[i+1] = True
         if a in shearForcesToPlot:
             outVal[i+4] = True
+        if a in bendingResistancesToPlot:
+            outVal[i+6] = True
 
     schnitt = self.results.schnittList[lineName]
     x=schnitt.arrayEvaluationPoints[:,0]
@@ -308,6 +377,24 @@ def plotBeamComponent(self,lineName, verticalDisplacement = True, bendingMoments
 
         self.axes[theTitle] = axOut
         outAxis.append(axOut) 
+
+    if outVal[6]: #plot Mx resistance
+        z = schnitt.bendingMoments[:,0]
+
+        theTitle='Mx'
+        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,plotOnMesh)
+
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut)
+
+    if outVal[7]: #plot My resistance
+        z = schnitt.bendingMoments[:,0]
+
+        theTitle='Mx'
+        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,plotOnMesh)
+
+        self.axes[theTitle] = axOut
+        outAxis.append(axOut)
 
     return outFig, outAxis
 
