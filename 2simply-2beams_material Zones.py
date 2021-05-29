@@ -35,7 +35,7 @@ wallDict = {}
 wallDict["outlineCoords"] = np.array([[0,0], [0,bUZ],[0,b-bUZ],[0,b]])
 wallDict["high"] = 3 # m
 wallDict["body"] = C25_30
-wallDict["support"] = np.array([1, 1, 0])
+wallDict["support"] = np.array([1, 0, 0])
 wallDict["thickness"] = 0.5 # m
 wall1 = Wall(wallDict)
 

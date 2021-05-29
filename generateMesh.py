@@ -105,30 +105,11 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     # distort the mesh if required
     if meshDistortion:
         nodesArrayPd = distortMesh(nodesArrayPd, distVal)
-    
-    elementsList = []
-    getElementByTagDictionary ={}
 
-    # Assign all the information to each element object and save it in the elementsList
-    for i in range(0, len(self.plates)):
-        _, elemTags, _ = gmsh.model.mesh.getElements(2,self.plates[i].tag)
-        for elemTag in elemTags[0]:
-            _ , nodeTags = gmsh.model.mesh.getElement(elemTag)
-            newElement = Element()
-            newElement.tag = elemTag
-            newElement.whichPlate = i
-            newElement.Db = self.plates[i].Df 
-            newElement.Ds = self.plates[i].Dc 
-            newElement.type = elementType
-            newElement.shape = elementShape
-            newElement.integration = elementIntegration
-            newElement.nNodes  = len(nodeTags)
-            newElement.connectivity  = nodeTags
-            newElement.coherentConnectivity = gmshToCoherentNodesNumeration.loc[nodeTags]
-            newElement.coordinates = nodesArrayPd.loc[nodeTags].to_numpy()
+    gmshModel = gmsh.model
+    platesList = self.plates
 
-            elementsList.append(newElement)
-            getElementByTagDictionary[elemTag] = newElement
+    elementsList, getElementByTagDictionary = getElementsList(gmshModel,platesList, elementType, elementShape,elementIntegration,gmshToCoherentNodesNumeration,nodesArrayPd)
 
     plateElementsList = copy.deepcopy(elementsList)  # usefull if there is the need to distinguish plate elements from the downstand bem elements
 
@@ -152,7 +133,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
 
     #generate BCs and nodes directions by iterating over wall segments
     wallList = self.walls
-    gmshModel = gmsh.model
+    
     columnsList = self.columns
     BCs, nodesRotationsPd = getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotation)
 
@@ -338,7 +319,31 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
 
 
 
+def getElementsList(gmshModel,platesList, elementType, elementShape,elementIntegration,gmshToCoherentNodesNumeration,nodesArrayPd):
+    elementsList = []
+    getElementByTagDictionary ={}
 
+    # Assign all the information to each element object and save it in the elementsList
+    for i in range(0, len(platesList)):
+        _, elemTags, _ = gmshModel.mesh.getElements(2,platesList[i].tag)
+        for elemTag in elemTags[0]:
+            _ , nodeTags = gmshModel.mesh.getElement(elemTag)
+            newElement = Element()
+            newElement.tag = elemTag
+            newElement.whichPlate = i
+            newElement.Db = platesList[i].Df 
+            newElement.Ds = platesList[i].Dc 
+            newElement.type = elementType
+            newElement.shape = elementShape
+            newElement.integration = elementIntegration
+            newElement.nNodes  = len(nodeTags)
+            newElement.connectivity  = nodeTags
+            newElement.coherentConnectivity = gmshToCoherentNodesNumeration.loc[nodeTags]
+            newElement.coordinates = nodesArrayPd.loc[nodeTags].to_numpy()
+
+            elementsList.append(newElement)
+            getElementByTagDictionary[elemTag] = newElement
+    return elementsList, getElementByTagDictionary
 
 def getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotation):
     BCsDic = {}
