@@ -60,56 +60,32 @@ def solveModel(self, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1,\
     # apply boundary conditions
     elementType = elementsList[0].type
 
-
-
     fDofsInt, rDofsBool,keepedDisplacements = getFreeDOFvector(BCs, nGDofs,elementType,discartedDOFs)
-
-
 
     kMatFree = sparseGlobalMatrix[fDofsInt,:]
     kMatFree = kMatFree[:,fDofsInt]
-    # np.savetxt('Kfree.csv', kMatFree.toarray(), delimiter=',')
-
     fVecFree = sparseForceGlobal[fDofsInt]
-    # print('force vector: ', pd.DataFrame(sparseForceGlobal.toarray()))
-
-    #slice A matrix
-
-
 
     if solveMethod == 'cho':
-        A = []
-        for myA in self.mesh.AmatList:
-            if len(A) == 0:
-                A=myA
-            else:
-                A= np.concatenate((A, myA))
-        # print(pd.DataFrame(A))
+        AmatList = self.mesh.AmatList
+        A = assembleSystemMFCmatrix(AmatList)
         try:
             A=A[:,fDofsInt]
         except:
             raise ValueError('Please change solveMethod from "cho" to "sparse"')
-            
-        b=np.zeros(A.shape[0])
-        nConstraints = A.shape[0]
-        nFreeDofs = A.shape[1]
-        kMatFreeNp = kMatFree.toarray()
-        fVecFreeNp = fVecFree.toarray()
-        rightSide = np.zeros(nFreeDofs+nConstraints)
-        rightSide[0:nFreeDofs]=fVecFree.toarray()[:,0]
-        M = block_diag(kMatFreeNp, np.zeros((nConstraints,nConstraints)))
-        M[-nConstraints:,0:nFreeDofs] = A
-        M[0:nFreeDofs, -nConstraints:] = A.T
-        # np.savetxt('Mmat.csv', M, delimiter=',')
-        # np.savetxt('Kmat.csv', kMatFreeNp, delimiter=',')
-        # np.savetxt('Amat.csv', A, delimiter=',')
+
+        # b=np.zeros(A.shape[0])
+
+        M, rightSide = getMmatrixAndRightSide(A, kMatFree,fVecFree)
+
+        # M is the matrix used to solve the system using lagrangian MPC. It has form [[K, A.T],[A, 0]]
 
         lu, d, perm = ldl(M)
 
 
         y = solve(lu, rightSide)
         x=solve(d@lu.T, y)
-
+        nConstraints = A.shape[0]
         Uf = x[0:-nConstraints]
         uGlob=np.zeros((nGDofs,1))
         uGlob[fDofsInt]=np.expand_dims(Uf, axis=1)
@@ -395,9 +371,7 @@ def getFreeDOFvector(BCs, nGDofs,elementType,discartedDOFs):
     for constraint in BCs:
         node=int(constraint[0])
         rDofsBool[node*3-3:node*3] = constraint[1:].astype(bool)
-
     rDofsInt = np.array(range(0,nGDofs))[rDofsBool]
-    # print('rDofs: ', rDofsInt)
 
     #remove discarted nodes
     allDofs =np.arange(0,nGDofs)
@@ -406,9 +380,26 @@ def getFreeDOFvector(BCs, nGDofs,elementType,discartedDOFs):
 
     return fDofsInt, rDofsBool,keepedDisplacements
 
+def assembleSystemMFCmatrix(AmatList):
+    A = []
+    for myA in AmatList:
+        if len(A) == 0:
+            A=myA
+        else:
+            A= np.concatenate((A, myA))
+    return A
 
+def getMmatrixAndRightSide(A, kMatFree,fVecFree):
+    nConstraints = A.shape[0]
+    nFreeDofs = A.shape[1]
+    kMatFreeNp = kMatFree.toarray()
+    rightSide = np.zeros(nFreeDofs+nConstraints)
+    rightSide[0:nFreeDofs]=fVecFree.toarray()[:,0]
+    M = block_diag(kMatFreeNp, np.zeros((nConstraints,nConstraints)))
+    M[-nConstraints:,0:nFreeDofs] = A
+    M[0:nFreeDofs, -nConstraints:] = A.T
 
-
+    return M, rightSide
 
 
 
