@@ -13,7 +13,8 @@ import gmsh # To create CAD model and mesh
 def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, elementDefinition=None, \
     meshSize=5e-2, nEdgeNodes=0, order='linear', meshDistortion = False, distVal = 100,\
         deactivateRotation=False):
-    ''' Generates mesh and stores it in the plateModel object according to the selected options.\n
+    ''' Generates mesh and stores it in the plateModel object according to the selected options. Gmsh model has to be already
+        initialized and structural elements have to be added to the model.\n
             Input: \n
             * self: plateModel object. \n
             * showGmshMesh = False: If True, the model is shown through the built-in fltk terminal (after the mesh generation). \n
@@ -109,7 +110,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     gmshModel = gmsh.model
     platesList = self.plates
     elementsList, getElementByTagDictionary = getElementsList(gmshModel,platesList, elementType, elementShape,elementIntegration,gmshToCoherentNodesNumeration,nodesArrayPd)
-    plateElementsList = copy.deepcopy(elementsList)  # usefull if there is the need to distinguish plate elements from the downstand bem elements
+    plateElementsList = copy.deepcopy(elementsList)  # useful if there is the need to distinguish plate elements from the downstand bem elements
 
     #assemble 2D elements for line load
     loadsList = self.loads
