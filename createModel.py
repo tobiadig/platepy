@@ -281,7 +281,7 @@ class Plate:
                                         [0,        (t)**3, 0],
                                         [0,         0,   t**3*1/2]])
 
-    def _plot(self, axGeometry):
+    def plot(self, axGeometry):
         '''
             (Private) Plots a plate object in the axGeometry axis. \n
             Input: \n
@@ -313,7 +313,7 @@ class Wall:
         self.elementComposition = []
         self.nodeComposition = None
 
-    def _plot(self, axGeometry):
+    def plot(self, axGeometry):
         '''
             (Private) Plots a wall object in the axGeometry axis. \n
             Input: \n
@@ -364,7 +364,7 @@ class Column:
         self.nodeComposition = None
         self.isInPlate = isInPlate
 
-    def _plot(self, ax):
+    def plot(self, ax):
         '''
             (Private) Plots a column object in the axGeometry axis. \n
             Input: \n
@@ -413,7 +413,7 @@ class DownStandBeam:
         self.newNodesUZ = None
 
 
-    def _plot(self, axGeometry):
+    def plot(self, axGeometry):
         '''
             (Private) Plots a downStandBeam object in the axGeometry axis. \n
             Input: \n
