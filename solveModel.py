@@ -57,31 +57,14 @@ def solveModel(self, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1,\
     modelMesh = self.mesh
 
     sparseGlobalMatrix, sparseForceGlobal, discartedDOFs = getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesRotations, modelMesh,p, nNodesTotal)
-    # np.savetxt('K.csv', sparseGlobalMatrix.toarray(), delimiter=",")
     # apply boundary conditions
-    rDofsBool = np.zeros((nGDofs),dtype=bool)
     elementType = elementsList[0].type
-    
-    if elementType=='MITC9':
-        keepedDisplacements = np.zeros((nGDofs),dtype=bool)
-        keepedDisplacements[discartedDOFs] = np.ones((discartedDOFs.size), dtype=bool)
-        keepedDisplacements = np.invert(keepedDisplacements)
-        rDofsBool[discartedDOFs] = np.ones((discartedDOFs.size), dtype=bool)
-    else:
-        keepedDisplacements = np.zeros((nGDofs),dtype=bool)
-        keepedDisplacements = np.invert(keepedDisplacements)
 
-    for constraint in BCs:
-        node=int(constraint[0])
-        rDofsBool[node*3-3:node*3] = constraint[1:].astype(bool)
 
-    rDofsInt = np.array(range(0,nGDofs))[rDofsBool]
-    # print('rDofs: ', rDofsInt)
 
-    #remove discarted nodes
-    allDofs =np.arange(0,nGDofs)
-    fDofsBool = np.invert(rDofsBool)
-    fDofsInt = allDofs[fDofsBool]
+    fDofsInt, rDofsBool,keepedDisplacements = getFreeDOFvector(BCs, nGDofs,elementType,discartedDOFs)
+
+
 
     kMatFree = sparseGlobalMatrix[fDofsInt,:]
     kMatFree = kMatFree[:,fDofsInt]
@@ -229,12 +212,8 @@ def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesR
     nElements = len(elementsList)
     discartedDOFs = np.zeros(nElements, dtype=int)
 
-
-
     print('Assembling stiffness matrix')
     for k,element in enumerate(tqdm(elementsList)):
-    # for element in elementsList:
-
         elementType=element.type
         elementIntegration = element.integration
         plateOfTheElement = element.whichPlate
@@ -244,8 +223,6 @@ def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesR
         elemNodesRotations = nodesRotations.loc[elemNodes].to_numpy()
         xi=element.coordinates[:,0]
         yi=element.coordinates[:,1]
-        # print('element ',k)
-        # print('nodes: ', elemNodes)
         if elementType!='timo':
             Df = platesList[plateOfTheElement].Df
             Dc = platesList[plateOfTheElement].Dc
@@ -404,7 +381,30 @@ def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesR
 
     return sparseGlobalMatrix, sparseForceGlobal, discartedDOFs
 
+def getFreeDOFvector(BCs, nGDofs,elementType,discartedDOFs):
+    rDofsBool = np.zeros((nGDofs),dtype=bool)
 
+    if elementType=='MITC9':
+        keepedDisplacements = np.zeros((nGDofs),dtype=bool)
+        keepedDisplacements[discartedDOFs] = np.ones((discartedDOFs.size), dtype=bool)
+        keepedDisplacements = np.invert(keepedDisplacements)
+        rDofsBool[discartedDOFs] = np.ones((discartedDOFs.size), dtype=bool)
+    else:
+        keepedDisplacements = np.zeros((nGDofs),dtype=bool)
+        keepedDisplacements = np.invert(keepedDisplacements)
+    for constraint in BCs:
+        node=int(constraint[0])
+        rDofsBool[node*3-3:node*3] = constraint[1:].astype(bool)
+
+    rDofsInt = np.array(range(0,nGDofs))[rDofsBool]
+    # print('rDofs: ', rDofsInt)
+
+    #remove discarted nodes
+    allDofs =np.arange(0,nGDofs)
+    fDofsBool = np.invert(rDofsBool)
+    fDofsInt = allDofs[fDofsBool]
+
+    return fDofsInt, rDofsBool,keepedDisplacements
 
 
 
@@ -472,16 +472,3 @@ class Result:
         z=np.abs(wVert)
         iMax = np.argmax(z)
         self.wMax = (outPos[iMax,0],outPos[iMax,1], self.wVert[iMax])
-
-if __name__ == "__main__":
-
-    xi = np.array([5. , 0. , 0. , 5. , 2.5, 0. , 2.5, 5. , 2.5])
-    yi = np.array([5. , 5. , 0. , 0. , 5. , 2.5, 0. , 2.5, 2.5])
-
-    ri = -0.7745966692414834
-    si = -0.7745966692414834
-
-    N, Nr, Ns = shapeFun9(ri, si)
-    N, Nr, Ns = shapeFun8(ri, si)
-
-    nothing = 0
