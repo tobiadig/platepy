@@ -137,39 +137,63 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     columnsList = self.columns
     BCs, nodesRotationsPd = getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotation)
 
-
-
     nextNode = int(np.max(nodeTagsModel)+1)
-    nextCoherentNode = int(nodesArray.shape[0])
+    downStandBeamsList = self.downStandBeams
+    myPlate = self.plates[0]
 
+    downStandBeamsList, gmshToCoherentNodesNumeration,nodesArray,nodesArrayPd,nodesRotationsPd =\
+    createNewNodesForDownStandBeams(gmshModel,nodesArray,nodesArrayPd,nodesRotationsPd,downStandBeamsList,gmshToCoherentNodesNumeration,nextNode)
+
+    downStandBeamsList, AmatList, elementsList,nodesRotationsPd = \
+    getDownStandBeamsElements(gmshModel,nodesRotationsPd,nodesArray,elementsList,\
+    downStandBeamsList,elementType,myPlate,gmshToCoherentNodesNumeration,nodesArrayPd)
+
+
+    self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs)
+    self.mesh.AmatList = AmatList
+    self.mesh.plateElementsList = plateElementsList
+    self.mesh.getElementByTagDictionary = getElementByTagDictionary
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def getDownStandBeamsElements(gmshModel,nodesRotationsPd,nodesArray,elementsList,\
+    downStandBeamsList,elementType,myPlate,gmshToCoherentNodesNumeration,nodesArrayPd):
     AmatList = []
-    for uz in self.downStandBeams:
-        uzElementsList = []
-        dim = uz.physicalGroup[0]
-        nodesUZ, coord = gmsh.model.mesh.getNodesForPhysicalGroup(dim,uz.physicalGroup[1])
-        nNodesUZ = len(nodesUZ)
-        newNodesUZ = np.array(range(nextNode, nextNode+nNodesUZ), dtype=int)
-        uz.newNodesUZ = newNodesUZ
-        coherentNodesUZ = np.array(range(nextCoherentNode, nextCoherentNode+nNodesUZ), dtype=int)
-        uz.coherentNodesUZ = coherentNodesUZ
-        tempDF = pd.DataFrame(coherentNodesUZ, index=newNodesUZ)
-        gmshToCoherentNodesNumeration = gmshToCoherentNodesNumeration.append(tempDF)
-        gmshToCoherentNodesNumeration.index = gmshToCoherentNodesNumeration.index.astype(int)
-        nextCoherentNode += nNodesUZ
-        nextNode = nextNode+nNodesUZ
-        tempNodesArray = nodesArrayPd.loc[nodesUZ].to_numpy()
-        nodesArray = np.append(nodesArray, tempNodesArray, axis=0)
-        nodesArrayPd = nodesArrayPd.append(pd.DataFrame(tempNodesArray, index=newNodesUZ))
-        nodesArrayPd.index = nodesArrayPd.index.astype(int)
-        uzNodesToNodesNumeration = pd.DataFrame(newNodesUZ, index = nodesUZ)
-        uzNodesToNodesNumeration.index = uzNodesToNodesNumeration.index.astype(int)
-        uz.uzNodesToNodesNumeration = uzNodesToNodesNumeration
-        coherentNodesPlate = gmshToCoherentNodesNumeration.loc[nodesUZ].to_numpy()[:,0]
-        uz.coherentNodesPlate = coherentNodesPlate
-        nodesRotationsPd = nodesRotationsPd.append(pd.DataFrame(np.zeros(nNodesUZ), index =newNodesUZ))
-        nodesRotationsPd.index = nodesRotationsPd.index.astype(int)
-
-    for uz in self.downStandBeams:
+    uzElementsList = []
+    for uz in downStandBeamsList:
         newNodesUZ = uz.newNodesUZ
         uzNodesToNodesNumeration = uz.uzNodesToNodesNumeration 
         coherentNodesPlate = uz.coherentNodesPlate
@@ -179,15 +203,15 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         nConstraints = len(newNodesUZ)*3
         A=np.zeros((nConstraints, nDofs))
 
-        hp = self.plates[0].thickness
-        hb = uz.thickness
-        enitiesTags = gmsh.model.getEntitiesForPhysicalGroup(dim,uz.physicalGroup[1])
+        hp = myPlate.thickness
+        hb = uz.crossSection.thickness
+        enitiesTags = gmshModel.getEntitiesForPhysicalGroup(dim,uz.physicalGroup[1])
         for uzLine in enitiesTags:
             # nodeTags, coord, _ = gmsh.model.mesh.getNodes(dim, uzLine, includeBoundary=True)
             # coord = coord.reshape(-1,3)
-            elementTypes, elementTags, nodeTags = gmsh.model.mesh.getElements(dim,uzLine)
+            elementTypes, elementTags, nodeTags =gmshModel.mesh.getElements(dim,uzLine)
             for elemTag in elementTags[0]:
-                _, nodeTags = gmsh.model.mesh.getElement(elemTag)
+                _, nodeTags = gmshModel.mesh.getElement(elemTag)
                 newElement = Element()
                 newElement.tag = elemTag
                 newElement.correspondingPlateElements = nodeTags
@@ -268,56 +292,40 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
             a3[plateNode*3+correspondingRotationDOF] = -(hb+hp)*0.5*mult
             a3[uzNode*3] = 1
             A[3*i:3*i+3, :] = np.array([a1, a2, a3])
-        
         AmatList.append(A)
 
         uz.elementsList = uzElementsList
-
-    self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs)
-    self.mesh.AmatList = AmatList
-    self.mesh.plateElementsList = plateElementsList
-    self.mesh.getElementByTagDictionary = getElementByTagDictionary
+    return downStandBeamsList, AmatList, elementsList,nodesRotationsPd
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+def createNewNodesForDownStandBeams(gmshModel,nodesArray,nodesArrayPd,nodesRotationsPd,downStandBeamsList,gmshToCoherentNodesNumeration,nextNode):
+    nextCoherentNode = int(nodesArray.shape[0])
+    for uz in downStandBeamsList:
+        dim = uz.physicalGroup[0]
+        nodesUZ, coord = gmshModel.mesh.getNodesForPhysicalGroup(dim,uz.physicalGroup[1])
+        nNodesUZ = len(nodesUZ)
+        newNodesUZ = np.array(range(nextNode, nextNode+nNodesUZ), dtype=int)
+        uz.newNodesUZ = newNodesUZ
+        coherentNodesUZ = np.array(range(nextCoherentNode, nextCoherentNode+nNodesUZ), dtype=int)
+        uz.coherentNodesUZ = coherentNodesUZ
+        tempDF = pd.DataFrame(coherentNodesUZ, index=newNodesUZ)
+        gmshToCoherentNodesNumeration = gmshToCoherentNodesNumeration.append(tempDF)
+        gmshToCoherentNodesNumeration.index = gmshToCoherentNodesNumeration.index.astype(int)
+        nextCoherentNode += nNodesUZ
+        nextNode = nextNode+nNodesUZ
+        tempNodesArray = nodesArrayPd.loc[nodesUZ].to_numpy()
+        nodesArray = np.append(nodesArray, tempNodesArray, axis=0)
+        nodesArrayPd = nodesArrayPd.append(pd.DataFrame(tempNodesArray, index=newNodesUZ))
+        nodesArrayPd.index = nodesArrayPd.index.astype(int)
+        uzNodesToNodesNumeration = pd.DataFrame(newNodesUZ, index = nodesUZ)
+        uzNodesToNodesNumeration.index = uzNodesToNodesNumeration.index.astype(int)
+        uz.uzNodesToNodesNumeration = uzNodesToNodesNumeration
+        coherentNodesPlate = gmshToCoherentNodesNumeration.loc[nodesUZ].to_numpy()[:,0]
+        uz.coherentNodesPlate = coherentNodesPlate
+        nodesRotationsPd = nodesRotationsPd.append(pd.DataFrame(np.zeros(nNodesUZ), index =newNodesUZ))
+        nodesRotationsPd.index = nodesRotationsPd.index.astype(int)
+    return downStandBeamsList, gmshToCoherentNodesNumeration,nodesArray,nodesArrayPd,nodesRotationsPd
 
 def getElementsList(gmshModel,platesList, elementType, elementShape,elementIntegration,gmshToCoherentNodesNumeration,nodesArrayPd):
     elementsList = []

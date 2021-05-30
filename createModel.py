@@ -476,11 +476,12 @@ class CrossSection:
         Return: \n
         *   -
     '''
-    def __init__(self, A, Iy, Iz, b):
+    def __init__(self, A, Iy, Iz, b,h):
         self.A = A
         self.Iy = Iy
         self.Iz = Iz
         self.width = b
+        self.thickness = h
 
 class Load:
     '''

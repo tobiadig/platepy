@@ -28,7 +28,7 @@ wallDict = {}
 wallDict["outlineCoords"] = np.array([[0,0], [0,b]])
 wallDict["high"] = 3 # m
 wallDict["body"] = C25_30
-wallDict["support"] = Support(np.array([1, 0, 0]))
+wallDict["support"] = np.array([1, 0, 0])
 wallDict["thickness"] = 0.5 # m
 wall1 = Wall(wallDict)
 
@@ -44,7 +44,7 @@ hUZ = h*(beamCoeff*a/((1-nu**2)*bUZ))**(1/3)
 # hUZ = h*((beamCoeff*a/((1-nu**2)*bUZ))**(1/3)-1)
 
 # print(hUZ)
-uzCrossSection = CrossSection(bUZ*hUZ*0, bUZ*hUZ**3/12,0, bUZ)
+uzCrossSection = CrossSection(bUZ*hUZ*0, bUZ*hUZ**3/12,0, bUZ, hUZ)
 unterZugDict = {}
 # E = 32e6
 # ConcreteDict["eModule"] = E #kN/m2
@@ -56,13 +56,13 @@ unterZugDict["crossSection"] = uzCrossSection
 unterZugDict["thickness"] = hUZ
 
 unterZugDict["outlineCoords"] = np.array([[0,0], [a,0]])
-unterZug1 = downStandBeam(unterZugDict)
+unterZug1 = DownStandBeam(unterZugDict)
 
 unterZugDict["outlineCoords"] = np.array([[0,b], [a,b]])
-unterZug2 = downStandBeam(unterZugDict)
+unterZug2 = DownStandBeam(unterZugDict)
 
 
-firstModel = PlateModel("plateModel1")
+firstModel = PlateModel()
 firstModel.addPlate(plate1)
 firstModel.addWall(wall1)
 firstModel.addWall(wall2)
