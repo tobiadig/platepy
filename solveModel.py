@@ -2,7 +2,7 @@
 -----------------------------------------------------------
 Purpose of module: Computes the equilibrium solution of a plate model using finite elements and stores the results.
 -----------------------------------------------------------
-- Copywrite Tobia Diggelmann (ETH Zurich) 24.03.2021
+- Copywrite Tobia Diggelmann (ETH Zurich) 30.05.2021
 '''
 #Basic modules
 import numpy as np
@@ -59,9 +59,8 @@ def solveModel(self, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1,\
     modelMesh = self.mesh
 
     sparseGlobalMatrix, sparseForceGlobal, discartedDOFs = getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesRotations, modelMesh,p, nNodesTotal)
-    # apply boundary conditions
-    elementType = elementsList[0].type
 
+    elementType = elementsList[0].type
     fDofsInt, rDofsBool,keepedDisplacements = getFreeDOFvector(BCs, nGDofs,elementType,discartedDOFs)
 
     kMatFree = sparseGlobalMatrix[fDofsInt,:]
@@ -76,8 +75,7 @@ def solveModel(self, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1,\
         except:
             raise ValueError('Please change solveMethod from "cho" to "sparse"')
 
-        M, rightSide = getMmatrixAndRightSide(A, kMatFree,fVecFree)
-        # M is the matrix used to solve the system using lagrangian MPC. It has form [[K, A.T],[A, 0]]
+        M, rightSide = getMmatrixAndRightSide(A, kMatFree,fVecFree)# M is the matrix used to solve the system using lagrangian MPC. It has form [[K, A.T],[A, 0]]
 
         lu, d, _ = ldl(M)
         y = solve(lu, rightSide)
@@ -96,7 +94,6 @@ def solveModel(self, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1,\
 
     uGlobSparse = csr_matrix(uGlob)
     globalForce = (sparseGlobalMatrix*uGlobSparse).toarray()
-
     nodes = self.mesh.nodesArray.to_numpy()
     if solveMethod == 'cho':
         uDownStandBeam = uGlob
@@ -110,7 +107,7 @@ def solveModel(self, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1,\
     vDisp = uGlob[0::3,0]
     if solveMethod != 'cho':
         vDisp = vDisp[keepedDisplacements]
-        outPos = outPos[keepedDisplacements, :]  #TODO: only works for vertical displacements!
+        outPos = outPos[keepedDisplacements, :] 
     values[:,1]=uGlob[1::3,0]
     values[:,2]=uGlob[2::3,0]
     
@@ -141,6 +138,20 @@ def solveModel(self, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1,\
     return outPos, values
 
 def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesRotations, modelMesh,p,nNodesTotal):
+    ''' Computes global stifness matrix and global force matrixes in sparse form.\n
+        Input: \n
+            * elementsList: List of element objects. \n
+            * platesList: List of plate obkects. \n
+            * downStandBeamsList: List of downStandBeam objects. \n
+            * nodesRotations: Pandas dataframe where indexes are node tags (assigned by gmsh), values are the rotations in radians. \n
+            * modelMesh: mesh object of the plateModel object. \n
+            * p: load object.
+            * nNodesTotal: nodesArray.shape[0], number of nodes in the entire model.\n
+        Return: \n
+            * sparseGlobalMatrix: Scipy sparse matrix of the system's stiffness.
+            * sparseForceGlobal: Scipy sparse matrix of the system's force vector.
+            * discartedDOFs: List of the degrees of freedom removed (in the case of the MITC-9 element, since only 8 vertical displacements are used).
+    '''
     nSparseData = len(elementsList)*(9*3)**2
     rowsForStiffnessSparseMatrix = np.zeros(nSparseData, dtype=int)
     columnsForStiffnessSparseMatrix = np.zeros(nSparseData, dtype=int)
@@ -152,7 +163,7 @@ def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesR
     startIndexForce = 0
     nElements = len(elementsList)
     discartedDOFs = np.zeros(nElements, dtype=int)
-
+    
     print('Assembling stiffness matrix')
     for k,element in enumerate(tqdm(elementsList)):
         elementType=element.type
@@ -178,8 +189,6 @@ def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesR
             Ds = 5/6*Gmod*crossA
             kLocalNotRotated, fLocal = gettimoBeamMatrix(xi, yi,Dc, Db, Ds, 0, nNodes)
 
-        # if the load is a line load IGNORE fLocal (set to zero), the force vector will be calculated in the next loop
-        # bad solution, hopefully it works #TODO: adjust forces
         if p.case != "area":
             fLocal = np.zeros((fLocal.size,1))
 
@@ -192,8 +201,6 @@ def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesR
         # #rotate stiffness matrix
         kTemp = np.matmul(kLocalNotRotated, R)
         kLocal = np.matmul(R.transpose(), kTemp)
-        # kLocal = kLocalNotRotated
-
 
         nMatrixDofs = kLocal.size
         kCoeff, discartedDOF = getKCoeff(elementType, coherentElemNodes)
@@ -201,51 +208,39 @@ def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesR
             discartedDOFs[k]=discartedDOF
         rows, columns = getRowsColumns(kCoeff, nMatrixDofs)
 
-        # coefficients of the DOFs and assignment of the stiffness matrix / force vector
-    
-        # create vectors to assemble sparse matrixes
         rowsForStiffnessSparseMatrix[startIndexStiffness:startIndexStiffness+rows.size] = rows
         columnsForStiffnessSparseMatrix[startIndexStiffness:startIndexStiffness+rows.size] = columns
         dataForStiffnessSparseMatrix[startIndexStiffness:startIndexStiffness+rows.size] = kLocal.flatten(order='F')
         startIndexStiffness += rows.size
-
         rowsForForceSparseMatrix[startIndexForce:startIndexForce+kCoeff.size] = kCoeff
-
         if fLocal.ndim == 1:
             dataForForceSparseMatrix[startIndexForce:startIndexForce+kCoeff.size] = fLocal[:]
         else:
             dataForForceSparseMatrix[startIndexForce:startIndexForce+kCoeff.size] = fLocal[:,0]
-
         startIndexForce += kCoeff.size
 
     #if line load, assemble HERE load vector
     if p.case == 'line':
-        
         rowsForForceSparseMatrix,dataForForceSparseMatrix = getLineLoadForceVector(p,nSparseData,elemNodesRotations)
 
     elif p.case == 'nodes':
-        rowsForForceSparseMatrix = np.zeros(nSparseData, dtype=int)
-        columnsForForceSparseMatrix = np.zeros(nSparseData, dtype=int)
-        dataForForceSparseMatrix = np.zeros(nSparseData)
-        startIndexForce = 0
-
-        nNodes = p.nodePattern.shape[0]
-        coherentNodes = p.nodePattern[:,0]
-
-        for node in p.nodePattern:
-            nodeTag = int(node[0]-1)
-            rowsForForceSparseMatrix[startIndexForce:startIndexForce+3] = range(nodeTag*3,nodeTag*3+3)
-            dataForForceSparseMatrix[startIndexForce:startIndexForce+3] = node[1:]
-            startIndexForce += 3
-            k+=1
+        rowsForForceSparseMatrix,dataForForceSparseMatrix = getNodesLoadForceVector(p, nSparseData)
 
     # create global matrixes
     sparseGlobalMatrix = csr_matrix((dataForStiffnessSparseMatrix,(rowsForStiffnessSparseMatrix,columnsForStiffnessSparseMatrix)))
     sparseForceGlobal = csr_matrix((dataForForceSparseMatrix,(rowsForForceSparseMatrix,columnsForForceSparseMatrix)), shape=(nNodesTotal*3,1))
-
     return sparseGlobalMatrix, sparseForceGlobal, discartedDOFs
 
 def getLineLoadForceVector(p,nSparseData,elemNodesRotations):
+    ''' Computes informations required to create the sparse force vector in case of line loads. \n
+        Input: \n
+            * p: Load object. \n
+            * nSparseData: Total number of the non-zero entries in the global stiffness matrix. = len(elementsList)*(9*3)**2. \n
+            * elemNodesRotations: Rotation of the node appartaineng at the element. \n
+        Return: \n
+            * rowsForForceSparseMatrix: numpy vector with the indexes of the entries in dataForForceSparseMatrix. \n
+            * dataForForceSparseMatrix: numpy vector with the values of the entries in the global sparse force vector. \n
+    '''
     elements1DList = p.elements1DList
     rowsForForceSparseMatrix = np.zeros(nSparseData, dtype=int)
     columnsForForceSparseMatrix = np.zeros(nSparseData, dtype=int)
@@ -253,37 +248,12 @@ def getLineLoadForceVector(p,nSparseData,elemNodesRotations):
     startIndexForce = 0
 
     for element in elements1DList:
-        elemNodes = element.connectivity
-
         coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
         nNodes=element.nNodes
-
-        # elemNodesRotations = nodesRotations.loc[elemNodes].to_numpy()
-
-        # xi=element.coordinates[:,0]
-        # yi=element.coordinates[:,1]
-        
-        # Df = self.plates[0].Df   
-        # Dc = self.plates[0].Dc
-
-        # kLocalNotRotated,fLocal = GetLocalMatrix(xi, yi, Df,Dc,p, reducedIntegration)
-
-        # # if the load is a line load IGNORE fLocal (set to zero), the force vector will be calculated in the next loop
-        # # bad solution, hopefully it works
-        # if p.case == "line":
-        #     fLocal = np.zeros((3*nNodes,1))
         xi=element.coordinates[:,0]
         yi=element.coordinates[:,1]
-
         L = np.sqrt((xi[1]-xi[0])**2+(yi[1]-yi[0])**2)
-        # gaussPoints, gaussWeights =  getGaussQuadrature('linear',2)
-        # N, Bb,Bs, detJ = getShapeFunctionForElementType(elementType,ri, si, xi, yi)
         fLocal = np.zeros(3*nNodes)
-        # for i in range(0, gaussPoints.shape[0]):
-        #     if fLocal == None:
-        #         ri = 1
-        #         si= gaussPoints
-
         if nNodes ==2:
             fLocal[0:3] = p.magnitude*L/2
             fLocal[3:] = p.magnitude*L/2
@@ -292,7 +262,6 @@ def getLineLoadForceVector(p,nSparseData,elemNodesRotations):
             fLocal[3:6] = p.magnitude*L*(1/6)
             fLocal[6:] = p.magnitude*L*(2/3)
         # # create rotation matrix
-        Ri = []
         RiInit = False
         for dofRot in elemNodesRotations:
             if not(RiInit):
@@ -300,18 +269,10 @@ def getLineLoadForceVector(p,nSparseData,elemNodesRotations):
                 RiInit=True
             else:
                 R = block_diag(R, rotMatrix(dofRot))
-
         element.rotationMatrix = R
-        # #rotate stiffness matrix
-        # kTemp = np.matmul(kLocalNotRotated, R)
-        # kLocal = np.matmul(R.transpose(), kTemp)
-        # # kLocal = kLocalNotRotated
-        # # coefficients of the DOFs and assignment of the stiffness matrix / force vector
-
         kCoeff = np.zeros((3*nNodes),dtype=int)
         for i in range(0,3):
             kCoeff[0+i::3]=coherentElemNodes*3+i
-
         rows = np.zeros((3*nNodes)**2,dtype=int)
         columns = np.zeros((3*nNodes)**2,dtype=int)
         c=0
@@ -320,14 +281,48 @@ def getLineLoadForceVector(p,nSparseData,elemNodesRotations):
                 rows[c] = i
                 columns[c] = j
                 c+=1
-
         # create vectors to assemble sparse matrixes
         rowsForForceSparseMatrix[startIndexForce:startIndexForce+kCoeff.size] = kCoeff
         dataForForceSparseMatrix[startIndexForce:startIndexForce+kCoeff.size] = fLocal[:]
         startIndexForce += kCoeff.size
     return rowsForForceSparseMatrix,dataForForceSparseMatrix
 
+def getNodesLoadForceVector(p, nSparseData):
+    ''' Computes informations required to create the sparse force vector in case the user manually defines the node loads. \n
+        Input: \n
+            * p: Load object. \n
+            * nSparseData: Total number of the non-zero entries in the global stiffness matrix. = len(elementsList)*(9*3)**2. \n
+        Return: \n
+            * rowsForForceSparseMatrix: numpy vector with the indexes of the entries in dataForForceSparseMatrix. \n
+            * dataForForceSparseMatrix: numpy vector with the values of the entries in the global sparse force vector. \n
+    '''
+    rowsForForceSparseMatrix = np.zeros(nSparseData, dtype=int)
+    columnsForForceSparseMatrix = np.zeros(nSparseData, dtype=int)
+    dataForForceSparseMatrix = np.zeros(nSparseData)
+    startIndexForce = 0
+
+    nNodes = p.nodePattern.shape[0]
+    coherentNodes = p.nodePattern[:,0]
+
+    for node in p.nodePattern:
+        nodeTag = int(node[0]-1)
+        rowsForForceSparseMatrix[startIndexForce:startIndexForce+3] = range(nodeTag*3,nodeTag*3+3)
+        dataForForceSparseMatrix[startIndexForce:startIndexForce+3] = node[1:]
+        startIndexForce += 3
+    return rowsForForceSparseMatrix,dataForForceSparseMatrix 
+
 def getFreeDOFvector(BCs, nGDofs,elementType,discartedDOFs):
+    ''' Constructs the vector with the not-restrained degrees of freedom.\n
+        Input: \n
+            * BCs: n x 4 numpy array. n is the number of restrained nodes, the first column is the node tag, the other column represent the condition of the three DOFs (1 is blocked, 0 is free). \n
+            * nGDofs: number of degrees of freedom in the system (=nNodes *3). \n
+            * elementType: "DB" or "MITC".
+            * discartedDOFs: numpy array with the tags of the DOFs discarted in the getGlobalStiffnesAndForce() function. \n 
+        Return: \n
+            * fDofsInt: Numpy array with the tags of the free DOFs. \n
+            * rDofsBool: Numpy boolean array of length nGDofs. True if the relative DOF is restrained. \n
+            * keepedDisplacements: DOFs which are not discarted in discartedDOFs.
+    '''
     rDofsBool = np.zeros((nGDofs),dtype=bool)
 
     if elementType=='MITC9':
@@ -351,6 +346,12 @@ def getFreeDOFvector(BCs, nGDofs,elementType,discartedDOFs):
     return fDofsInt, rDofsBool,keepedDisplacements
 
 def assembleSystemMFCmatrix(AmatList):
+    ''' Constructs the MFC matrix for the system. \n
+        Input: \n
+            * AmatList: List of MFC matrix for the indivudual downstand beams. \n
+        Return: \n
+            * A: System MFC matrix of shape (nConstraints x nGDOFs)
+    '''
     A = []
     for myA in AmatList:
         if len(A) == 0:
@@ -360,6 +361,15 @@ def assembleSystemMFCmatrix(AmatList):
     return A
 
 def getMmatrixAndRightSide(A, kMatFree,fVecFree):
+    ''' Returns left and right sides of the system of equations to solve. \n
+            Input: \n
+                * A: System MFC matrix of shape (nConstraints x nGDOFs). \n
+                * kMatFree: Scipy sparse matrix of the system's stiffness. \n
+                * fVecFree: Scipy sparse matrix of the system's force vector. \n
+            Return: \n
+                * M: Numpy matrix for the left side of the equation, has shape (nGDOFs + nConstraints,nGDOFs + nConstraints ). \n
+                * rightSide: Numpy matrix for the right side of the equation, has shape (nGDOFs + nConstraints,). \n
+    '''
     nConstraints = A.shape[0]
     nFreeDofs = A.shape[1]
     kMatFreeNp = kMatFree.toarray()
@@ -372,6 +382,13 @@ def getMmatrixAndRightSide(A, kMatFree,fVecFree):
     return M, rightSide
 
 def getBendingResistance(bendingMoments,kBendingResistance):
+    '''Computes rquired bending resistance according to SIA 262.\n
+        Input: \n
+            * bendingMoments: Numpy array of shape (n evaluation points, 3). First column: mx, second column: my, third column: mxy. \n
+            * kBendingResistance: 1/tan(alpha) according to SIA 262. \n
+        Return: \n
+            * bendingResistance: Numpy array of shape(n evaluation points,3,3). Dimension 2 are mx, my, mxy. Dimension 3 are positive resistance, negative resistance, maximal resistance.
+    '''
     bendingResistance = np.zeros((bendingMoments.shape[0],2,3))
     bendingResistance[:,0,0] = bendingMoments[:,0] + kBendingResistance*np.abs(bendingMoments[:,2])
     bendingResistance[:,1,0] = bendingMoments[:,1] + 1/kBendingResistance*np.abs(bendingMoments[:,2])
