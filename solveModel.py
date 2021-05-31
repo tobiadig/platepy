@@ -79,7 +79,7 @@ def solveModel(self, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1,\
 
         lu, d, _ = ldl(M)
         y = solve(lu, rightSide)
-        x=solve(d@lu.T, y)
+        x = solve(d@lu.T, y)
 
         nConstraints = A.shape[0]
         Uf = x[0:-nConstraints]
@@ -201,6 +201,8 @@ def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesR
         # #rotate stiffness matrix
         kTemp = np.matmul(kLocalNotRotated, R)
         kLocal = np.matmul(R.transpose(), kTemp)
+        if elementType == 'timo':
+            kLocal = kLocalNotRotated
 
         nMatrixDofs = kLocal.size
         kCoeff, discartedDOF = getKCoeff(elementType, coherentElemNodes)
@@ -398,38 +400,6 @@ def getBendingResistance(bendingMoments,kBendingResistance):
     bendingResistance[:,1,2] = np.abs(bendingMoments[:,1]) + 1/kBendingResistance*np.abs(bendingMoments[:,2])
     return bendingResistance
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class Result:
     '''
         class which stores all model output
@@ -443,18 +413,13 @@ class Result:
         self.internalForcesPositions = None
         self.shearForces = None
         self.resultsScaleVertDisp = resultsScale[0]
-
         self.bendingResistance = None
-
         self.bendingMomentsDSB=None
         self.internalForcesPositionsDSB=None
         self.shearForcesDSB = None
         self.normalForcesDSB = None
-
         self.schnittList = {}
-
         self.uGlobPlate = None
-
         z=np.abs(wVert)
         iMax = np.argmax(z)
         self.wMax = (outPos[iMax,0],outPos[iMax,1], self.wVert[iMax])

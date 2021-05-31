@@ -15,6 +15,10 @@ class PlateModel:
         Is used to store structural elements, mesh and results.
     '''
     def __init__(self):
+        gmsh.initialize()
+        gmsh.model.remove()
+        gmsh.option.setNumber("General.Verbosity",0)
+        # gmsh.model.add('1')
         self.loads = []
         self.plates = []
         self.walls = []
@@ -35,10 +39,10 @@ class PlateModel:
             *   -
         '''
         # Initialize the model if not existent
-        if not(self.isInitialized): 
-            gmsh.initialize()
-            gmsh.option.setNumber("General.Verbosity",0)
-            self.isInitialized =True
+        # if not(self.isInitialized): 
+        #     gmsh.initialize()
+        #     gmsh.option.setNumber("General.Verbosity",0)
+        #     self.isInitialized =True
         self.plates.append(newPlate)
 
         # Create points in the Gmsh model
@@ -75,11 +79,10 @@ class PlateModel:
             *   -
         '''
         # Initialize the model if not existent
-        if not(self.isInitialized):
-            gmsh.initialize()
-            gmsh.model.add(self.name)
-            self.isInitialized =True
-
+        # if not(self.isInitialized):
+        #     gmsh.initialize()
+        #     gmsh.model.add(self.name)
+        #     self.isInitialized =True
         self.walls.append(newWall)
         
         # Create points in the Gmsh model
@@ -109,7 +112,6 @@ class PlateModel:
         for line in linesTags:
             if line in entities[:,1]:
                 gmsh.model.mesh.embed(1, [line], 2, 1) 
-        
         gmsh.model.geo.synchronize()
 
     def addDownStandBeam(self, newDSB):
@@ -121,10 +123,10 @@ class PlateModel:
             *   -
         '''
         # Initialize the model if not existent
-        if not(self.isInitialized):
-            gmsh.initialize()
-            gmsh.model.add(self.name)
-            self.isInitialized =True
+        # if not(self.isInitialized):
+        #     gmsh.initialize()
+        #     gmsh.model.add(self.name)
+        #     self.isInitialized =True
 
         self.downStandBeams.append(newDSB)
         
@@ -164,10 +166,10 @@ class PlateModel:
             *   -
         '''
         # Initialize the model if not existent
-        if not(self.isInitialized):
-            gmsh.initialize()
-            gmsh.model.add(self.name)
-            self.isInitialized =True
+        # if not(self.isInitialized):
+        #     gmsh.initialize()
+        #     gmsh.model.add(self.name)
+        #     self.isInitialized =True
         self.columns.append(newColumn)
 
         # Create points in the Gmsh model
@@ -401,7 +403,6 @@ class DownStandBeam:
         self.outlineCoords = inputDict["outlineCoords"]
         self.body = inputDict["body"]
         self.crossSection = inputDict["crossSection"]
-
         self.physicalGroup = None
         self.elementsList = []
         self.nodeComposition = None
@@ -411,7 +412,6 @@ class DownStandBeam:
         self.coherentNodesPlate = None
         self.coherentNodesUZ = None
         self.newNodesUZ = None
-
 
     def plot(self, axGeometry):
         '''
@@ -446,8 +446,6 @@ class DownStandBeam:
                 axGeometry.fill_between(l1[:,0], l2[:,1], l1[:,1],color='yellow')
             else:
                 axGeometry.fill_between(np.array([l1[0,0], l2[0,0]]), np.array([l1[1,1], l2[1,1]]), np.array([l1[0,1], l2[0,1]]),color='yellow')
-
-
 
 class Concrete:
     '''
