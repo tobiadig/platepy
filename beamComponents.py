@@ -1,7 +1,6 @@
-from copy import Error
 import numpy as np
 import gmsh
-from shapeFunctions import *
+from .shapeFunctions import *
 from scipy.integrate import trapezoid
 
 def beamComponents(self,lineName, startCoord, endCoord, nEvaluationPoints,integrationWidth = 0, nIntegrationPoints =0):

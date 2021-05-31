@@ -15,11 +15,11 @@ from scipy.sparse.linalg import spsolve
 from scipy.sparse import csr_matrix
 
 # Import custom functions from other modules
-from shapeFunctions import *
-from localMatrixes import *
-from internalForces import *
-from slicingFunctions import *
-from rotationMatrix import *
+from .shapeFunctions import *
+from .localMatrixes import *
+from .internalForces import *
+from .slicingFunctions import *
+from .rotationMatrix import *
 
 # for debug purposes
 from tqdm import tqdm

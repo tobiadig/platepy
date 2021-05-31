@@ -572,7 +572,7 @@ class Element:
         self.Ds = None
 
 
-
+# can be removed but im not sure
 # def assignNumpyArrayToDataFrame(xDF, indexesToModify, plateRotations, uzRotation):
 #     index = xDF.index
 #     values = xDF.to_numpy()
