@@ -38,7 +38,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
 
     # Set recombination rules
     if elementShape == 4 or elementShape == 9 :
-        gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 2) #0: simple, 1: blossom (default), 2: simple full-quad, 3: blossom full-quad
+        gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 3) #0: simple, 1: blossom (default), 2: simple full-quad, 3: blossom full-quad
         for i in range(0, len(self.plates)):
             gmsh.model.geo.mesh.setRecombine(2, self.plates[i].tag)
     elif elementShape != 3:
@@ -58,7 +58,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
             gmsh.model.geo.synchronize()
         # automatically distort mesh with Gmsh, the results are pretty bad
         # elif nEdgeNodes>0 and meshDistortion:
-        #     gmsh.model.geo.mesh.setTransfiniteCurve(1, nEdgeNodes, "Progression", progVal)
+            # gmsh.model.geo.mesh.setTransfiniteCurve(1, nEdgeNodes, "Progression", progVal)
         #     gmsh.model.geo.mesh.setTransfiniteCurve(2, nEdgeNodes, "Progression", progVal)
         #     gmsh.model.geo.mesh.setTransfiniteCurve(3, nEdgeNodes, "Progression", progVal)
         #     gmsh.model.geo.mesh.setTransfiniteCurve(4, nEdgeNodes, "Progression", progVal)

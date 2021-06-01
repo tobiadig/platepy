@@ -269,7 +269,7 @@ def  getInternalForcesDSB(elementsList,uDownStandBeam,internalForcePosition, dow
             Db = Emod*crossI
             Ds = 5/6*Gmod*crossA
 
-            vLoc = np.matmul(element.rotationMatrix, uDownStandBeam[kCoeff])
+            vLoc = uDownStandBeam[kCoeff]
             Nforces[k] = Dc*Bc@vLoc
             Mforces[k] = Db*Bb@vLoc
             Vforces[k]= Ds*Bs@vLoc

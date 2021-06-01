@@ -344,6 +344,9 @@ class Wall:
             linWidth = 0.7
             axGeometry.plot(l1[:,0],l1[:,1], color='g', linewidth = linWidth)
             axGeometry.plot(l2[:,0],l2[:,1], color='g', linewidth = linWidth)
+            axGeometry.plot(np.array([l1[0,0],l2[0,0]]),np.array([l1[0,1],l2[0,1]]), color='g', linewidth = linWidth)
+            axGeometry.plot(np.array([l1[1,0],l2[1,0]]),np.array([l1[1,1],l2[1,1]]), color='g', linewidth = linWidth)
+
 
 class Column:
     '''
@@ -386,7 +389,7 @@ class Column:
         yi= np.array([y1, y1, y2, y2, y1])
 
         ax.plot(xi,yi, color='b')
-        ax.scatter(x,y,marker="D")
+        ax.scatter(x,y,marker="D", color='b')
 
 class DownStandBeam:
     '''

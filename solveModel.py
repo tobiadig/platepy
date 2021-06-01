@@ -87,6 +87,9 @@ def solveModel(self, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1,\
         uGlob[fDofsInt]=np.expand_dims(Uf, axis=1)
 
     elif solveMethod == 'sparse':
+        # KTEST = kMatFree.toarray()
+        # FTEST = fVecFree.toarray()
+        # sol = np.linalg.solve(KTEST,FTEST)
         Uf = spsolve(kMatFree,fVecFree)
         Uf=Uf.reshape(-1,1)
         uGlob=np.zeros((nGDofs,1))

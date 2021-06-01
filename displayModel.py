@@ -8,6 +8,7 @@ Purpose of module: display given geometry and results of a plateModel class usin
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.tri as tri
 
 from mpl_toolkits.mplot3d import Axes3D # 3D plot
 from matplotlib import cm   # contour plot
@@ -16,7 +17,7 @@ from io import BytesIO
 from tqdm import tqdm
 
 def plotInputGeometry(self, figaspect = 1):
-    w, h = plt.figaspect(1.)
+    w, h = plt.figaspect(figaspect)
     mult = 1.5
     fig, axGeometry = plt.subplots(figsize=(w*mult, h*mult))
 
@@ -236,7 +237,22 @@ def myIsoPlot(self,x,y,z, theTitle = ''):
     # myColorMap.set_under(self, color='b')
 
     # cs = plt.tricontour(x,y,z,colors='r')
-    cs = plt.tricontour(x,y,z,cmap=mycmp, norm=norm)
+        # Mask triangles with sidelength bigger some alpha
+    alpha = 2
+    triang = tri.Triangulation(x, y)
+    triangles = triang.triangles
+    # Mask off unwanted triangles.
+    xtri = x[triangles] - np.roll(x[triangles], 1, axis=1)
+    ytri = y[triangles] - np.roll(y[triangles], 1, axis=1)
+    maxi = np.max(np.sqrt(xtri**2 + ytri**2), axis=1)
+    alpha = np.percentile(maxi, 98.5)
+    # print('alpha: ', alpha)
+    # np.savetxt('maxi.csv', maxi, delimiter = ',')
+    # apply masking
+    triang.set_mask(maxi > alpha)
+    # plt.hist(maxi)
+    # cs = plt.tricontour(x,y,z,cmap=mycmp, norm=norm)
+    cs = plt.tricontour(triang,z,cmap=mycmp, norm=norm)
 
     outAx.clabel(cs, fmt='%1.1f')
     xLim = np.array([np.min(x), np.max(x)])
