@@ -32,7 +32,12 @@ def plotInputGeometry(self, figaspect = 1):
         
     for uz in self.downStandBeams:
         uz.plot(axGeometry)
-    
+    for p in self.loads:
+        if p.case == 'point':
+            mySize = 100
+            axGeometry.scatter(p.outlineCoords[0], p.outlineCoords[1],marker="x", color='r', s=mySize )
+            froceString = 'F = '+str(p.magnitude[0])
+            axGeometry.text(p.outlineCoords[0]*1.1, p.outlineCoords[1]*1.1,froceString, fontsize = 15)
 
     self.axes['InputGeometry'] = axGeometry
     return fig,axGeometry
