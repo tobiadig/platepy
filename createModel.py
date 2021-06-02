@@ -232,6 +232,22 @@ class PlateModel:
             gmsh.model.geo.synchronize()
         elif newLoad.case == 'nodes':
             pass
+        elif newLoad.case == 'point':
+
+            newPoint = newLoad.outlineCoords
+            pointTags = gmsh.model.geo.addPoint(newPoint[0], newPoint[1], 0)
+
+            #create physical group
+            physicalTag = gmsh.model.addPhysicalGroup(0, [pointTags])
+            newLoad.physicalGroup = (0, physicalTag)
+            
+
+            gmsh.model.geo.synchronize()
+            gmsh.model.mesh.embed(0,[pointTags], 2, 1)
+            gmsh.model.geo.synchronize()
+            gmsh.model.geo.removeAllDuplicates()
+            gmsh.model.geo.synchronize()
+
     def clearMesh(self):
         '''
             Method which deletes the current mesh of the plateModel. \n
@@ -502,5 +518,6 @@ class Load:
         self.physicalGroup = None
         self.elements1DList = None
         self.nodePattern = None
+        self.pointLoadNode = None
 
 

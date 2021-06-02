@@ -76,11 +76,11 @@ def solveModel(self, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1,\
             raise ValueError('Please change solveMethod from "cho" to "sparse"')
 
         M, rightSide = getMmatrixAndRightSide(A, kMatFree,fVecFree)# M is the matrix used to solve the system using lagrangian MPC. It has form [[K, A.T],[A, 0]]
-
+        
         lu, d, _ = ldl(M)
         y = solve(lu, rightSide)
         x = solve(d@lu.T, y)
-
+        
         nConstraints = A.shape[0]
         Uf = x[0:-nConstraints]
         uGlob=np.zeros((nGDofs,1))
@@ -230,6 +230,8 @@ def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesR
 
     elif p.case == 'nodes':
         rowsForForceSparseMatrix,dataForForceSparseMatrix = getNodesLoadForceVector(p, nSparseData)
+    elif p.case == 'point':
+        rowsForForceSparseMatrix,dataForForceSparseMatrix = getPointLoadForceVector(p, nSparseData)
 
     # create global matrixes
     sparseGlobalMatrix = csr_matrix((dataForStiffnessSparseMatrix,(rowsForStiffnessSparseMatrix,columnsForStiffnessSparseMatrix)))
@@ -315,6 +317,41 @@ def getNodesLoadForceVector(p, nSparseData):
         dataForForceSparseMatrix[startIndexForce:startIndexForce+3] = node[1:]
         startIndexForce += 3
     return rowsForForceSparseMatrix,dataForForceSparseMatrix 
+
+def getPointLoadForceVector(p,nSparseData):
+    ''' Computes informations required to create the sparse force vector in case of line loads. \n
+        Input: \n
+            * p: Load object. \n
+            * nSparseData: Total number of the non-zero entries in the global stiffness matrix. = len(elementsList)*(9*3)**2. \n
+        Return: \n
+            * rowsForForceSparseMatrix: numpy vector with the indexes of the entries in dataForForceSparseMatrix. \n
+            * dataForForceSparseMatrix: numpy vector with the values of the entries in the global sparse force vector. \n
+    '''
+    nodeWithLoad = p.pointLoadNode
+    fLocal = p.magnitude
+    rowsForForceSparseMatrix = np.zeros(nSparseData, dtype=int)
+    columnsForForceSparseMatrix = np.zeros(nSparseData, dtype=int)
+    dataForForceSparseMatrix = np.zeros(nSparseData)
+    startIndexForce = 0
+    nNodes = 1
+
+    coherentElemNodes = nodeWithLoad-1
+    kCoeff = np.zeros((3*nNodes),dtype=int)
+    for i in range(0,3):
+        kCoeff[0+i::3]=coherentElemNodes*3+i
+    rows = np.zeros((3*nNodes)**2,dtype=int)
+    columns = np.zeros((3*nNodes)**2,dtype=int)
+    c=0
+    for j in kCoeff:
+        for i in kCoeff:
+            rows[c] = i
+            columns[c] = j
+            c+=1
+    # create vectors to assemble sparse matrixes
+    rowsForForceSparseMatrix[startIndexForce:startIndexForce+kCoeff.size] = kCoeff
+    dataForForceSparseMatrix[startIndexForce:startIndexForce+kCoeff.size] = fLocal[:]
+
+    return rowsForForceSparseMatrix,dataForForceSparseMatrix
 
 def getFreeDOFvector(BCs, nGDofs,elementType,discartedDOFs):
     ''' Constructs the vector with the not-restrained degrees of freedom.\n

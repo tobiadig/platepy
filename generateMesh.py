@@ -238,6 +238,11 @@ def getLineLoadForces(gmshModel, loadsList, gmshToCoherentNodesNumeration, nodes
                 newElement.whichPlate  = 1  
                 elements1DList.append(newElement)
             p.elements1DList = elements1DList
+        elif p.case == 'point':
+            tags = gmshModel.getEntitiesForPhysicalGroup(p.physicalGroup[0],p.physicalGroup[1])
+            _, elementTags, nodeTags = gmshModel.mesh.getElements(0,tags[0])   
+            p.pointLoadNode = nodeTags[0]
+
     return loadsList
 
 def getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotation):

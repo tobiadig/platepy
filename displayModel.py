@@ -32,6 +32,7 @@ def plotInputGeometry(self, figaspect = 1):
         
     for uz in self.downStandBeams:
         uz.plot(axGeometry)
+    
 
     self.axes['InputGeometry'] = axGeometry
     return fig,axGeometry
@@ -190,8 +191,19 @@ def plotInternalForce(self,plotType,theTitle, x,y,z,saveImage):
             # outFig.append(data5)
     elif plotType == '3d':
         fig=plt.figure()
+        triang = tri.Triangulation(x, y)
+        triangles = triang.triangles
+        # Mask off unwanted triangles.
+        xtri = x[triangles] - np.roll(x[triangles], 1, axis=1)
+        ytri = y[triangles] - np.roll(y[triangles], 1, axis=1)
+        maxi = np.max(np.sqrt(xtri**2 + ytri**2), axis=1)
+        alpha = np.percentile(maxi, 100)
+        # print('alpha: ', alpha)
+        # np.savetxt('maxi.csv', maxi, delimiter = ',')
+        # apply masking
+        triang.set_mask(maxi > alpha)
         axOut = fig.gca(projection='3d')
-        axOut.plot_trisurf(x,y,z,cmap=cm.jet)
+        axOut.plot_trisurf(triang,z,cmap=cm.jet)
     elif plotType == 'text':
         fig, axOut = myTextPlot(self, x,y,z,theTitle=theTitle)
     elif plotType == 'text+mesh':
@@ -238,14 +250,14 @@ def myIsoPlot(self,x,y,z, theTitle = ''):
 
     # cs = plt.tricontour(x,y,z,colors='r')
         # Mask triangles with sidelength bigger some alpha
-    alpha = 2
+
     triang = tri.Triangulation(x, y)
     triangles = triang.triangles
     # Mask off unwanted triangles.
     xtri = x[triangles] - np.roll(x[triangles], 1, axis=1)
     ytri = y[triangles] - np.roll(y[triangles], 1, axis=1)
     maxi = np.max(np.sqrt(xtri**2 + ytri**2), axis=1)
-    alpha = np.percentile(maxi, 98.5)
+    alpha = np.percentile(maxi, 100)
     # print('alpha: ', alpha)
     # np.savetxt('maxi.csv', maxi, delimiter = ',')
     # apply masking
