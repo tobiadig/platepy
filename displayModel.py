@@ -50,6 +50,7 @@ def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines',
     valPossRes = ['x+', 'y+', 'x-', 'y-', 'xAbs', 'yAbs']
     
     outVal = np.zeros(12, dtype=bool)
+    
     outVal[0]=verticalDisplacement
     for i, a in enumerate(valPossM):
         if a in bendingMomentsToPlot:
@@ -202,13 +203,20 @@ def plotInternalForce(self,plotType,theTitle, x,y,z,saveImage):
         xtri = x[triangles] - np.roll(x[triangles], 1, axis=1)
         ytri = y[triangles] - np.roll(y[triangles], 1, axis=1)
         maxi = np.max(np.sqrt(xtri**2 + ytri**2), axis=1)
-        alpha = np.percentile(maxi, 100)
+        alpha = np.percentile(maxi, 96)
         # print('alpha: ', alpha)
         # np.savetxt('maxi.csv', maxi, delimiter = ',')
         # apply masking
         triang.set_mask(maxi > alpha)
         axOut = fig.gca(projection='3d')
-        axOut.plot_trisurf(triang,z,cmap=cm.jet)
+        # axOut.plot_trisurf(triang,z,cmap=cm.jet)
+        axOut.plot_trisurf(triang,z,cmap=plt.get_cmap('winter'))
+        axOut.grid(False)
+
+# Hide axes ticks
+        axOut.set_xticks([])
+        axOut.set_yticks([])
+        axOut.set_zticks([])
     elif plotType == 'text':
         fig, axOut = myTextPlot(self, x,y,z,theTitle=theTitle)
     elif plotType == 'text+mesh':
