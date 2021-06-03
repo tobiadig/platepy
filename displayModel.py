@@ -16,8 +16,6 @@ import base64
 from io import BytesIO
 from tqdm import tqdm
 
-
-
 def plotInputGeometry(self, figaspect = 1):
     w, h = plt.figaspect(figaspect)
     mult = 1.5
@@ -44,7 +42,7 @@ def plotInputGeometry(self, figaspect = 1):
     self.axes['InputGeometry'] = axGeometry
     return fig,axGeometry
 
-def plotResults(self, valuesToPlotList, plotType = 'isolines', saveImage=False):
+def plotResults(self, valuesToPlotList, plotType = 'isolines',saveToSVG=False, saveImage=False):
     outAxis = []
     outFig = []
     resultsDictionary = self.resultsInformation.resultsDictionary
@@ -56,6 +54,8 @@ def plotResults(self, valuesToPlotList, plotType = 'isolines', saveImage=False):
         fig, axOut = plotInternalForce(self,plotType,theTitle, resultToPlot.x,resultToPlot.y,myZ,saveImage)
         self.axes[theTitle] = valueToPlot
         outAxis.append(axOut)
+        if saveToSVG:
+            fig.savefig(theTitle+'.svg')
     return outFig, outAxis
 
 def plotInternalForce(self,plotType,theTitle, x,y,z,saveImage):
@@ -69,22 +69,11 @@ def plotInternalForce(self,plotType,theTitle, x,y,z,saveImage):
             # outFig.append(data5)
     elif plotType == '3d':
         fig=plt.figure()
-        triang = tri.Triangulation(x, y)
-        triangles = triang.triangles
-        # Mask off unwanted triangles.
-        xtri = x[triangles] - np.roll(x[triangles], 1, axis=1)
-        ytri = y[triangles] - np.roll(y[triangles], 1, axis=1)
-        maxi = np.max(np.sqrt(xtri**2 + ytri**2), axis=1)
-        alpha = np.percentile(maxi, 96)
-        # print('alpha: ', alpha)
-        # np.savetxt('maxi.csv', maxi, delimiter = ',')
-        # apply masking
-        triang.set_mask(maxi > alpha)
+        percentageTrianglesToMantain = 98
+        triang = removeTrianglesOutsidePlate(x,y,percentageTrianglesToMantain)
         axOut = fig.gca(projection='3d')
-        # axOut.plot_trisurf(triang,z,cmap=cm.jet)
         axOut.plot_trisurf(triang,z,cmap=plt.get_cmap('winter'))
         axOut.grid(False)
-
         # Hide axes ticks
         axOut.set_xticks([])
         axOut.set_yticks([])
@@ -97,6 +86,18 @@ def plotInternalForce(self,plotType,theTitle, x,y,z,saveImage):
         raise TypeError('type of plot does not exist')
 
     return fig, axOut
+
+def removeTrianglesOutsidePlate(x,y,percentageTrianglesToMantain):
+    triang = tri.Triangulation(x, y)
+    triangles = triang.triangles
+    # Mask off unwanted triangles.
+    xtri = x[triangles] - np.roll(x[triangles], 1, axis=1)
+    ytri = y[triangles] - np.roll(y[triangles], 1, axis=1)
+    maxi = np.max(np.sqrt(xtri**2 + ytri**2), axis=1)
+    alpha = np.percentile(maxi, percentageTrianglesToMantain)
+
+    triang.set_mask(maxi > alpha)
+    return triang
 
 def myTextPlot(self,x,y,z, theTitle = ''):
     fig,outAx = plotInputGeometry(self)
@@ -127,27 +128,8 @@ def myIsoPlot(self,x,y,z, theTitle = ''):
     bounds = np.array([-1e70, -0.00001,0.000001, 1e70])
 
     norm = matplotlib.colors.BoundaryNorm(bounds, 3)
-
-    # myColorMap = matplotlib.colors.Colormap('redAndBlue')
-    # myColorMap.set_over(self, color='r')
-    # myColorMap.set_under(self, color='b')
-
-    # cs = plt.tricontour(x,y,z,colors='r')
-        # Mask triangles with sidelength bigger some alpha
-
-    triang = tri.Triangulation(x, y)
-    triangles = triang.triangles
-    # Mask off unwanted triangles.
-    xtri = x[triangles] - np.roll(x[triangles], 1, axis=1)
-    ytri = y[triangles] - np.roll(y[triangles], 1, axis=1)
-    maxi = np.max(np.sqrt(xtri**2 + ytri**2), axis=1)
-    alpha = np.percentile(maxi, 98)
-    # print('alpha: ', alpha)
-    # np.savetxt('maxi.csv', maxi, delimiter = ',')
-    # apply masking
-    triang.set_mask(maxi > alpha)
-    # plt.hist(maxi)
-    # cs = plt.tricontour(x,y,z,cmap=mycmp, norm=norm)
+    percentageTrianglesToMantain = 98    
+    triang = removeTrianglesOutsidePlate(x,y,percentageTrianglesToMantain)
     cs = plt.tricontour(triang,z,cmap=mycmp, norm=norm)
 
     outAx.clabel(cs, fmt='%1.1f')
@@ -239,8 +221,6 @@ def plotSchnittValues(self,theTitle, x,y,z,plotOnMesh):
 
     iMMax = np.argmax(np.abs(z))
     # iMMin = np.argmin(z)
-
-
     magValue = 0.2*maxVal/np.max(np.abs(z))
     zNorm = z*magValue
 
@@ -257,31 +237,9 @@ def plotSchnittValues(self,theTitle, x,y,z,plotOnMesh):
     outAx.plot(x,y,color='k')
     outAx.plot(zPoints[:,0], zPoints[:,1], color='k')
 
-
-
-
-
-    # zMinString = '{:.3f}'.format(z[iMMin])
-    # if np.abs(z[iMMin])>0.1:
-    #     outAx.text(zPoints[iMMin,0],zPoints[iMMin,1], zMinString,color='r', bbox=dict(facecolor='w', edgecolor='red'), zorder=1000)
-
     zMaxString = '{:.3f}'.format(z[iMMax])
     if np.abs(z[iMMax])>0.1:
         outAx.text(zPoints[iMMax,0],zPoints[iMMax,1], zMaxString,color='k', bbox=dict(facecolor='w', edgecolor='grey'), zorder=1000)
-
-
-
-
-    # xLim = np.array([np.min(x), np.max(x)])
-    # yLim = np.array([np.min(y), np.max(y)])
-    # a=xLim[1]-xLim[0]
-    # b= yLim[1]-yLim[0]
-
-    # # fig.set_size_inches(10*a,10*b)
-    # marginWidth = 0.1
-    # outAx.set_xlim(xLim[0]-marginWidth*a, xLim[1]+marginWidth*a)
-    # outAx.set_ylim(yLim[0]-marginWidth*b, yLim[1]+marginWidth*b)
-
 
     outAx.set_title(theTitle)
     return fig,outAx
