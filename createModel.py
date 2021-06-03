@@ -27,7 +27,7 @@ class PlateModel:
         self.downStandBeams = []
         self.isInitialized = False
         self.mesh = None
-        self.results = None
+        self.resultsInformation = None
         self.axes = {}
         
     def addPlate(self, newPlate):  

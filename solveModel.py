@@ -24,7 +24,7 @@ from .rotationMatrix import *
 # for debug purposes
 from tqdm import tqdm
 
-def solveModel(self, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1,\
+def solveModel(self, resultsScales = (1,1, 1),\
     internalForcePosition = 'nodes', smoothedValues = False, solveMethod = 'sparse', computeMoments=True, kBendingResistance = 1):
     ''' Given a plateModel object with an initialized mesh, this function computes displacements, rotations and internal forces at
         each node.\n
@@ -113,9 +113,15 @@ def solveModel(self, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1,\
         outPos = outPos[keepedDisplacements, :] 
     values[:,1]=uGlob[1::3,0]
     values[:,2]=uGlob[2::3,0]
+
+    resultsDictionary = {}
+    resultsDictionary['vDisp'] = Result(outPos[:,0], outPos[:,1], vDisp, resultsScales[0])
+    resultsDictionary['xRot'] = Result(outPos[:,0], outPos[:,1], values[:,1], resultsScales[0])
+    resultsDictionary['yRot'] = Result(outPos[:,0], outPos[:,1], values[:,2], resultsScales[0])
+
     
-    self.results = Result(outPos,vDisp, values[:,1], values[:,2],resultsScale=(resultsScaleVertDisp,resultsScaleIntForces))
-    self.results.uGlobPlate = uGlob
+    self.resultsInformation = ResultsInformation()
+    self.resultsInformation.uGlobPlate = uGlob
 
     #compute MOMENTS
     if computeMoments:
@@ -123,22 +129,34 @@ def solveModel(self, resultsScaleIntForces = (1, 1), resultsScaleVertDisp = 1,\
         mitcList = self.mesh.plateElementsList
 
         bendingMoments, shearForces, internalForcesPositions = getInternalForces(mitcList,uGlob,internalForcePosition,nodesArray, smoothedValues)
+        xPos = internalForcesPositions[:,0]
+        yPos = internalForcesPositions[:,1]
+        resultsDictionary['Mx'] = Result(xPos,yPos,bendingMoments[:,0], resultsScales[1])
+        resultsDictionary['My'] = Result(xPos,yPos,bendingMoments[:,1], resultsScales[1])
+        resultsDictionary['Mxy'] = Result(xPos,yPos,bendingMoments[:,2], resultsScales[1])
+        resultsDictionary['Vx'] = Result(xPos,yPos,shearForces[:,0], resultsScales[2])
+        resultsDictionary['Vy'] = Result(xPos,yPos,shearForces[:,1], resultsScales[2])
 
-        self.results.bendingMoments=bendingMoments*resultsScaleIntForces[0]
-        self.results.internalForcesPositions=internalForcesPositions
-        self.results.shearForces = shearForces*resultsScaleIntForces[1]
-        self.results.resultsScaleVertDisp = resultsScaleVertDisp
-        self.results.bendingResistance = getBendingResistance(bendingMoments,kBendingResistance)
+        # self.results.resultsScales = resultsScales
+        bendingResistance = getBendingResistance(bendingMoments,kBendingResistance)
+        resultsDictionary['Mx_Rd_+'] = Result(xPos,yPos,bendingResistance[:,0,0], resultsScales[1])
+        resultsDictionary['My_Rd_+'] = Result(xPos,yPos,bendingResistance[:,1,0], resultsScales[1])
+
+        resultsDictionary['Mx_Rd_-'] = Result(xPos,yPos,bendingResistance[:,0,1], resultsScales[1])
+        resultsDictionary['My_Rd_-'] = Result(xPos,yPos,bendingResistance[:,1,1], resultsScales[1])
+
+        resultsDictionary['Mx_Rd_max'] = Result(xPos,yPos,bendingResistance[:,0,2], resultsScales[1])
+        resultsDictionary['My_Rd_max'] = Result(xPos,yPos,bendingResistance[:,1,2], resultsScales[1])
 
         if len(self.downStandBeams) > 0:
             uzList = self.downStandBeams[0].elementsList
             Nforces, Vforces, Mforces, internalForcesPositions = getInternalForcesDSB(uzList,uDownStandBeam,internalForcePosition, self.downStandBeams[0])
-            self.results.bendingMomentsDSB=Mforces*resultsScaleIntForces[0]
-            self.results.internalForcesPositionsDSB=internalForcesPositions
-            self.results.shearForcesDSB = Vforces*resultsScaleIntForces[1]
-            self.results.normalForcesDSB = Nforces*resultsScaleIntForces[1]
+            resultsDictionary['N_DSB'] = Result(internalForcesPositions[:,0], internalForcesPositions[:,1], Nforces, resultsScales[2])
+            resultsDictionary['V_DSB'] = Result(internalForcesPositions[:,0], internalForcesPositions[:,1], Vforces, resultsScales[2])
+            resultsDictionary['N_DSB'] = Result(internalForcesPositions[:,0], internalForcesPositions[:,1], Mforces, resultsScales[1])
 
-    return outPos, values
+    self.resultsInformation.resultsDictionary = resultsDictionary
+    return resultsDictionary
 
 def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesRotations, modelMesh,p,nNodesTotal):
     ''' Computes global stifness matrix and global force matrixes in sparse form.\n
@@ -441,18 +459,29 @@ def getBendingResistance(bendingMoments,kBendingResistance):
     return bendingResistance
 
 class Result:
-    '''
-        class which stores all model output
-    '''
-    def __init__(self, outPos, wVert, xRot, yRot, resultsScale = (1,1)):
-        self.outPos = outPos
-        self.wVert = wVert*resultsScale[0]
-        self.xRot = xRot
-        self.yRot = yRot
+    def __init__(self,x,y,z, resultScale):
+        self.x = x
+        self.y = y
+        self.z = z
+        iMax = np.argmax(z)
+        self.iMax = iMax
+        self.zMax = z[iMax]
+        iMin = np.argmin(z)
+        self.iMin = iMin
+        self.zMin = z[iMin]
+        zAbs = np.abs(z)
+        self.zAbsMax = np.max(zAbs)
+
+        self.resultScale = resultScale
+
+class ResultsInformation:
+    def __init__(self):
+        self.resultsDictionary = None
+
         self.bendingMoments = None
         self.internalForcesPositions = None
         self.shearForces = None
-        self.resultsScaleVertDisp = resultsScale[0]
+        # self.resultsScaleVertDisp = resultsScale[0]
         self.bendingResistance = None
         self.bendingMomentsDSB=None
         self.internalForcesPositionsDSB=None
@@ -460,6 +489,6 @@ class Result:
         self.normalForcesDSB = None
         self.schnittList = {}
         self.uGlobPlate = None
-        z=np.abs(wVert)
-        iMax = np.argmax(z)
-        self.wMax = (outPos[iMax,0],outPos[iMax,1], self.wVert[iMax])
+
+
+

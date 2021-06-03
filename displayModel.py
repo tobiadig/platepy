@@ -42,148 +42,18 @@ def plotInputGeometry(self, figaspect = 1):
     self.axes['InputGeometry'] = axGeometry
     return fig,axGeometry
 
-def plotResults(self, verticalDisplacement = True,displacementPlot = 'isolines', bendingMomentsToPlot = [], shearForcesToPlot = [],bendingResistancesToPlot=[], saveImage=False):
+def plotResults(self, valuesToPlotList, plotType = 'isolines', saveImage=False):
     outAxis = []
     outFig = []
-    valPossM = ['x', 'y', 'xy']
-    valPossV = ['x','y']
-    valPossRes = ['x+', 'y+', 'x-', 'y-', 'xAbs', 'yAbs']
-    
-    outVal = np.zeros(12, dtype=bool)
-    
-    outVal[0]=verticalDisplacement
-    for i, a in enumerate(valPossM):
-        if a in bendingMomentsToPlot:
-            outVal[i+1] = True
-    for i, a in enumerate(valPossV):
-        if a in shearForcesToPlot:
-            outVal[i+4] = True
-    for i, a in enumerate(valPossRes):
-        if a in bendingResistancesToPlot:
-            outVal[i+6] = True
-
-    if outVal[0]: #plot vertical displacements
-        x= self.results.outPos[:,0]
-        y = self.results.outPos[:,1]
-        z= self.results.wVert
-
-        theTitle='w'
-        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
-
-        self.axes[theTitle] = axOut
+    resultsDictionary = self.resultsInformation.resultsDictionary
+    for valueToPlot in valuesToPlotList:
+        theTitle=valueToPlot
+        resultToPlot = resultsDictionary[valueToPlot]
+        myZ = resultToPlot.z*resultToPlot.resultScale
+        
+        fig, axOut = plotInternalForce(self,plotType,theTitle, resultToPlot.x,resultToPlot.y,myZ,saveImage)
+        self.axes[theTitle] = valueToPlot
         outAxis.append(axOut)
-
-    if outVal[1]: #plot Mx
-        x = self.results.internalForcesPositions[:,0]
-        y = self.results.internalForcesPositions[:,1]
-        z = self.results.bendingMoments[:,0]
-        theTitle='Mx'
-        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut)
-
-    if outVal[2]: # plot My
-        x= self.results.internalForcesPositions[:,0]
-        y = self.results.internalForcesPositions[:,1]
-        z= self.results.bendingMoments[:,1]
-        theTitle='My'
-        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut) 
-
-    if outVal[3]:  # plot Mxy
-        x= self.results.internalForcesPositions[:,0]
-        y = self.results.internalForcesPositions[:,1]
-        z= self.results.bendingMoments[:,2]
-        theTitle='Mxy'
-        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut) 
-
-    if outVal[4]: # plot Vx
-        x = self.results.internalForcesPositions[:,0]
-        y = self.results.internalForcesPositions[:,1]
-        z = self.results.shearForces[:,0]
-        theTitle='Vx'
-        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut) 
-
-    if outVal[5]: # plot Vy
-        x = self.results.internalForcesPositions[:,0]
-        y = self.results.internalForcesPositions[:,1]
-        z = self.results.shearForces[:,1]
-        theTitle='Vy'
-        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut)
-
-    if outVal[6]: #plot Mx+
-        x = self.results.internalForcesPositions[:,0]
-        y = self.results.internalForcesPositions[:,1]
-        z = self.results.bendingResistance[:,0,0]
-        theTitle='Mx+ Resistance'
-        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut)
-
-    if outVal[7]: #plot My resistance+
-        x = self.results.internalForcesPositions[:,0]
-        y = self.results.internalForcesPositions[:,1]
-        z = self.results.bendingResistance[:,1,0]
-        theTitle='My+ resistance'
-        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut)
-
-    if outVal[8]: #plot Mx-
-        x = self.results.internalForcesPositions[:,0]
-        y = self.results.internalForcesPositions[:,1]
-        z = self.results.bendingResistance[:,0,1]
-        theTitle='Mx- Resistance'
-        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut)
-
-    if outVal[9]: #plot My resistance-
-        x = self.results.internalForcesPositions[:,0]
-        y = self.results.internalForcesPositions[:,1]
-        z = self.results.bendingResistance[:,1,1]
-        theTitle='My- resistance'
-        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut)
-
-    if outVal[10]: #plot Mx abs
-        x = self.results.internalForcesPositions[:,0]
-        y = self.results.internalForcesPositions[:,1]
-        z = self.results.bendingResistance[:,0,2]
-        theTitle='Mx max Resistance'
-        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut)
-
-    if outVal[11]: #plot My resistance abs
-        x = self.results.internalForcesPositions[:,0]
-        y = self.results.internalForcesPositions[:,1]
-        z = self.results.bendingResistance[:,1,2]
-        theTitle='My max resistance'
-        fig, axOut = plotInternalForce(self,displacementPlot,theTitle, x,y,z,saveImage)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut)
-
-
     return outFig, outAxis
 
 def plotInternalForce(self,plotType,theTitle, x,y,z,saveImage):
