@@ -16,6 +16,8 @@ import base64
 from io import BytesIO
 from tqdm import tqdm
 
+
+
 def plotInputGeometry(self, figaspect = 1):
     w, h = plt.figaspect(figaspect)
     mult = 1.5
@@ -83,7 +85,7 @@ def plotInternalForce(self,plotType,theTitle, x,y,z,saveImage):
         axOut.plot_trisurf(triang,z,cmap=plt.get_cmap('winter'))
         axOut.grid(False)
 
-# Hide axes ticks
+        # Hide axes ticks
         axOut.set_xticks([])
         axOut.set_yticks([])
         axOut.set_zticks([])
@@ -113,7 +115,6 @@ def myTextOnMeshPlot(self,x,y,z, theTitle = ''):
 
     outAx.set_title(theTitle)
     return fig, outAx
-
 
 def myIsoPlot(self,x,y,z, theTitle = ''):
     fig,outAx = plotInputGeometry(self)
@@ -216,99 +217,18 @@ def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = Fals
             k+=1
     return fig, outAx 
 
-def plotBeamComponent(self,lineName, verticalDisplacement = True, bendingMomentsToPlot = [], shearForcesToPlot = [],bendingResistancesToPlot=[], plotOnMesh=False):
+def plotBeamComponent(self, valuesToPlotList, plotOnMesh=False):
     outAxis = []
     outFig = []
-    valPoss = ['x', 'y', 'xy']
-    
-    outVal = np.zeros(8, dtype=bool)
-    outVal[0]=verticalDisplacement
-    for i, a in enumerate(valPoss):
-        if a in bendingMomentsToPlot:
-            outVal[i+1] = True
-        if a in shearForcesToPlot:
-            outVal[i+4] = True
-        if a in bendingResistancesToPlot:
-            outVal[i+6] = True
-
-    schnitt = self.results.schnittList[lineName]
-    x=schnitt.arrayEvaluationPoints[:,0]
-    y=schnitt.arrayEvaluationPoints[:,1]
-
-    if outVal[0]: #plot vertical displacements
-        z= schnitt.verticalDisplacements
-
-        theTitle='w'
-        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,plotOnMesh)
-
-        self.axes[theTitle] = axOut
+    resultsDictionary = self.resultsInformation.resultsDictionary
+    for valueToPlot in valuesToPlotList:
+        theTitle=valueToPlot
+        resultToPlot = resultsDictionary[valueToPlot]
+        myZ = resultToPlot.z*resultToPlot.resultScale
+        fig, axOut = plotSchnittValues(self,theTitle, resultToPlot.x,resultToPlot.y,myZ,plotOnMesh)
+        self.axes[valueToPlot] = valueToPlot
         outAxis.append(axOut)
-
-    if outVal[1]: #plot Mx
-        z = schnitt.bendingMoments[:,0]
-
-        theTitle='Mx'
-        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,plotOnMesh)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut)
-
-    if outVal[2]: # plot My
-
-        z= schnitt.bendingMoments[:,1]
-        theTitle='My'
-        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,plotOnMesh)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut) 
-
-    if outVal[3]:  # plot Mxy
-
-        z= schnitt.bendingMoments[:,2]
-        theTitle='Mxy'
-        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,plotOnMesh)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut) 
-
-    if outVal[4]: # plot Vx
-
-        z = schnitt.shearForces[:,0]
-        theTitle='Vx'
-        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,plotOnMesh)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut) 
-
-    if outVal[5]: # plot Vy
-
-        z = schnitt.shearForces[:,1]
-        theTitle='Vy'
-        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,plotOnMesh)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut) 
-
-    if outVal[6]: #plot Mx resistance
-        z = schnitt.bendingMoments[:,0]
-
-        theTitle='Mx'
-        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,plotOnMesh)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut)
-
-    if outVal[7]: #plot My resistance
-        z = schnitt.bendingMoments[:,0]
-
-        theTitle='Mx'
-        fig, axOut = plotSchnittValues(self,theTitle, x,y,z,plotOnMesh)
-
-        self.axes[theTitle] = axOut
-        outAxis.append(axOut)
-
     return outFig, outAxis
-
 
 def plotSchnittValues(self,theTitle, x,y,z,plotOnMesh):
     maxVal = np.max(self.plates[0].outlineCoords)

@@ -13,6 +13,7 @@ from scipy.linalg import ldl
 from scipy.linalg import solve
 from scipy.sparse.linalg import spsolve
 from scipy.sparse import csr_matrix
+from scipy.integrate import trapezoid
 
 # Import custom functions from other modules
 from .shapeFunctions import *
@@ -20,6 +21,8 @@ from .localMatrixes import *
 from .internalForces import *
 from .slicingFunctions import *
 from .rotationMatrix import *
+
+import gmsh
 
 # for debug purposes
 from tqdm import tqdm
@@ -131,6 +134,7 @@ def solveModel(self, resultsScales = (1,1, 1),\
         bendingMoments, shearForces, internalForcesPositions = getInternalForces(mitcList,uGlob,internalForcePosition,nodesArray, smoothedValues)
         xPos = internalForcesPositions[:,0]
         yPos = internalForcesPositions[:,1]
+
         resultsDictionary['Mx'] = Result(xPos,yPos,bendingMoments[:,0], resultsScales[1])
         resultsDictionary['My'] = Result(xPos,yPos,bendingMoments[:,1], resultsScales[1])
         resultsDictionary['Mxy'] = Result(xPos,yPos,bendingMoments[:,2], resultsScales[1])
@@ -458,12 +462,137 @@ def getBendingResistance(bendingMoments,kBendingResistance):
     bendingResistance[:,1,2] = np.abs(bendingMoments[:,1]) + 1/kBendingResistance*np.abs(bendingMoments[:,2])
     return bendingResistance
 
+def computeBeamComponents(self, startCoord, endCoord, nEvaluationPoints,resultsScales = (1,1, 1),integrationWidth = 0, nIntegrationPoints =0):
+
+    uGlob = self.resultsInformation.uGlobPlate
+    # print(uGlob)
+
+    elementsList = self.mesh.elementsList
+    arrayEvaluationPoints = np.zeros((nEvaluationPoints,2))
+
+    arrayEvaluationPoints[:,0] = np.linspace(startCoord[0], endCoord[0], num=nEvaluationPoints)
+    arrayEvaluationPoints[:,1] = np.linspace(startCoord[1], endCoord[1], num=nEvaluationPoints)
+    
+    bendingMoments = np.zeros((nEvaluationPoints,3))
+    shearForces = np.zeros((nEvaluationPoints,2))
+    verticalDisplacements = np.zeros(nEvaluationPoints)
+
+
+    if integrationWidth ==0:
+        for k,evaluationPoint in enumerate(arrayEvaluationPoints):
+            elementTaggetEl, elementTypegetEl, nodeTagsgetEl, ugetEl, vgetEl, wgetEl = gmsh.model.mesh.getElementByCoordinates(evaluationPoint[0],evaluationPoint[1],0, dim=2)
+            # print('element: ', elementTaggetEl)
+            element = self.mesh.getElementByTagDictionary[elementTaggetEl]
+            plateOfTheElement = element.whichPlate
+            elementType = element.type
+            elemNodes = element.connectivity
+            coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
+            nNodes=element.nNodes
+            xi=element.coordinates[:,0]
+            yi=element.coordinates[:,1]
+            elementShape = len(xi)
+            kCoeff = np.zeros((3*nNodes),dtype=int)
+            for i in range(0,3):
+                kCoeff[0+i::3]=coherentElemNodes*3+i
+            vLoc = np.matmul(element.rotationMatrix, uGlob[kCoeff])
+            # print('vLoc: ', vLoc)
+            Df = self.plates[plateOfTheElement].Df
+            Dc = self.plates[plateOfTheElement].Dc
+
+            ri =ugetEl
+            si = vgetEl
+
+            N, Bb,Bs, detJ =getShapeFunctionForElementType(elementType,ri, si, xi, yi)
+
+            tempDispl = N@vLoc
+            verticalDisplacements[k] = tempDispl[0]
+            bendingMoments[k,0:3] = np.matmul(Df,np.matmul(Bb, vLoc))[:,0]*1
+            shearForces[k,0:2] = np.matmul(Dc, np.matmul(Bs, vLoc))[:,0]*1
+
+    elif integrationWidth>0:
+        verticalDisplacements = None
+        sampleWidth = integrationWidth/nIntegrationPoints
+        lineDir = np.array([endCoord[0]-startCoord[0],endCoord[1]-startCoord[1]])
+        lineDir = lineDir/np.sqrt(lineDir[0]**2+lineDir[1]**2)
+        normLineDir = np.array([lineDir[1], -lineDir[0]])
+
+        for k,evaluationPoint in enumerate(arrayEvaluationPoints):
+            pCord = np.array([evaluationPoint[0],evaluationPoint[1]])
+            startIntegrationLine = pCord-normLineDir*integrationWidth/2
+            endIntegrationLine = pCord + normLineDir*integrationWidth/2
+
+            arrayIntegrationPoints = np.zeros((nIntegrationPoints,2))
+            arrayIntegrationPoints[:,0] = np.linspace(startIntegrationLine[0], endIntegrationLine[0], num=nIntegrationPoints)
+
+            arrayIntegrationPoints[:,1] = np.linspace(startIntegrationLine[1], endIntegrationLine[1], num=nIntegrationPoints)
+            integrationBendingMoments = np.zeros((nIntegrationPoints,3))
+            integrationShearForces = np.zeros((nIntegrationPoints,2))
+
+            for j, integrationPoint in enumerate(arrayIntegrationPoints):
+                elementTaggetEl, elementTypegetEl, nodeTagsgetEl, ugetEl, vgetEl, wgetEl = gmsh.model.mesh.getElementByCoordinates(integrationPoint[0],integrationPoint[1],0, dim=2)
+                element = self.mesh.getElementByTagDictionary[elementTaggetEl]
+                plateOfTheElement = element.whichPlate
+                elementType = element.type
+                elemNodes = element.connectivity
+                coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
+                nNodes=element.nNodes
+                xi=element.coordinates[:,0]
+                yi=element.coordinates[:,1]
+                elementShape = len(xi)
+                kCoeff = np.zeros((3*nNodes),dtype=int)
+                for i in range(0,3):
+                    kCoeff[0+i::3]=coherentElemNodes*3+i
+                vLoc = np.matmul(element.rotationMatrix, uGlob[kCoeff])
+                # print('vLoc: ', vLoc)
+                Df = self.plates[plateOfTheElement].Df
+                Dc = self.plates[plateOfTheElement].Dc
+
+                ri =ugetEl
+                si = vgetEl
+
+                N, Bb,Bs, detJ =getShapeFunctionForElementType(elementType,ri, si, xi, yi)
+
+                integrationBendingMoments[j,0:3] = np.matmul(Df,np.matmul(Bb, vLoc))[:,0]*1
+                integrationShearForces[j,0:2] = np.matmul(Dc, np.matmul(Bs, vLoc))[:,0]*1
+            
+            for j in range(0,3):
+                arrayToIntegrate = integrationBendingMoments[:,j]
+                bendingMoments[k,j]=trapezoid(arrayToIntegrate,dx=sampleWidth)
+
+            for j in range(0,2):
+                arrayToIntegrate = integrationShearForces[:,j]
+                shearForces[k,j]=trapezoid(arrayToIntegrate,dx=sampleWidth)
+
+    resultsDictionary = self.resultsInformation.resultsDictionary
+    xPos = arrayEvaluationPoints[:,0]
+    yPos = arrayEvaluationPoints[:,1]
+    resultsDictionary['vDisp_line'] = Result(xPos,yPos, verticalDisplacements, resultsScales[0])
+    resultsDictionary['Mx_line'] = Result(xPos,yPos,bendingMoments[:,0], resultsScales[1])
+    resultsDictionary['My_line'] = Result(xPos,yPos,bendingMoments[:,1], resultsScales[1])
+    resultsDictionary['Mxy_line'] = Result(xPos,yPos,bendingMoments[:,2], resultsScales[1])
+    resultsDictionary['Vx_line'] = Result(xPos,yPos,shearForces[:,0], resultsScales[2])
+    resultsDictionary['Vy_line'] = Result(xPos,yPos,shearForces[:,1], resultsScales[2])
+
+
+    # self.results.schnittList[lineName] = Schnitt(bendingMoments, shearForces,verticalDisplacements, arrayEvaluationPoints)
+
+    return bendingMoments, shearForces, arrayEvaluationPoints
+
+class Schnitt:
+    def __init__(self, bendingMoments, shearForces,verticalDisplacements, arrayEvaluationPoints):
+        self.bendingMoments = bendingMoments
+        self.shearForces = shearForces
+        self.verticalDisplacements = verticalDisplacements
+        self.arrayEvaluationPoints = arrayEvaluationPoints
+
+
+
 class Result:
     def __init__(self,x,y,z, resultScale):
         self.x = x
         self.y = y
         self.z = z
-        iMax = np.argmax(z)
+        iMax = np.argmax(z) 
         self.iMax = iMax
         self.zMax = z[iMax]
         iMin = np.argmin(z)
