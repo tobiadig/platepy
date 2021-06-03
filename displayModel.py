@@ -140,7 +140,7 @@ def myIsoPlot(self,x,y,z, theTitle = ''):
     xtri = x[triangles] - np.roll(x[triangles], 1, axis=1)
     ytri = y[triangles] - np.roll(y[triangles], 1, axis=1)
     maxi = np.max(np.sqrt(xtri**2 + ytri**2), axis=1)
-    alpha = np.percentile(maxi, 100)
+    alpha = np.percentile(maxi, 98)
     # print('alpha: ', alpha)
     # np.savetxt('maxi.csv', maxi, delimiter = ',')
     # apply masking
