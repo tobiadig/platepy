@@ -27,11 +27,11 @@ def plotInputGeometry(self, figaspect = 1):
     for wall in self.walls:
         wall.plot(axGeometry)
 
-    for column in self.columns:
-        column.plot(axGeometry)
-        
     for uz in self.downStandBeams:
         uz.plot(axGeometry)
+
+    for column in self.columns:
+        column.plot(axGeometry)
     for p in self.loads:
         if p.case == 'point':
             mySize = 100
@@ -89,14 +89,14 @@ def plotInternalForce(self,plotType,theTitle, x,y,z,saveImage):
 
 def removeTrianglesOutsidePlate(x,y,percentageTrianglesToMantain):
     triang = tri.Triangulation(x, y)
-    triangles = triang.triangles
-    # Mask off unwanted triangles.
-    xtri = x[triangles] - np.roll(x[triangles], 1, axis=1)
-    ytri = y[triangles] - np.roll(y[triangles], 1, axis=1)
-    maxi = np.max(np.sqrt(xtri**2 + ytri**2), axis=1)
-    alpha = np.percentile(maxi, percentageTrianglesToMantain)
+    # triangles = triang.triangles
+    # # Mask off unwanted triangles.
+    # xtri = x[triangles] - np.roll(x[triangles], 1, axis=1)
+    # ytri = y[triangles] - np.roll(y[triangles], 1, axis=1)
+    # maxi = np.max(np.sqrt(xtri**2 + ytri**2), axis=1)
+    # alpha = np.percentile(maxi, percentageTrianglesToMantain)
 
-    triang.set_mask(maxi > alpha)
+    # triang.set_mask(maxi > alpha)
     return triang
 
 def myTextPlot(self,x,y,z, theTitle = ''):
@@ -149,6 +149,7 @@ def myIsoPlot(self,x,y,z, theTitle = ''):
     zMinString = '{:.3f}'.format(z[iMMin])
     if np.abs(z[iMMin])>0.1:
         outAx.text(x[iMMin],y[iMMin], zMinString,color='r', bbox=dict(facecolor='w', edgecolor='red'), zorder=1000)
+        print('z max position:', x[iMMin],y[iMMin])
 
     zMaxString = '{:.3f}'.format(z[iMMax])
     if np.abs(z[iMMax])>0.1:
@@ -243,7 +244,3 @@ def plotSchnittValues(self,theTitle, x,y,z,plotOnMesh):
 
     outAx.set_title(theTitle)
     return fig,outAx
-
-
-
-

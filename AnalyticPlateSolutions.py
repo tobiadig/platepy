@@ -9,7 +9,8 @@ Purpose of module: Provide analytic plate bending solutions
 #%% Import only necessary modules
 import numpy as np
 import warnings                                                                #for unimplemented cases
-from collections import namedtuple                                             #for generating test data if __name__ = __main__
+from collections import namedtuple
+from scipy.interpolate import interp1d
 
 #%% Driver dispatching to the correct subroutine
 def AnalyticPlateSolutions(pOpts, lOpts, sOpts, inPos):
@@ -63,6 +64,9 @@ def AnalyticPlateSolutions(pOpts, lOpts, sOpts, inPos):
 
     elif pOpts.shape == "rectangular"  and pOpts.depth == "thin"  and pOpts.support == "sSupportwBeams"  and lOpts.type == "distributed":
         quantities, values, outPos = Rect_thin_sSupportwBeams_Distr(pOpts, lOpts, sOpts, inPos)
+    elif pOpts.shape == "rectangular"  and pOpts.depth == "thin"  and pOpts.support == "columnswBeams"  and lOpts.type == "distributed":
+        w = Rect_thin_columnswBeams_Distr(pOpts, lOpts, sOpts, inPos)
+        return w
     
     else:
         raise ValueError('Requested combination for analytic solution either not feasible or implemented yet')    
@@ -328,6 +332,19 @@ def Rect_thin_sSupportwBeams_Distr(pOpts, lOpts, sOpts, inPos):
     
     return quantities, values, outPos
 
+
+def Rect_thin_columnswBeams_Distr(pOpts, lOpts, sOpts, inPos):
+    quantities=[True, False, False, False, False, False, False, False]
+    #Actually: Wz, Rx, Ry, Mx, Mx, Mxy, Vx, Vy)
+    # outQuantities: [w, Mx, My, Mxy, Qx, Qy]
+    myLambda = pOpts.material.myLambda
+    gammas = np.array([0,0.5, 1, 2, 3, 4, 5, 10, 25, 50, 100, 1000])
+    wTimo = np.array([0.0257, 0.01174, 0.00873, 0.00668, 0.00588, 0.00546, 0.00519, 0.00464, 0.00429, 0.00418, 0.00412, 0.00406])
+    f2 = interp1d(gammas, wTimo, kind='linear')
+
+    w = f2(myLambda)
+
+    return w
 #%% for unit testing! This code is executed if this python file is run!
 if __name__ == "__main__":
     #provide some demo input and verify output

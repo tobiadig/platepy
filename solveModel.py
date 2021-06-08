@@ -21,13 +21,14 @@ from .localMatrixes import *
 from .internalForces import *
 from .slicingFunctions import *
 from .rotationMatrix import *
+from .displayModel import plotInputGeometry, plotMesh
 
 import gmsh
 
 # for debug purposes
 from tqdm import tqdm
 
-def solveModel(self, resultsScales = (1,1, 1),\
+def solveModel(self, resultsScales = (1, 1, 1),\
     internalForcePosition = 'nodes', smoothedValues = False, solveMethod = 'sparse', computeMoments=True, kBendingResistance = 1):
     ''' Given a plateModel object with an initialized mesh, this function computes displacements, rotations and internal forces at
         each node.\n
@@ -578,13 +579,67 @@ def computeBeamComponents(self, startCoord, endCoord, nEvaluationPoints,resultsS
 
     return bendingMoments, shearForces, arrayEvaluationPoints
 
+
+def evaluateAtPoints(self, coords, displayPoints = False):
+
+    uGlob = self.resultsInformation.uGlobPlate
+    # print(uGlob)
+    nEvaluationPoints = coords.shape[0]
+    elementsList = self.mesh.elementsList
+    arrayEvaluationPoints = np.zeros((nEvaluationPoints,2))
+
+    bendingMoments = np.zeros((nEvaluationPoints,3))
+    shearForces = np.zeros((nEvaluationPoints,2))
+    verticalDisplacements = np.zeros(nEvaluationPoints)
+    resultsScaleVertDisp = self.resultsInformation.resultsDictionary['vDisp'].resultScale
+
+    for k,evaluationPoint in enumerate(coords):
+        elementTaggetEl, elementTypegetEl, nodeTagsgetEl, ugetEl, vgetEl, wgetEl = gmsh.model.mesh.getElementByCoordinates(evaluationPoint[0],evaluationPoint[1],0, dim=2)
+        # print('element: ', elementTaggetEl)
+        element = self.mesh.getElementByTagDictionary[elementTaggetEl]
+        plateOfTheElement = element.whichPlate
+        elementType = element.type
+        elemNodes = element.connectivity
+        coherentElemNodes = element.coherentConnectivity.to_numpy()[:,0]
+        nNodes=element.nNodes
+        xi=element.coordinates[:,0]
+        yi=element.coordinates[:,1]
+        elementShape = len(xi)
+        kCoeff = np.zeros((3*nNodes),dtype=int)
+        for i in range(0,3):
+            kCoeff[0+i::3]=coherentElemNodes*3+i
+
+        # vLoc = np.matmul(element.rotationMatrix, uGlob[kCoeff])
+        vLoc = uGlob[kCoeff]
+        # print('vLoc: ', vLoc)
+        Df = self.plates[plateOfTheElement].Df
+        Dc = self.plates[plateOfTheElement].Dc
+
+        ri =-ugetEl
+        si = -vgetEl
+
+        N, Bb,Bs, detJ =getShapeFunctionForElementType(elementType,ri, si, xi, yi)
+
+        tempDispl = N@vLoc
+
+        verticalDisplacements[k] = tempDispl[0]*resultsScaleVertDisp
+        bendingMoments[k,0:3] = np.matmul(Df,np.matmul(Bb, vLoc))[:,0]*1
+        shearForces[k,0:2] = np.matmul(Dc, np.matmul(Bs, vLoc))[:,0]*1
+
+    if displayPoints:
+        fig,outAx = plotInputGeometry(self)
+        # fig,outAx = plotMesh(self)
+        for k,evaluationPoint in enumerate(coords):
+            outAx.scatter(evaluationPoint[0],evaluationPoint[1], facecolor='b', marker='.')
+
+    return verticalDisplacements,bendingMoments, shearForces
+
 class Schnitt:
     def __init__(self, bendingMoments, shearForces,verticalDisplacements, arrayEvaluationPoints):
         self.bendingMoments = bendingMoments
         self.shearForces = shearForces
         self.verticalDisplacements = verticalDisplacements
         self.arrayEvaluationPoints = arrayEvaluationPoints
-
 
 
 class Result:
