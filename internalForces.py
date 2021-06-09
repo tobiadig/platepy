@@ -64,7 +64,7 @@ def getInternalForcesCenter(elementsList,uGlob):
             Bc = Bc[0,:,:]
         kCoeff, _ = getKCoeff(elementType, coherentElemNodes)
         vLoc = np.matmul(element.rotationMatrix, uGlob[kCoeff])
-        bendingMoments[k,:] = np.matmul(Df,np.matmul(Bf, vLoc))[:,0]
+        bendingMoments[k,:] = np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*-1
         shearForces[k,:]=np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*-1
     return bendingMoments, shearForces, internalForcesPositions
 

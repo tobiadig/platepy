@@ -51,6 +51,7 @@ def solveModel(self, resultsScales = (1, 1, 1),\
     '''
     # Loop over elements and assemble stiffness matrices
     nodes=self.mesh.nodesArray
+    # print('nodes: ', nodes)
     nNodesTotal = nodes.shape[0]
     nodesRotations = self.mesh.nodesRotations # both dataframes
     elementsList = self.mesh.elementsList
@@ -507,8 +508,8 @@ def computeBeamComponents(self, startCoord, endCoord, nEvaluationPoints,resultsS
 
             tempDispl = N@vLoc
             verticalDisplacements[k] = tempDispl[0]
-            bendingMoments[k,0:3] = np.matmul(Df,np.matmul(Bb, vLoc))[:,0]*1
-            shearForces[k,0:2] = np.matmul(Dc, np.matmul(Bs, vLoc))[:,0]*1
+            bendingMoments[k,0:3] = np.matmul(Df,np.matmul(Bb, vLoc))[:,0]*-1
+            shearForces[k,0:2] = np.matmul(Dc, np.matmul(Bs, vLoc))[:,0]*-1
 
     elif integrationWidth>0:
         verticalDisplacements = None
