@@ -306,7 +306,7 @@ def _myIsoPlot(self,x,y,z, theTitle = ''):
     # Hide axes ticks
     outAx.set_xticks([])
     outAx.set_yticks([])
-    outAx.set_zticks([])
+
     return fig,outAx
 
 def _plotSchnittValues(self,theTitle, x,y,z,plotOnMesh):
