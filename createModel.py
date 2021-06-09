@@ -363,7 +363,6 @@ class Wall:
             axGeometry.plot(np.array([l1[0,0],l2[0,0]]),np.array([l1[0,1],l2[0,1]]), color='g', linewidth = linWidth)
             axGeometry.plot(np.array([l1[1,0],l2[1,0]]),np.array([l1[1,1],l2[1,1]]), color='g', linewidth = linWidth)
 
-
 class Column:
     '''
         A column object contains all characteristics regarding geometry and support conditions. \n

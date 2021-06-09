@@ -1,5 +1,17 @@
 import numpy as np
 def getGaussQuadrature(shape, nPoints):
+    '''
+        Return coordinates and weight of the point for the Gauss quadrature. \n
+        Input: \n
+        * shape: \n
+        \t * "linear" \n
+        \t * "triangular" \n
+        \t * "rectangular" \n
+        * nPoints: number of nodes of Gauss points.\n
+        Return: \n
+        * pointsCoordinates: Numpy array of shape (nPoints x 2).\n
+        * pointsWeights: Numpy array of shape (nPoints,).
+    '''
     gaussQuadrature={'linear': {1:{'points': np.array([[0,0]]),
                                     'weights': np.array([2])},
 
@@ -40,4 +52,6 @@ def getGaussQuadrature(shape, nPoints):
                                                             [   0    , +np.sqrt(3/5)],
                                                             [+np.sqrt(3/5), +np.sqrt(3/5)]]),
                                     'weights': np.array([25, 40, 25, 40, 64, 40, 25, 40, 25])/81}}}
-    return gaussQuadrature[shape][nPoints]['points'], gaussQuadrature[shape][nPoints]['weights']
+    pointsCoordinates = gaussQuadrature[shape][nPoints]['points']
+    pointsWeights = gaussQuadrature[shape][nPoints]['weights']
+    return pointsCoordinates, pointsWeights
