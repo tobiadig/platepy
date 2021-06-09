@@ -33,7 +33,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
             *   -
     '''
 
-    elementType, elementShape, elementIntegration = getElementDefinition(elementDefinition)
+    elementType, elementShape, elementIntegration = _getElementDefinition(elementDefinition)
     gmsh.model.mesh.clear()
 
     # Set recombination rules
@@ -105,35 +105,67 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
 
     # distort the mesh if required
     if meshDistortion:
-        nodesArrayPd = distortMesh(nodesArrayPd, distVal)
+        nodesArrayPd = _distortMesh(nodesArrayPd, distVal)
 
     gmshModel = gmsh.model
     platesList = self.plates
-    elementsList, getElementByTagDictionary = getElementsList(gmshModel,platesList, elementType, elementShape,elementIntegration,gmshToCoherentNodesNumeration,nodesArrayPd)
+    elementsList, getElementByTagDictionary = _getElementsList(gmshModel,platesList, elementType, elementShape,elementIntegration,gmshToCoherentNodesNumeration,nodesArrayPd)
     plateElementsList = copy.deepcopy(elementsList)  # useful if there is the need to distinguish plate elements from the downstand bem elements
 
     #assemble 2D elements for line load
     loadsList = self.loads
-    loadsList = getLineLoadForces(gmshModel, loadsList,gmshToCoherentNodesNumeration,nodesArrayPd)
+    loadsList = _getLineLoadForces(gmshModel, loadsList,gmshToCoherentNodesNumeration,nodesArrayPd)
 
     #generate BCs and nodes directions by iterating over wall segments
     wallList = self.walls
     columnsList = self.columns
-    BCs, nodesRotationsPd = getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotation)
+    BCs, nodesRotationsPd = _getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotation)
 
     nextNode = int(np.max(nodeTagsModel)+1)
     downStandBeamsList = self.downStandBeams
     myPlate = self.plates[0]
     downStandBeamsList, gmshToCoherentNodesNumeration,nodesArray,nodesArrayPd,nodesRotationsPd =\
-    createNewNodesForDownStandBeams(gmshModel,nodesArray,nodesArrayPd,nodesRotationsPd,downStandBeamsList,gmshToCoherentNodesNumeration,nextNode)
+    _createNewNodesForDownStandBeams(gmshModel,nodesArray,nodesArrayPd,nodesRotationsPd,downStandBeamsList,gmshToCoherentNodesNumeration,nextNode)
     downStandBeamsList, AmatList, elementsList,nodesRotationsPd = \
-    getDownStandBeamsElements(gmshModel,nodesRotationsPd,nodesArray,elementsList,\
+    _getDownStandBeamsElements(gmshModel,nodesRotationsPd,nodesArray,elementsList,\
     downStandBeamsList,elementType,myPlate,gmshToCoherentNodesNumeration,nodesArrayPd)
 
     # Store everything into the mesh object
     self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs, AmatList, plateElementsList, getElementByTagDictionary)
 
-def getElementDefinition(elementDefinition):
+def setMesh(self, nodesArray, elements, BCs, load = None):
+    ''' Allows to manually define node positions, elements connectivity, boundary conditions and loads. \n
+        Input: \n
+            * self: plateModel object.\n
+            * nodesArray: nNodes x 3 numpy array. Columns are the x-y-z coordinates of each node.\n
+            * elements: (nElements x nElementNodes) connectivity matrix. Each row is an element, the columns contain the node tags which build the element. \n
+            * BCs: n x 4 numpy array. n is the number of restrained nodes, the first column is the node tag, the other column represent the condition of the three DOFs (1 is blocked, 0 is free). \n
+            * load = None: n x 4 numpy array. n is the number of loaded nodes, the first column is the node tag, the other column represent the magnitude of the load for the relative DOF. \n
+        Return: \n
+            * - \n
+    '''
+    elementsList = []
+    nNodes = nodesArray.shape[0]
+    k=1
+    for element in elements:
+        newElement = Element()
+        newElement.tag = k
+        newElement.nNodes  = len(element)
+        newElement.connectivity  = element
+        newElement.shape=4
+        newElement.coherentConnectivity = pd.DataFrame(element-1)
+        newElement.coordinates = np.zeros((len(element), 3))
+        newElement.coordinates[:,0:2] = nodesArray[element-1, :]
+        newElement.whichPlate  = 1  
+        elementsList.append(newElement)
+        k+=1
+
+    nodesRotationsPd = pd.DataFrame(np.zeros((nNodes, 1)), index=range(1, nNodes+1))
+    nodesArrayPd =pd.DataFrame(nodesArray, index=range(1, nNodes+1) )
+    self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs)
+    self.mesh.load = load
+
+def _getElementDefinition(elementDefinition):
     '''
         Extracts information from the elementDefinition String. \n
         Input: \n
@@ -154,7 +186,7 @@ def getElementDefinition(elementDefinition):
 
     return elementType, elementShape, elementIntegration
 
-def distortMesh(nodesArray, alpha):
+def _distortMesh(nodesArray, alpha):
     '''
     Displace the nodes in nodesArray according to a distortion function. \n
     Input: \n
@@ -175,7 +207,7 @@ def distortMesh(nodesArray, alpha):
     newNodesArray = pd.DataFrame(newNodes, index = myIndex)
     return newNodesArray
 
-def getElementsList(gmshModel,platesList, elementType, elementShape,elementIntegration,gmshToCoherentNodesNumeration,nodesArrayPd):
+def _getElementsList(gmshModel,platesList, elementType, elementShape,elementIntegration,gmshToCoherentNodesNumeration,nodesArrayPd):
     ''' Creates a list of all elements objects of the model.\n
         Input: \n
             * gmshModel: model object of the gmsh library. \n
@@ -212,7 +244,7 @@ def getElementsList(gmshModel,platesList, elementType, elementShape,elementInteg
             getElementByTagDictionary[elemTag] = newElement
     return elementsList, getElementByTagDictionary
 
-def getLineLoadForces(gmshModel, loadsList, gmshToCoherentNodesNumeration, nodesArrayPd):
+def _getLineLoadForces(gmshModel, loadsList, gmshToCoherentNodesNumeration, nodesArrayPd):
     ''' Creates a list of all elements objects of the model.\n
         Input: \n
             * gmshModel: model object of the gmsh library. \n
@@ -245,7 +277,7 @@ def getLineLoadForces(gmshModel, loadsList, gmshToCoherentNodesNumeration, nodes
 
     return loadsList
 
-def getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotation):
+def _getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotation):
     ''' Creates array where the rows are the constrained nodes, the first columns is the node tag and the 
         other 3 columns define if the correspondend DOF is restrained or free (see supportCondition). 
         Additionally also the nodes rotations are stored.\n
@@ -298,7 +330,7 @@ def getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotati
         BCs[count,1:] = BCsDic[a]
     return BCs, nodesRotationsPd
 
-def createNewNodesForDownStandBeams(gmshModel,nodesArray,nodesArrayPd,nodesRotationsPd,downStandBeamsList,gmshToCoherentNodesNumeration,nextNode):
+def _createNewNodesForDownStandBeams(gmshModel,nodesArray,nodesArrayPd,nodesRotationsPd,downStandBeamsList,gmshToCoherentNodesNumeration,nextNode):
     ''' Iterates of the downstand beams and creates the new nodes. The array of nodes and rotations are expanded and returned accordingly. \n
         Input: \n
             * gmshModel: model object of the gmsh library.\n
@@ -342,7 +374,7 @@ def createNewNodesForDownStandBeams(gmshModel,nodesArray,nodesArrayPd,nodesRotat
         nodesRotationsPd.index = nodesRotationsPd.index.astype(int)
     return downStandBeamsList, gmshToCoherentNodesNumeration,nodesArray,nodesArrayPd,nodesRotationsPd
 
-def getDownStandBeamsElements(gmshModel,nodesRotationsPd,nodesArray,elementsList,\
+def _getDownStandBeamsElements(gmshModel,nodesRotationsPd,nodesArray,elementsList,\
     downStandBeamsList,elementType,myPlate,gmshToCoherentNodesNumeration,nodesArrayPd):
     ''' Add the downstand beam elements to the model elements list. 
     Additionally, creates the multi-constraint matrix which connects plate and beam DOFs. \n
@@ -396,7 +428,7 @@ def getDownStandBeamsElements(gmshModel,nodesRotationsPd,nodesArray,elementsList
 
                 coord = nodesArray[realCoherentNodeTags,0:2]
                 lineDirection = coord[1,:] -coord[0,:]
-                lineRot = getVectorDirection(lineDirection)
+                lineRot = _getVectorDirection(lineDirection)
                 plateRots = nodesRotationsPd.loc[nodeTags].to_numpy()
                 # print('before: ',nodesRotationsPd)
                 
@@ -408,13 +440,13 @@ def getDownStandBeamsElements(gmshModel,nodesRotationsPd,nodesArray,elementsList
         nConstraints = len(newNodesUZ)*3
         hp = myPlate.thickness
         hb = uz.crossSection.thickness
-        A = getMFCMatrix(coherentNodesPlate,coherentNodesUZ,nodesRotationsPd,nDofs,nConstraints,elementType, hb, hp)
+        A = _getMFCMatrix(coherentNodesPlate,coherentNodesUZ,nodesRotationsPd,nDofs,nConstraints,elementType, hb, hp)
         AmatList.append(A)
 
         uz.elementsList = uzElementsList
     return downStandBeamsList, AmatList, elementsList,nodesRotationsPd
 
-def getVectorDirection(lineDirection):
+def _getVectorDirection(lineDirection):
     ''' Return direction of the given vector in radians.\n
         Input: \n
             * lineDirection: Numpy array of length 2 with x and y coordinates. \n
@@ -433,7 +465,7 @@ def getVectorDirection(lineDirection):
         lineRot = np.arctan(lineDirection[1]/lineDirection[0])
     return lineRot
 
-def getMFCMatrix(coherentNodesPlate,coherentNodesUZ,nodesRotationsPd,nDofs,nConstraints,elementType, hb, hp):
+def _getMFCMatrix(coherentNodesPlate,coherentNodesUZ,nodesRotationsPd,nDofs,nConstraints,elementType, hb, hp):
     ''' Computes the MultiFreedom matrix A. \n
         Input: \n
             * coherentNodesPlate: Nodes of the plate (coherently numerated from 0 to nNodes-1).\n
@@ -484,38 +516,6 @@ def getMFCMatrix(coherentNodesPlate,coherentNodesUZ,nodesRotationsPd,nDofs,nCons
         a3[uzNode*3] = 1
         A[3*i:3*i+3, :] = np.array([a1, a2, a3])
     return A
-
-def setMesh(self, nodesArray, elements, BCs, load = None):
-    ''' Allows to manually define node positions, elements connectivity, boundary conditions and loads. \n
-        Input: \n
-            * self: plateModel object.\n
-            * nodesArray: nNodes x 3 numpy array. Columns are the x-y-z coordinates of each node.\n
-            * elements: (nElements x nElementNodes) connectivity matrix. Each row is an element, the columns contain the node tags which build the element. \n
-            * BCs: n x 4 numpy array. n is the number of restrained nodes, the first column is the node tag, the other column represent the condition of the three DOFs (1 is blocked, 0 is free). \n
-            * load = None: n x 4 numpy array. n is the number of loaded nodes, the first column is the node tag, the other column represent the magnitude of the load for the relative DOF. \n
-        Return: \n
-            * - \n
-    '''
-    elementsList = []
-    nNodes = nodesArray.shape[0]
-    k=1
-    for element in elements:
-        newElement = Element()
-        newElement.tag = k
-        newElement.nNodes  = len(element)
-        newElement.connectivity  = element
-        newElement.shape=4
-        newElement.coherentConnectivity = pd.DataFrame(element-1)
-        newElement.coordinates = np.zeros((len(element), 3))
-        newElement.coordinates[:,0:2] = nodesArray[element-1, :]
-        newElement.whichPlate  = 1  
-        elementsList.append(newElement)
-        k+=1
-
-    nodesRotationsPd = pd.DataFrame(np.zeros((nNodes, 1)), index=range(1, nNodes+1))
-    nodesArrayPd =pd.DataFrame(nodesArray, index=range(1, nNodes+1) )
-    self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs)
-    self.mesh.load = load
 
 class Mesh:
     '''
@@ -575,15 +575,4 @@ class Element:
         self.correspondingPlateElements = None
         self.Db = None
         self.Ds = None
-
-
-# can be removed but im not sure
-# def assignNumpyArrayToDataFrame(xDF, indexesToModify, plateRotations, uzRotation):
-#     index = xDF.index
-#     values = xDF.to_numpy()
-#     nIndexes = len(indexesToModify)
-#     values[indexesToModify-1] = uzRotation * np.ones((nIndexes,1)) - plateRotations
-
-#     xDF = pd.DataFrame(values, index=index)
-#     return xDF
 
