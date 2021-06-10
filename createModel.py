@@ -323,13 +323,20 @@ class Wall:
         Return: \n
         *   -
     '''
-    def __init__(self, inputDict):
+    def __init__(self, inputDict, verticalDisplacement = False):
         self.outlineCoords = inputDict["outlineCoords"]
         self.support = inputDict["support"]
         self.thickness = inputDict["thickness"]
         self.physicalGroup = None
         self.elementComposition = []
         self.nodeComposition = None
+        self.isElasticallySupported = verticalDisplacement
+        if verticalDisplacement:
+            try:
+                self.high = inputDict["effective high"]
+                self.body = inputDict["body"]
+            except:
+                Exception('Please define wall body and high')
 
     def plot(self, axGeometry):
         '''
@@ -518,5 +525,4 @@ class Load:
         self.elements1DList = None
         self.nodePattern = None
         self.pointLoadNode = None
-
 

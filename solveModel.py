@@ -63,7 +63,13 @@ def solveModel(self, resultsScales = (1, 1, 1),\
     downStandBeamsList = self.downStandBeams
     modelMesh = self.mesh
 
-    sparseGlobalMatrix, sparseForceGlobal, discartedDOFs = getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesRotations, modelMesh,p, nNodesTotal)
+    elasticallySupportedNodes = self.mesh.elasticallySupportedNodes
+    if self.walls[0].isElasticallySupported:
+        wallStiffness = self.walls[0].body.eModule / self.walls[0].high * self.walls[0].thickness *0.007 # what is the characteristic length?
+    else:
+        wallStiffness = None
+
+    sparseGlobalMatrix, sparseForceGlobal, discartedDOFs = getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesRotations, modelMesh,p, nNodesTotal, elasticallySupportedNodes,wallStiffness)
 
     elementType = elementsList[0].type
     fDofsInt, rDofsBool,keepedDisplacements = getFreeDOFvector(BCs, nGDofs,elementType,discartedDOFs)
@@ -164,7 +170,7 @@ def solveModel(self, resultsScales = (1, 1, 1),\
     self.resultsInformation.resultsDictionary = resultsDictionary
     return resultsDictionary
 
-def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesRotations, modelMesh,p,nNodesTotal):
+def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesRotations, modelMesh,p,nNodesTotal, elasticallySupportedNodes,wallStiffness):
     ''' Computes global stifness matrix and global force matrixes in sparse form.\n
         Input: \n
             * elementsList: List of element objects. \n
@@ -247,6 +253,14 @@ def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesR
         else:
             dataForForceSparseMatrix[startIndexForce:startIndexForce+kCoeff.size] = fLocal[:,0]
         startIndexForce += kCoeff.size
+
+    # add elastically supported nodes:
+    if len(elasticallySupportedNodes)>0:
+        rows = elasticallySupportedNodes*3
+        columns = elasticallySupportedNodes*3
+        rowsForStiffnessSparseMatrix[startIndexStiffness:startIndexStiffness+rows.size] = rows[:,0]
+        columnsForStiffnessSparseMatrix[startIndexStiffness:startIndexStiffness+rows.size] = columns[:,0]
+        dataForStiffnessSparseMatrix[startIndexStiffness:startIndexStiffness+rows.size] = np.ones(rows.size)*wallStiffness
 
     #if line load, assemble HERE load vector
     if p.case == 'line':

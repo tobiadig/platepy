@@ -119,7 +119,8 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     #generate BCs and nodes directions by iterating over wall segments
     wallList = self.walls
     columnsList = self.columns
-    BCs, nodesRotationsPd = _getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotation)
+    BCs, nodesRotationsPd,elasticallySupportedNodes = _getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotation)
+    elasticallySupportedNodes = gmshToCoherentNodesNumeration.loc[elasticallySupportedNodes].to_numpy()
 
     nextNode = int(np.max(nodeTagsModel)+1)
     downStandBeamsList = self.downStandBeams
@@ -131,7 +132,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     downStandBeamsList,elementType,myPlate,gmshToCoherentNodesNumeration,nodesArrayPd)
 
     # Store everything into the mesh object
-    self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs, AmatList, plateElementsList, getElementByTagDictionary)
+    self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs, AmatList, plateElementsList, getElementByTagDictionary,elasticallySupportedNodes)
 
 def setMesh(self, nodesArray, elements, BCs, load = None):
     ''' Allows to manually define node positions, elements connectivity, boundary conditions and loads. \n
@@ -290,8 +291,10 @@ def _getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotat
         Return: \n
             * BCs: n x 4 numpy array. n is the number of restrained nodes, the first column is the node tag, the other column represent the condition of the three DOFs (1 is blocked, 0 is free). \n
             * nodesRotationsPd: pandas dataframe where the indexes are the node tags, the values are the node rotation in radians. 
+            * elasticallySupportedNodes: 
     '''
     BCsDic = {}
+    elasticallySupportedNodes = []
     for wall in wallList:
         dim = wall.physicalGroup[0]
         nodeTags, _ = gmshModel.mesh.getNodesForPhysicalGroup(dim,wall.physicalGroup[1])
@@ -299,13 +302,12 @@ def _getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotat
         for wallLine in enitiesTags:
             nodeTags, coord, _ = gmshModel.mesh.getNodes(dim, wallLine, includeBoundary=True)
             coord = coord.reshape(-1,3)
-            # start and end nodes are blocked
+            # start and end nodes are blocked (why?)
             p1Tag = nodeTags[-2]
             BCsDic[p1Tag] = np.array([1,1,1])
             p2Tag = nodeTags[-1]
             BCsDic[p2Tag] = np.array([1,1,1])
             lineDirection = coord[-1,:] -coord[-2,:]
-            #particular directions (np.arctan not defined)
             if deactivateRotation:
                 rotationKiller = 0
             else:
@@ -319,6 +321,8 @@ def _getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotat
             nodesRotationsPd.loc[nodeTags[:]] = lineRot
             for node in nodeTags[:]:
                 BCsDic[node] = wall.support
+                if wall.isElasticallySupported:
+                    elasticallySupportedNodes.append(node)
     for col in columnsList:
         dim = col.physicalGroup[0]
         nodeTags, _ = gmshModel.mesh.getNodesForPhysicalGroup(dim,col.physicalGroup[1])
@@ -328,7 +332,9 @@ def _getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotat
     for count, a in enumerate(BCsDic):
         BCs[count, 0] = a
         BCs[count,1:] = BCsDic[a]
-    return BCs, nodesRotationsPd
+
+    elasticallySupportedNodes = np.array(elasticallySupportedNodes)
+    return BCs, nodesRotationsPd,elasticallySupportedNodes
 
 def _createNewNodesForDownStandBeams(gmshModel,nodesArray,nodesArrayPd,nodesRotationsPd,downStandBeamsList,gmshToCoherentNodesNumeration,nextNode):
     ''' Iterates of the downstand beams and creates the new nodes. The array of nodes and rotations are expanded and returned accordingly. \n
@@ -531,7 +537,7 @@ class Mesh:
         Return: \n
         * -
     '''
-    def __init__(self,nodesArray, nodesRotations, elementsList, BCs, AmatList, plateElementsList, getElementByTagDictionary):
+    def __init__(self,nodesArray, nodesRotations, elementsList, BCs, AmatList, plateElementsList, getElementByTagDictionary,elasticallySupportedNodes):
         self.nodesArray = nodesArray  #pandas!
         self.nodesRotations = nodesRotations
         self.elementsList=elementsList
@@ -540,6 +546,7 @@ class Mesh:
         self.AmatList = AmatList
         self.getElementByTagDictionary = getElementByTagDictionary
         self.plateElementsList = plateElementsList
+        self.elasticallySupportedNodes = elasticallySupportedNodes
 
 class Element:
     '''

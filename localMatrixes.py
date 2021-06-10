@@ -27,7 +27,6 @@ def GetLocalMatrix(xi, yi, Df,Dc, p,nNodes, elementType, elementIntegration):
 
     return kLocal, fLocal
 
-
 def gettimoBeamMatrix(xi, yi,Dc, Db, Ds, p, nNodes):
     '''
     Dc = EA
