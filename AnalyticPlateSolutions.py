@@ -136,20 +136,22 @@ def Rect_thin_sSupport_Distrib(pOpts, lOpts, sOpts, inPos):
 
 def Rect_thin_sSupport_Concntr(pOpts, lOpts, sOpts, inPos):
     ##Actually: Wz, Mx, My, Mxy, Vx, Vy)
+    nPoints = len(inPos[:,0])
+    v1=np.ones(nPoints)
     quantities=[True, True, True, True, False, False]
     nOutputs = 4
-    x = inPos[:,0]
-    y = inPos[:,1]
-    r = lOpts.position[0]
-    s = lOpts.position[1]
     P = lOpts.magnitude
     D = pOpts.material.D
     nu = pOpts.material.nu
     a = pOpts.geometry[0]
     b = pOpts.geometry[1]
+    x = inPos[:,0]+v1*0.5*a
+    y = inPos[:,1]+v1*0.5*b
+    r = lOpts.position[0]+v1*0.5*a
+    s = lOpts.position[1]+v1*0.5*b
     nTerms = sOpts.nTerms
-    nPoints = len(x)
-    v1=np.ones(nPoints)
+    
+
     values = np.zeros((nPoints, nOutputs))
     outPos=np.zeros((nPoints,2,nOutputs))
     w = np.zeros(nPoints)
@@ -159,7 +161,8 @@ def Rect_thin_sSupport_Concntr(pOpts, lOpts, sOpts, inPos):
     y1=b*v1-y
     for m in range(1,nTerms*2+1,2):
         beta = m*np.pi*b/(a) # io
-        temp=(v1+beta/np.tanh(beta)*v1-beta*y1/b/np.tanh(beta*y1/b)-beta*s/b/np.tanh(beta*s/b)*v1)*np.sinh(beta*s/b)*np.sinh(beta*y1/b)*np.sin(m*np.pi*r/a)*np.sin(m*np.pi*x/a)/(m**3*np.sinh(beta))
+        temp=(v1+beta/np.tanh(beta)*v1-beta*y1/b/np.tanh(beta*y1/b)-beta*s/b/np.tanh(beta*s/b)*v1)\
+            *np.sinh(beta*s/b)*np.sinh(beta*y1/b)*np.sin(m*np.pi*r/a)*np.sin(m*np.pi*x/a)/(m**3*np.sinh(beta))
         w+=temp
         Mx += m**(-1)*np.sin(m*np.pi*r/a)*np.sin(m*np.pi*x/a)*(v1+nu*v1+(1-nu)*m*np.pi*y/a)*np.exp(-m*np.pi*y/a)
         My += 1/m*np.sin(m*np.pi*r/a)*np.sin(m*np.pi*x/a)*(v1+nu*v1-(1-nu)*m*np.pi*y/a)*np.exp(-m*np.pi*y/a)
