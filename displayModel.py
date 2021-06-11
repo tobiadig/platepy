@@ -135,6 +135,8 @@ def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = Fals
             outAx.scatter(node[0], node[1], facecolor='r', marker='.')
             # outAx.text(node[0], node[1], k)
             k+=1
+    outAx.set_xticks([])
+    outAx.set_yticks([])
     return fig, outAx 
 
 def plotBeamComponent(self, valuesToPlotList, plotOnMesh=False, saveToSVG = False):
