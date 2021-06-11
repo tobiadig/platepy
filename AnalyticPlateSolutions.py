@@ -350,7 +350,7 @@ if __name__ == "__main__":
     pOpts = POpts()
     pOpts.shape="rectangular"
     pOpts.depth = "thin"
-    pOpts.support = "clamped"
+    pOpts.support = "clamped" 
     pOpts.geometry = (1,1)
     pOpts.material = Material(10920, 0.3, 0.1) #E, nu and h
 
