@@ -74,6 +74,7 @@ def solveModel(self, resultsScales = (1, 1, 1),\
 
     sparseGlobalMatrix, sparseForceGlobal, discartedDOFs = getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesRotations, modelMesh,p, nNodesTotal, elasticallySupportedNodes,wallStiffness)
 
+    print(np.diag(sparseGlobalMatrix.toarray()))
     elementType = elementsList[0].type
     fDofsInt, rDofsBool,keepedDisplacements = getFreeDOFvector(BCs, nGDofs,elementType,discartedDOFs)
 
@@ -133,7 +134,6 @@ def solveModel(self, resultsScales = (1, 1, 1),\
     resultsDictionary['xRot'] = Result(outPos[:,0], outPos[:,1], values[:,1], resultsScales[0])
     resultsDictionary['yRot'] = Result(outPos[:,0], outPos[:,1], values[:,2], resultsScales[0])
 
-    
     self.resultsInformation = ResultsInformation()
     self.resultsInformation.uGlobPlate = uGlob
 
@@ -244,6 +244,7 @@ def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesR
         kCoeff, discartedDOF = getKCoeff(elementType, coherentElemNodes)
         if discartedDOF != None:
             discartedDOFs[k]=discartedDOF
+
         rows, columns = getRowsColumns(kCoeff, nMatrixDofs)
 
         rowsForStiffnessSparseMatrix[startIndexStiffness:startIndexStiffness+rows.size] = rows
@@ -408,7 +409,7 @@ def getFreeDOFvector(BCs, nGDofs,elementType,discartedDOFs):
     '''
     rDofsBool = np.zeros((nGDofs),dtype=bool)
 
-    if elementType=='MITC9':
+    if discartedDOFs[0]!=0:
         keepedDisplacements = np.zeros((nGDofs),dtype=bool)
         keepedDisplacements[discartedDOFs] = np.ones((discartedDOFs.size), dtype=bool)
         keepedDisplacements = np.invert(keepedDisplacements)
@@ -416,6 +417,7 @@ def getFreeDOFvector(BCs, nGDofs,elementType,discartedDOFs):
     else:
         keepedDisplacements = np.zeros((nGDofs),dtype=bool)
         keepedDisplacements = np.invert(keepedDisplacements)
+
     for constraint in BCs:
         node=int(constraint[0])
         rDofsBool[node*3-3:node*3] = constraint[1:].astype(bool)
@@ -673,7 +675,8 @@ class Result:
         self.zMin = z[iMin]
         zAbs = np.abs(z)
         self.zAbsMax = np.max(zAbs)
-
+        self.zMaxScaled = z[iMax]*resultScale
+        self.zMinScaled = z[iMin]*resultScale
         self.resultScale = resultScale
 
 class ResultsInformation:

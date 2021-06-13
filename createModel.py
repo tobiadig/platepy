@@ -259,19 +259,20 @@ class PlateModel:
         self.mesh = None
 
 class Plate:
-    '''
-        A plate object contains all characteristics regarding geometry and material. \n
-        Input: \n
-        * inputDict: dictionary with following entries:
-        \t * "outlineCoords": n x 2 numpy array with n x-y couples, representing the boundaries of the plate  \n
-        \t * "thickness": thickness of the plate \n
-        \t * "body": concrete object \n
-        * isUnterZug = False: Boolean, True if the plate aims to modell a downstand beam (default is False)
-        * t = 0: If the plate aims to modell a downstand beam, thickness of the sorrounding plate (default is 0) \n
-        Return: \n
-        *   -
-    '''
+
     def __init__(self, inputDict, isUnterZug=False, t=0):
+        '''
+            A plate object contains all characteristics regarding geometry and material. \n
+            Input: \n
+            * inputDict: dictionary with following entries:
+            \t * "outlineCoords": n x 2 numpy array with n x-y couples, representing the boundaries of the plate  \n
+            \t * "thickness": thickness of the plate \n
+            \t * "body": concrete object \n
+            * isUnterZug = False: Boolean, True if the plate aims to modell a downstand beam (default is False)
+            * t = 0: If the plate aims to modell a downstand beam, thickness of the sorrounding plate (default is 0) \n
+            Return: \n
+            *   -
+        '''
         self.outlineCoords = inputDict["outlineCoords"]
         self.thickness = inputDict["thickness"]
         self.body = inputDict["body"]
@@ -313,17 +314,17 @@ class Plate:
             axGeometry.fill_between(coords[0:2,0], coords[0:2,1], y2=coords[2:4,1],color='yellow')
 
 class Wall:
-    '''
-        A wall object contains all characteristics regarding geometry and support conditions. \n
-        Input: \n
-        * inputDict: dictionary with following entries:
-        \t * "outlineCoords": n x 2 numpy array with n x-y couples, representing the points defining the wall's outline.  \n
-        \t * "thickness": thickness of the wall \n
-        \t * "support": Numpy array of length 3, each element is either 1 or 0 to block or leave free the relative degree of freedom. \n
-        Return: \n
-        *   -
-    '''
     def __init__(self, inputDict, verticalDisplacement = False):
+        '''
+            A wall object contains all characteristics regarding geometry and support conditions. \n
+            Input: \n
+            * inputDict: dictionary with following entries:
+            \t * "outlineCoords": n x 2 numpy array with n x-y couples, representing the points defining the wall's outline.  \n
+            \t * "thickness": thickness of the wall \n
+            \t * "support": Numpy array of length 3, each element is either 1 or 0 to block or leave free the relative degree of freedom. \n
+            Return: \n
+            *   -
+        '''
         self.outlineCoords = inputDict["outlineCoords"]
         self.support = inputDict["support"]
         self.thickness = inputDict["thickness"]
@@ -371,18 +372,18 @@ class Wall:
             axGeometry.plot(np.array([l1[1,0],l2[1,0]]),np.array([l1[1,1],l2[1,1]]), color='g', linewidth = linWidth)
 
 class Column:
-    '''
-        A column object contains all characteristics regarding geometry and support conditions. \n
-        Input: \n
-        * inputDict: dictionary with following entries:
-        \t * "outlineCoords": 1 x 2 numpy array with the x and y coordinates of the column.  \n
-        \t * "width": Width of the column (square-shaped). \n
-        \t * "support": Numpy array of length 3, each element is either 1 or 0 to block or leave free the relative degree of freedom. \n
-        * isInPlate = False: Boolean, True if the columns is positioned inside a plate (default is False) \n
-        Return: \n
-        *   -
-    '''
     def __init__(self, inputDict, isInPlate = False):
+        '''
+            A column object contains all characteristics regarding geometry and support conditions. \n
+            Input: \n
+            * inputDict: dictionary with following entries:
+            \t * "outlineCoords": 1 x 2 numpy array with the x and y coordinates of the column.  \n
+            \t * "width": Width of the column (square-shaped). \n
+            \t * "support": Numpy array of length 3, each element is either 1 or 0 to block or leave free the relative degree of freedom. \n
+            * isInPlate = False: Boolean, True if the columns is positioned inside a plate (default is False) \n
+            Return: \n
+            *   -
+        '''
         self.outlineCoords = inputDict["outlineCoords"]
         self.support = inputDict["support"]
         self.width = inputDict["width"]
@@ -414,17 +415,17 @@ class Column:
         ax.scatter(x,y,marker="D", color='b')
 
 class DownStandBeam:
-    '''
-        A downStandBeam object contains all characteristics regarding geometry and material. \n
-        Input: \n
-        * inputDict: dictionary with following entries: 
-        \t * "outlineCoords": n x 2 numpy array with n x-y couples, representing the points defining the downstand beam's outline.  \n
-        \t * "body": concrete object.\n
-        \t * "crossSection": crossSection object. \n
-        Return: \n
-        *   -
-    '''
     def __init__(self, inputDict):
+        '''
+            A downStandBeam object contains all characteristics regarding geometry and material. \n
+            Input: \n
+            * inputDict: dictionary with following entries: 
+            \t * "outlineCoords": n x 2 numpy array with n x-y couples, representing the points defining the downstand beam's outline.  \n
+            \t * "body": concrete object.\n
+            \t * "crossSection": crossSection object. \n
+            Return: \n
+            *   -
+        '''
         self.outlineCoords = inputDict["outlineCoords"]
         self.body = inputDict["body"]
         self.crossSection = inputDict["crossSection"]
@@ -473,33 +474,34 @@ class DownStandBeam:
                 axGeometry.fill_between(np.array([l1[0,0], l2[0,0]]), np.array([l1[1,1], l2[1,1]]), np.array([l1[0,1], l2[0,1]]),color='yellow')
 
 class Concrete:
-    '''
-        A concrete object contains all characteristics regarding the material used for plates and downstand beams. \n
-        Input: \n
-        * inputDict: dictionary with following entries:
-        \t * "eModule": Elastic modulus E.  \n
-        \t * "gModule": Shear modulus G. \n
-        \t * "nu": Poisson's ratio. \n
-        Return: \n
-        *   -
-    '''
     def __init__(self, inputDict):
+        '''
+            A concrete object contains all characteristics regarding the material used for plates and downstand beams. \n
+            Input: \n
+            * inputDict: dictionary with following entries:
+            \t * "eModule": Elastic modulus E.  \n
+            \t * "gModule": Shear modulus G. \n
+            \t * "nu": Poisson's ratio. \n
+            Return: \n
+            *   -
+        '''
         self.eModule = inputDict["eModule"]
         self.gModule = inputDict["gModule"]
         self.nu = inputDict["nu"]
 
 class CrossSection:
-    '''
-        A crossSection object contains all the geometrical information used in downstand beams. \n
-        Input: \n
-        * A: Area of the cross section. \n
-        * Iy: Second moment of area in respect to the y-axis.
-        * Iz: Second moment of area in respect to the z-axis.
-        * b: Width of the structural element (only for display purposes).
-        Return: \n
-        *   -
-    '''
+
     def __init__(self, A, Iy, Iz, b,h):
+        '''
+            A crossSection object contains all the geometrical information used in downstand beams. \n
+            Input: \n
+            * A: Area of the cross section. \n
+            * Iy: Second moment of area in respect to the y-axis.
+            * Iz: Second moment of area in respect to the z-axis.
+            * b: Width of the structural element (only for display purposes).
+            Return: \n
+            *   -
+        '''        
         self.A = A
         self.Iy = Iy
         self.Iz = Iz
@@ -507,17 +509,17 @@ class CrossSection:
         self.thickness = h
 
 class Load:
-    '''
-        A load object contains all information which define a load, including magnitude, type and position. \n
-        Input: \n
-        * case: String defining the type of load. Acceptable values are the following: \n
-        \t * "line": Line load, outline is to be additionally defined. \n
-        \t * "area": Constant load distributed on the entire structure.\n
-        * magnitude: Numpy array of length 3, each element define the magnitude of the applied load for the relative degree of freedom.\n
-        Return: \n
-        *   -
-    '''
     def __init__(self,case, magnitude):
+        '''
+            A load object contains all information which define a load, including magnitude, type and position. \n
+            Input: \n
+            * case: String defining the type of load. Acceptable values are the following: \n
+            \t * "line": Line load, outline is to be additionally defined. \n
+            \t * "area": Constant load distributed on the entire structure.\n
+            * magnitude: Numpy array of length 3, each element define the magnitude of the applied load for the relative degree of freedom.\n
+            Return: \n
+            *   -
+        '''        
         self.magnitude = magnitude
         self.case=case
         self.outlineCoords = np.array([])
