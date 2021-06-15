@@ -521,8 +521,8 @@ def computeBeamComponents(self, startCoord, endCoord, nEvaluationPoints,resultsS
             Df = self.plates[plateOfTheElement].Df
             Dc = self.plates[plateOfTheElement].Dc
 
-            ri =ugetEl
-            si = vgetEl
+            ri =-ugetEl
+            si = -vgetEl
 
             N, Bb,Bs, detJ =getShapeFunctionForElementType(elementType,ri, si, xi, yi)
 
@@ -569,8 +569,8 @@ def computeBeamComponents(self, startCoord, endCoord, nEvaluationPoints,resultsS
                 Df = self.plates[plateOfTheElement].Df
                 Dc = self.plates[plateOfTheElement].Dc
 
-                ri =ugetEl
-                si = vgetEl
+                ri = -ugetEl
+                si = -vgetEl
 
                 N, Bb,Bs, detJ =getShapeFunctionForElementType(elementType,ri, si, xi, yi)
 
