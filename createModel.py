@@ -498,7 +498,8 @@ class CrossSection:
             * A: Area of the cross section. \n
             * Iy: Second moment of area in respect to the y-axis.
             * Iz: Second moment of area in respect to the z-axis.
-            * b: Width of the structural element (only for display purposes).
+            * b: Width of the structural element.
+            * h : high of the structural element.
             Return: \n
             *   -
         '''        

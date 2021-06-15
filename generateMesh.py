@@ -10,8 +10,8 @@ import pandas as pd
 import copy
 import gmsh # To create CAD model and mesh
 
-def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, elementDefinition=None, \
-    meshSize=5e-2, nEdgeNodes=0, order='linear', meshDistortion = False, distVal = 100,\
+def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, elementDefinition='MITC-4-N', \
+    meshSize=8e-1, nEdgeNodes=0, order='linear', meshDistortion = False, distVal = 100,\
         deactivateRotation=False):
     ''' Generates mesh and stores it in the plateModel object according to the selected options. Gmsh model has to be already
         initialized and structural elements have to be added to the model.\n

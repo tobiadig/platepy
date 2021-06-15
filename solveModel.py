@@ -28,8 +28,8 @@ import gmsh
 # for debug purposes
 from tqdm import tqdm
 
-def solveModel(self, resultsScales = (1, 1, 1),\
-    internalForcePosition = 'nodes', smoothedValues = False, solveMethod = 'sparse', computeMoments=True, kBendingResistance = 1):
+def solveModel(self, resultsScales = (1e-3, 1, 1),\
+    internalForcePosition = 'center', smoothedValues = False, computeMoments=True, kBendingResistance = 1):
     ''' Given a plateModel object with an initialized mesh, this function computes displacements, rotations and internal forces at
         each node.\n
             Input: \n
@@ -41,14 +41,16 @@ def solveModel(self, resultsScales = (1, 1, 1),\
             Possible values are "nodes" (default), "center" and "intPoints" for the positions used in the Gauss quadratur.\n
             * smoothedValues = False: Experimental. If True, the values of the shear forces by displacement based elements are smoothed according to
             the values at the Gauss points. \n
-            * solveMethod = 'sparse': select the algorithm used to solve the equilibrium equation. "cho" has to be used by 
-            downstand beams (in order to solve non-positive definite matrix systems), "sparse" (default) in all other cases. \n
             * computeMoments = True: Deactivates the computation of internal forces. For debug purposes. \n
             * kBendingResistance = 1: 1/tan(alpha), to compute the plate bending resistance according to the SIA 262 swiss norm. \n
             Return: \n
             * outPos: (nNodes x 2) numpy matrix, with the x-y coordinates of the result points for the displacements. \n
             * values: (nNodes x 3) numpy matrix, with the values of (vertical displacement, rotation 1, rotation 2) at each position in outPos.
     '''
+    if len(self.downStandBeams)>0:
+        solveMethod='cho'
+    else:
+        solveMethod = 'sparse'
     # Loop over elements and assemble stiffness matrices
     nodes=self.mesh.nodesArray
     # print('nodes: ', nodes)
@@ -74,7 +76,6 @@ def solveModel(self, resultsScales = (1, 1, 1),\
 
     sparseGlobalMatrix, sparseForceGlobal, discartedDOFs = getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesRotations, modelMesh,p, nNodesTotal, elasticallySupportedNodes,wallStiffness)
 
-    print(np.diag(sparseGlobalMatrix.toarray()))
     elementType = elementsList[0].type
     fDofsInt, rDofsBool,keepedDisplacements = getFreeDOFvector(BCs, nGDofs,elementType,discartedDOFs)
 
@@ -638,6 +639,10 @@ def evaluateAtPoints(self, coords, displayPoints = False):
         ri =-ugetEl
         si = -vgetEl
 
+        if elementType == 'DB' and nNodes ==4:
+            ri = np.array([ri])
+            si = np.array([si])
+
         N, Bb,Bs, detJ =getShapeFunctionForElementType(elementType,ri, si, xi, yi)
 
         tempDispl = N@vLoc
@@ -677,6 +682,7 @@ class Result:
         self.zAbsMax = np.max(zAbs)
         self.zMaxScaled = z[iMax]*resultScale
         self.zMinScaled = z[iMin]*resultScale
+        self.zAbsScaled = np.max(zAbs)*resultScale
         self.resultScale = resultScale
 
 class ResultsInformation:

@@ -28,7 +28,7 @@ def AnalyticPlateSolutions(pOpts, lOpts, sOpts, inPos):
     * inPos : Numpy arry with shape (n, 2) containing the positions at which output quantities are requested.\n
     Returns: \n
     * quantities = boolean list (of size 8) of calculated and therefore returned outputs (possible: Wz, Rx, Ry, Mx, Mx, Mxy, Vx, Vy). \n
-    * values     = Numpy array of size (nReturnedQuantities, length(inPos) ) containing quanties calculated at inPos. \n
+    * values     = Numpy array of size (length(inPos),nReturnedQuantities ) containing quanties calculated at inPos. \n
     * outPos     = Numpy array of size (length(inPos), 2, nReturnedQuantities) containing positions where output quantities are calculated.
     '''
 
