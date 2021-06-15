@@ -30,6 +30,7 @@ class PlateModel:
         self.resultsInformation = None
         self.axes = {}
         
+        
     def addPlate(self, newPlate):  
         '''
             Add a plate object to the plateModel. \n
