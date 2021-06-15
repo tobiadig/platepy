@@ -1,5 +1,5 @@
 """
-platePy
+platepy
 =====
 
 Provides\n
