@@ -23,7 +23,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
             \t * type: DB for displacement-based elements or MITC. \n
             \t * nNodes: number of nodes ( currently 3, 4 or 9). \n
             \t * integration: Desired Gauss-quadrature for the calculation of the stiffness matrixes. R for reduced or N for normal. \n
-            * meshSize = 5e-2: target mesh size around the point entities. If nEdgeNodes > 0, meshSize is ignored. \n
+            * meshSize = 8e-1: target mesh size around the point entities. If nEdgeNodes > 0, meshSize is ignored. \n
             * nEdgeNodes = 0: Prescribes the number of nodes on each edge. Plate must be rectangular.
             * order = "linear": Prescribes the order of the elements. "linear for first 
             order elements (default) and "quadratic" for second order elements. \n

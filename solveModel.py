@@ -34,11 +34,10 @@ def solveModel(self, resultsScales = (1e-3, 1, 1),\
         each node.\n
             Input: \n
             * self: plateModel object. \n
-            * resultsScaleIntForces = (1, 1): Before being displayed, the computed beding moments are multiplied by resultsScaleIntForces[0]
-                and the shear forces by resultsScaleIntForces[1]. \n
-            * resultsScaleVertDisp = 1: Before being displayed, the computed displacements are multiplied by resultsScaleVertDisp. \n
-            * internalForcePosition = 'nodes': String defining the desired position where the internal forces should be computed.
-            Possible values are "nodes" (default), "center" and "intPoints" for the positions used in the Gauss quadratur.\n
+            * resultsScales = (1e-3, 1, 1): Before being displayed the computed displacements are multiplied by resultsScales[0], the computed beding moments are multiplied by resultsScales[1]
+                and the shear forces by resultsScales[2]. \n
+            * internalForcePosition = 'center': String defining the desired position where the internal forces should be computed.
+            Possible values are "center" (default), "nodes" and "intPoints" for the positions used in the Gauss quadrature.\n
             * smoothedValues = False: Experimental. If True, the values of the shear forces by displacement based elements are smoothed according to
             the values at the Gauss points. \n
             * computeMoments = True: Deactivates the computation of internal forces. For debug purposes. \n
@@ -47,6 +46,8 @@ def solveModel(self, resultsScales = (1e-3, 1, 1),\
             * outPos: (nNodes x 2) numpy matrix, with the x-y coordinates of the result points for the displacements. \n
             * values: (nNodes x 3) numpy matrix, with the values of (vertical displacement, rotation 1, rotation 2) at each position in outPos.
     '''
+
+    #chose the right solving algorithm based on the presence or not of downstand beams
     if len(self.downStandBeams)>0:
         solveMethod='cho'
     else:
