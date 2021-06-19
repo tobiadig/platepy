@@ -59,13 +59,17 @@ def getInternalForcesCenter(elementsList,uGlob):
             ri = 0
             si = 0
         _, Bf,Bc, _ = getShapeFunctionForElementType(elementType,ri, si, xi, yi)
-        if elementType =='L':
+        if elementType == 'DB' and nNodes ==4:
             Bf = Bf[0,:,:]
             Bc = Bc[0,:,:]
         kCoeff, _ = getKCoeff(elementType, coherentElemNodes)
         vLoc = np.matmul(element.rotationMatrix, uGlob[kCoeff])
-        bendingMoments[k,:] = np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*1
-        shearForces[k,:]=np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]*1
+        if elementType == 'DB' and nNodes ==9:
+            changeSign = -1
+        else:
+            changeSign = 1
+        bendingMoments[k,:] = np.matmul(Df,np.matmul(Bf, vLoc))[:,0]*changeSign
+        shearForces[k,:]=np.matmul(Dc, np.matmul(Bc, vLoc))[:,0]
     return bendingMoments, shearForces, internalForcesPositions
 
 def getInternalForcesNodes(elementsList,uGlob, nodesArray, smoothedValues):

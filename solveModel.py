@@ -76,7 +76,8 @@ def solveModel(self, resultsScales = (1e-3, 1, 1),\
         wallStiffness = None
 
     sparseGlobalMatrix, sparseForceGlobal, discartedDOFs = getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesRotations, modelMesh,p, nNodesTotal, elasticallySupportedNodes,wallStiffness)
-
+    # print(sparseForceGlobal.toarray())
+    # np.savetxt('K.csv', sparseGlobalMatrix.toarray(), delimiter=",")
     elementType = elementsList[0].type
     fDofsInt, rDofsBool,keepedDisplacements = getFreeDOFvector(BCs, nGDofs,elementType,discartedDOFs)
 
@@ -217,6 +218,9 @@ def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesR
             Df = platesList[plateOfTheElement].Df
             Dc = platesList[plateOfTheElement].Dc
             kLocalNotRotated,fLocal = GetLocalMatrix(xi, yi, Df,Dc,p,nNodes , elementType, elementIntegration)
+            # print('connectivity:', elemNodes)
+            # print('kLocalNotRotated', kLocalNotRotated)
+            
         else:
             Emod = downStandBeamsList[0].body.eModule
             Gmod = downStandBeamsList[0].body.gModule
@@ -231,6 +235,9 @@ def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesR
             fLocal = np.zeros((fLocal.size,1))
 
         R = getRotationMatrix(elementType, elemNodesRotations) 
+        # print('elemNodesRotations: ',elemNodesRotations)
+        # np.savetxt('R.csv', R, delimiter=",")
+
 
         element.rotationMatrix = R
         if elementType!='timo':
@@ -239,6 +246,7 @@ def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesR
         # #rotate stiffness matrix
         kTemp = np.matmul(kLocalNotRotated, R)
         kLocal = np.matmul(R.transpose(), kTemp)
+        # print('kLocal', kLocal)
         if elementType == 'timo':
             kLocal = kLocalNotRotated
 
@@ -246,7 +254,8 @@ def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesR
         kCoeff, discartedDOF = getKCoeff(elementType, coherentElemNodes)
         if discartedDOF != None:
             discartedDOFs[k]=discartedDOF
-
+        # print('kCoeff: ', kCoeff)
+        
         rows, columns = getRowsColumns(kCoeff, nMatrixDofs)
 
         rowsForStiffnessSparseMatrix[startIndexStiffness:startIndexStiffness+rows.size] = rows
@@ -627,18 +636,21 @@ def evaluateAtPoints(self, coords, displayPoints = False):
         xi=element.coordinates[:,0]
         yi=element.coordinates[:,1]
         elementShape = len(xi)
-        kCoeff = np.zeros((3*nNodes),dtype=int)
-        for i in range(0,3):
-            kCoeff[0+i::3]=coherentElemNodes*3+i
+        kCoeff, discartedDOF = getKCoeff(elementType, coherentElemNodes)
+
 
         # vLoc = np.matmul(element.rotationMatrix, uGlob[kCoeff])
         vLoc = uGlob[kCoeff]
         # print('vLoc: ', vLoc)
         Df = self.plates[plateOfTheElement].Df
         Dc = self.plates[plateOfTheElement].Dc
-
-        ri =-ugetEl
-        si = -vgetEl
+        if elementType == 'MITC':
+            ri =-ugetEl
+            si = -vgetEl
+        else:
+            ri =ugetEl
+            si = vgetEl
+        
 
         if elementType == 'DB' and nNodes ==4:
             ri = np.array([ri])
@@ -647,10 +659,16 @@ def evaluateAtPoints(self, coords, displayPoints = False):
         N, Bb,Bs, detJ =getShapeFunctionForElementType(elementType,ri, si, xi, yi)
 
         tempDispl = N@vLoc
+        if len(tempDispl.shape)>2:
+            tempDispl = tempDispl[0,:,:]
 
+        if (elementType == 'DB' and nNodes ==9) or (elementType == 'MITC' and nNodes==9):
+            changeSign = -1
+        else:
+            changeSign = 1
         verticalDisplacements[k] = tempDispl[0]*resultsScaleVertDisp
-        bendingMoments[k,0:3] = np.matmul(Df,np.matmul(Bb, vLoc))[:,0]*1
-        shearForces[k,0:2] = np.matmul(Dc, np.matmul(Bs, vLoc))[:,0]*1
+        bendingMoments[k,0:3] = np.matmul(Df,np.matmul(Bb, vLoc))[:,0]*changeSign
+        shearForces[k,0:2] = np.matmul(Dc, np.matmul(Bs, vLoc))[:,0]*changeSign
 
     if displayPoints:
         fig,outAx = plotInputGeometry(self)

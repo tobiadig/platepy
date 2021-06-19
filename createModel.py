@@ -518,6 +518,7 @@ class Load:
             * case: String defining the type of load. Acceptable values are the following: \n
             \t * "line": Line load, outline is to be additionally defined. \n
             \t * "area": Constant load distributed on the entire structure.\n
+            \t * "point": Concentrated load, position is to be additionally defined. \n
             * magnitude: Numpy array of length 3, each element define the magnitude of the applied load for the relative degree of freedom.\n
             Return: \n
             *   -

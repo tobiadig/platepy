@@ -134,7 +134,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     # Store everything into the mesh object
     self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs, AmatList, plateElementsList, getElementByTagDictionary,elasticallySupportedNodes)
 
-def setMesh(self, nodesArray, elements, BCs, load = None):
+def setMesh(self, nodesArray, elements, BCs,elementDefinition = None, load = None):
     ''' Allows to manually define node positions, elements connectivity, boundary conditions and loads. \n
         Input: \n
             * self: plateModel object.\n
@@ -145,25 +145,31 @@ def setMesh(self, nodesArray, elements, BCs, load = None):
         Return: \n
             * - \n
     '''
+    elementType, elementShape, elementIntegration = _getElementDefinition(elementDefinition)
     elementsList = []
     nNodes = nodesArray.shape[0]
+    platesList = self.plates
     k=1
     for element in elements:
         newElement = Element()
         newElement.tag = k
         newElement.nNodes  = len(element)
         newElement.connectivity  = element
-        newElement.shape=4
+        newElement.shape=elementShape
+        newElement.Db = platesList[0].Df 
+        newElement.Ds = platesList[0].Dc 
+        newElement.type = elementType
+        newElement.integration = elementIntegration
         newElement.coherentConnectivity = pd.DataFrame(element-1)
         newElement.coordinates = np.zeros((len(element), 3))
         newElement.coordinates[:,0:2] = nodesArray[element-1, :]
-        newElement.whichPlate  = 1  
+        newElement.whichPlate  = 0
         elementsList.append(newElement)
         k+=1
 
     nodesRotationsPd = pd.DataFrame(np.zeros((nNodes, 1)), index=range(1, nNodes+1))
     nodesArrayPd =pd.DataFrame(nodesArray, index=range(1, nNodes+1) )
-    self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs)
+    self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs, [], elementsList, [],[])
     self.mesh.load = load
 
 def _getElementDefinition(elementDefinition):
@@ -318,8 +324,8 @@ def _getBCsArray(gmshModel,wallList,columnsList,nodesRotationsPd,deactivateRotat
                 lineRot = np.pi/2*3*rotationKiller
             else:
                 lineRot = np.arctan(lineDirection[1]/lineDirection[0])*rotationKiller
-            nodesRotationsPd.loc[nodeTags[:]] = lineRot
-            for node in nodeTags[:]:
+            nodesRotationsPd.loc[nodeTags[:-2]] = lineRot
+            for node in nodeTags[:-2]:
                 BCsDic[node] = wall.support
                 if wall.isElasticallySupported:
                     elasticallySupportedNodes.append(node)
