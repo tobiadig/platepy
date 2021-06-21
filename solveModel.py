@@ -69,7 +69,7 @@ def solveModel(self, resultsScales = (1e-3, 1, 1),\
     elasticallySupportedNodes = self.mesh.elasticallySupportedNodes
     if len(self.walls)>0:
         if self.walls[0].isElasticallySupported:
-            wallStiffness = self.walls[0].body.eModule / self.walls[0].high * self.walls[0].thickness *0.007 # what is the characteristic length?
+            wallStiffness = self.walls[0].body.eModule / self.walls[0].high * self.walls[0].thickness *0.004 # what is the characteristic length?
         else:
             wallStiffness = None
     else:

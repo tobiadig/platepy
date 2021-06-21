@@ -645,7 +645,7 @@ def getMITC9Shapefunctions(ri, si, xi, yi):
     N8, Nr8, Ns8 = shapeFun8(ri, si)
     N9, Nr, Ns = shapeFun9(ri, si)
     Jac, JacInv, JacDet = getJac(Nr, Ns, xi, yi)
-    # print('Jacobian: ', Jac)
+    print('Jacobian: ', Jac)
     # print('JacDet: ', JacDet)
 
     endNTemp = np.zeros((3,3*9))
