@@ -7,7 +7,7 @@ Purpose of module: Provide analytic plate bending solutions
 '''
 import numpy as np
 from scipy.interpolate import interp1d
-
+#test
 def AnalyticPlateSolutions(pOpts, lOpts, sOpts, inPos):
     '''
     Compute the analythical solution of a plate problem according to Timoshenko's book "Theory of plates and shells" (1959).\n
