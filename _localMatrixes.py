@@ -1,6 +1,6 @@
 import numpy as np
-from .shapeFunctions import *
-from .getGaussQuadrature import *
+from ._shapeFunctions import *
+from ._getGaussQuadrature import *
 
 def GetLocalMatrix(xi, yi, Df,Dc, p,nNodes, elementType, elementIntegration):
     ''' Input/Output descriptions
@@ -9,7 +9,6 @@ def GetLocalMatrix(xi, yi, Df,Dc, p,nNodes, elementType, elementIntegration):
         Df, Dc: material of the plate
         p: load vector
         reducedIntegration: bool to manage the number of Gauss integration points 
-
         return:
         kLocal, fLocal
     '''

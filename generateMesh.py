@@ -1,6 +1,6 @@
-''' Module Information
+'''
 -----------------------------------------------------------
-Purpose of module: Generates and stores the mesh of a plate Model.
+Generates and stores the mesh of a plate Model.
 -----------------------------------------------------------
 - Copywrite Tobia Diggelmann (ETH Zurich) 30.05.2021
 '''
@@ -13,24 +13,28 @@ import gmsh # To create CAD model and mesh
 def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, elementDefinition='MITC-4-N', \
     meshSize=6e-1, nEdgeNodes=0, order='linear', meshDistortion = False, distVal = 100,\
         deactivateRotation=False):
-    ''' Generates mesh and stores it in the plateModel object according to the selected options. Gmsh model has to be already
-        initialized and structural elements have to be added to the model.\n
-            Input: \n
-            * self: plateModel object. \n
-            * showGmshMesh = False: If True, the model is shown through the built-in fltk terminal (after the mesh generation). \n
-            * showGmshMesh = True: If True, the model is shown through the built-in fltk terminal (before the mesh generation). \n
-            * elementDefinition = None: String defining the desired FE-element in the following form: "type-nNodes-integration". \n
-            \t * type: DB for displacement-based elements or MITC. \n
-            \t * nNodes: number of nodes ( currently 3, 4 or 9). \n
-            \t * integration: Desired Gauss-quadrature for the calculation of the stiffness matrixes. R for reduced or N for normal. \n
-            * meshSize = 8e-1: target mesh size around the point entities. If nEdgeNodes > 0, meshSize is ignored. \n
-            * nEdgeNodes = 0: Prescribes the number of nodes on each edge. Plate must be rectangular.
-            * order = "linear": Prescribes the order of the elements. "linear for first 
-            order elements (default) and "quadratic" for second order elements. \n
-            * meshDistortion = False: Boolean, if True a mesh distortion function is applied. \n
-            * distVal = Severeness of the mesh distortion function. \n
-            Return: \n
-            *   -
+    ''' Generates mesh and stores it in the plateModel object according to the selected options. Gmsh model has to be already 
+        initialized and structural elements have to be added to the model.
+        ~~~~~~~~~~~~~~~~~~~
+        Input:
+        ~~~~~~~~~~~~~~~~~~~
+        * **self**: plateModel object. 
+        * **showGmshMesh = False**: If True, the model is shown through the built-in fltk terminal (after the mesh generation). 
+        * **showGmshMesh = True**: If True, the model is shown through the built-in fltk terminal (before the mesh generation). 
+        * **elementDefinition = None**: String defining the desired FE-element in the following form: "type-nNodes-integration". 
+
+            - type: DB for displacement-based elements or MITC. 
+            - nNodes: number of nodes ( currently 3, 4 or 9). 
+            - integration: Desired Gauss-quadrature for the calculation of the stiffness matrixes. R for reduced or N for normal. 
+
+        * **meshSize = 8e-1**: target mesh size around the point entities. If nEdgeNodes > 0, meshSize is ignored. 
+        * **nEdgeNodes = 0**: Prescribes the number of nodes on each edge. Plate must be rectangular.
+        * **order = "linear"**: Prescribes the order of the elements. "linear for first order elements (default) and "quadratic" for second order elements. 
+        * **meshDistortion = False**: Boolean, if True a mesh distortion function is applied. 
+        * **distVal = 100**: Severeness of the mesh distortion function. 
+        ~~~~~~~~~~~~~~~~~~~
+        Return:
+        ~~~~~~~~~~~~~~~~~~~
     '''
 
     elementType, elementShape, elementIntegration = _getElementDefinition(elementDefinition)
@@ -132,7 +136,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     downStandBeamsList,elementType,myPlate,gmshToCoherentNodesNumeration,nodesArrayPd)
 
     # Store everything into the mesh object
-    self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs, AmatList, plateElementsList, getElementByTagDictionary,elasticallySupportedNodes)
+    self.mesh = _Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs, AmatList, plateElementsList, getElementByTagDictionary,elasticallySupportedNodes)
 
 def setMesh(self, nodesArray, elements, BCs,elementDefinition = None, load = None):
     ''' Allows to manually define node positions, elements connectivity, boundary conditions and loads. \n
@@ -151,7 +155,7 @@ def setMesh(self, nodesArray, elements, BCs,elementDefinition = None, load = Non
     platesList = self.plates
     k=1
     for element in elements:
-        newElement = Element()
+        newElement = _Element()
         newElement.tag = k
         newElement.nNodes  = len(element)
         newElement.connectivity  = element
@@ -169,7 +173,7 @@ def setMesh(self, nodesArray, elements, BCs,elementDefinition = None, load = Non
 
     nodesRotationsPd = pd.DataFrame(np.zeros((nNodes, 1)), index=range(1, nNodes+1))
     nodesArrayPd =pd.DataFrame(nodesArray, index=range(1, nNodes+1) )
-    self.mesh = Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs, [], elementsList, [],[])
+    self.mesh = _Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs, [], elementsList, [],[])
     self.mesh.load = load
 
 def _getElementDefinition(elementDefinition):
@@ -234,7 +238,7 @@ def _getElementsList(gmshModel,platesList, elementType, elementShape,elementInte
         _, elemTags, _ = gmshModel.mesh.getElements(2,platesList[i].tag)
         for elemTag in elemTags[0]:
             _ , nodeTags = gmshModel.mesh.getElement(elemTag)
-            newElement = Element()
+            newElement = _Element()
             newElement.tag = elemTag
             newElement.whichPlate = i
             newElement.Db = platesList[i].Df 
@@ -268,7 +272,7 @@ def _getLineLoadForces(gmshModel, loadsList, gmshToCoherentNodesNumeration, node
             elements1DList = []
             for elemTag in elementTags[0]:
                 elementType, nodeTags = gmshModel.mesh.getElement(elemTag)
-                newElement = Element()
+                newElement = _Element()
                 newElement.tag = elemTag
                 newElement.nNodes  = len(nodeTags)
                 newElement.connectivity  = nodeTags
@@ -422,7 +426,7 @@ def _getDownStandBeamsElements(gmshModel,nodesRotationsPd,nodesArray,elementsLis
             elementTypes, elementTags, nodeTags =gmshModel.mesh.getElements(dim,uzLine)
             for elemTag in elementTags[0]:
                 _, nodeTags = gmshModel.mesh.getElement(elemTag)
-                newElement = Element()
+                newElement = _Element()
                 newElement.tag = elemTag
                 newElement.correspondingPlateElements = nodeTags
                 newElement.nNodes  = len(nodeTags)
@@ -529,7 +533,7 @@ def _getMFCMatrix(coherentNodesPlate,coherentNodesUZ,nodesRotationsPd,nDofs,nCon
         A[3*i:3*i+3, :] = np.array([a1, a2, a3])
     return A
 
-class Mesh:
+class _Mesh:
     '''
         Stores all informations regarding the mesh. \n
         Input: \n
@@ -554,7 +558,7 @@ class Mesh:
         self.plateElementsList = plateElementsList
         self.elasticallySupportedNodes = elasticallySupportedNodes
 
-class Element:
+class _Element:
     '''
         Stores all information regarding an element
         Atributes: \n

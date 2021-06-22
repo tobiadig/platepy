@@ -1,7 +1,7 @@
 import numpy as np 
 import pandas as pd
-from .shapeFunctions import *
-from .slicingFunctions import *
+from ._shapeFunctions import *
+from ._slicingFunctions import *
 
 def getInternalForces(elementsList,uGlob,internalForcePosition, nodesArray, smoothedValues):
     ''' Redirects to the right subroutine, depending on the position where the internal forces should be computed. \n

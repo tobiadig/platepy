@@ -1,5 +1,5 @@
 import numpy as np
-from .getGaussQuadrature import *
+from ._getGaussQuadrature import *
 def getShapeFunctionForElementType(elementType,ri, si, xi, yi):
     nNodes = len(xi)
     if (elementType=='DB' and nNodes == 4) or (elementType == 'timo'):
@@ -645,7 +645,7 @@ def getMITC9Shapefunctions(ri, si, xi, yi):
     N8, Nr8, Ns8 = shapeFun8(ri, si)
     N9, Nr, Ns = shapeFun9(ri, si)
     Jac, JacInv, JacDet = getJac(Nr, Ns, xi, yi)
-    print('Jacobian: ', Jac)
+
     # print('JacDet: ', JacDet)
 
     endNTemp = np.zeros((3,3*9))

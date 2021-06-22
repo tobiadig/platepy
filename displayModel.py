@@ -298,7 +298,6 @@ def _myIsoPlot(self,x,y,z, theTitle = ''):
     zMinString = '{:.3f}'.format(z[iMMin])
     if np.abs(z[iMMin])>0.1:
         outAx.text(x[iMMin],y[iMMin], zMinString,color='r', bbox=dict(facecolor='w', edgecolor='red'), zorder=1000)
-        print('z max position:', x[iMMin],y[iMMin])
 
     zMaxString = '{:.3f}'.format(z[iMMax])
     if np.abs(z[iMMax])>0.1:

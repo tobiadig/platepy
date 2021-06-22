@@ -12,13 +12,13 @@ import gmsh # To create CAD model and mesh
 class PlateModel:   
     '''
         A plateModel object is used as basis for the calculation of FE-model.
-        Is used to store structural elements, mesh and results.
+        Is used to store struct
+        ural elements, mesh and results.
     '''
     def __init__(self):
         gmsh.initialize()
         gmsh.model.remove()
         gmsh.option.setNumber("General.Verbosity",0)
-        # gmsh.model.add('1')
         self.loads = []
         self.plates = []
         self.walls = []
@@ -248,18 +248,8 @@ class PlateModel:
             gmsh.model.geo.synchronize()
 
     def clearMesh(self):
-        '''
-            Method which deletes the current mesh of the plateModel. \n
-            Input: \n
-            *   - \n
-            Return: \n
-            *   -
-        '''
+        '''Method which deletes the current mesh of the plateModel.'''
         self.mesh = None
-
-    def solveModel():
-        pass
-
 
 class Plate:
     def __init__(self, inputDict, isUnterZug=False, t=0):
