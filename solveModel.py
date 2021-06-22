@@ -28,7 +28,7 @@ import gmsh
 # for debug purposes
 from tqdm import tqdm
 
-def solveModel(self, resultsScales = (1e-3, 1, 1),\
+def solveModel(self, resultsScales = (1, 1, 1),\
     internalForcePosition = 'center', smoothedValues = False, computeMoments=True, kBendingResistance = 1):
     ''' Given a plateModel object with an initialized mesh, this function computes displacements, rotations and internal forces at
         each node.\n
@@ -237,8 +237,6 @@ def getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesR
         R = getRotationMatrix(elementType, elemNodesRotations) 
         # print('elemNodesRotations: ',elemNodesRotations)
         # np.savetxt('R.csv', R, delimiter=",")
-
-
         element.rotationMatrix = R
         if elementType!='timo':
             modelMesh.plateElementsList[k].rotationMatrix = R

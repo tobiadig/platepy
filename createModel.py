@@ -491,6 +491,36 @@ class Concrete:
         self.gModule = inputDict["gModule"]
         self.nu = inputDict["nu"]
 
+class StandardConcrete(Concrete):
+    def __init__(self, concreteType):
+        '''
+        Defines a concrete object from a repository of standard concretes.\n
+        Input: \n
+        * concreteType: string defining the standard concrete type. Possibilities are: \n
+        \t * "C25_30" \n
+        \t * "C30_37" \n
+        \t * "unit" \n
+        Return: \n
+        *   -
+        '''
+        dic = {}
+        if concreteType == 'C25_30':
+            self.eModule = 32.1*1e6 #kN/m2
+            self.gModule = 14.36*1e6 #kN/m2
+            self.nu = 0.17
+        elif concreteType == 'C30_37':
+            self.eModule = 33.6*1e6 #kN/m2
+            self.gModule = 14.36*1e6 #kN/m2
+            self.nu = 0.17
+        elif concreteType == 'unit':
+            self.eModule = 10.92*1e6 #kN/m2
+            self.gModule = 10.92/2.6*1e6 #kN/m2
+            self.nu = 0.3
+        else:
+            raise ValueError('Concrete type not recognised')
+        
+
+
 class CrossSection:
 
     def __init__(self, A, Iy, Iz, b,h):

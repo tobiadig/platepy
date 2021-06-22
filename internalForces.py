@@ -64,7 +64,7 @@ def getInternalForcesCenter(elementsList,uGlob):
             Bc = Bc[0,:,:]
         kCoeff, _ = getKCoeff(elementType, coherentElemNodes)
         vLoc = np.matmul(element.rotationMatrix, uGlob[kCoeff])
-        if elementType == 'DB' and nNodes ==9:
+        if elementType == 'DB' and nNodes ==9 or elementType=='MITC':
             changeSign = -1
         else:
             changeSign = 1
