@@ -5,7 +5,6 @@ Purpose of module: Provide analytic plate bending solutions
 - Solutions stem from Timoshenko's book: "Plates and Shells"
 - Copywrite Tobia Diggelmann (ETH Zurich) and Adrian Egger (Cubus AG), 11.06.2021
 '''
-
 import numpy as np
 from scipy.interpolate import interp1d
 

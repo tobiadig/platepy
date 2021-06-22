@@ -371,7 +371,7 @@ def _removeTrianglesOutsidePlate(x,y,percentageTrianglesToMantain):
     maxi = np.max(np.sqrt(xtri**2 + ytri**2), axis=1)
     alpha = np.percentile(maxi, percentageTrianglesToMantain)
 
-    # triang.set_mask(maxi > alpha)
+    triang.set_mask(maxi > alpha)
     return triang
 
 def _valuesAreNotBeamValues(valueToPlot):

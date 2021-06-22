@@ -29,8 +29,6 @@ class PlateModel:
         self.mesh = None
         self.resultsInformation = None
         self.axes = {}
-        
-        
     def addPlate(self, newPlate):  
         '''
             Add a plate object to the plateModel. \n
@@ -259,8 +257,11 @@ class PlateModel:
         '''
         self.mesh = None
 
-class Plate:
+    def solveModel():
+        pass
 
+
+class Plate:
     def __init__(self, inputDict, isUnterZug=False, t=0):
         '''
             A plate object contains all characteristics regarding geometry and material. \n
