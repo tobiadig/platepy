@@ -1,5 +1,5 @@
 '''
-Computes the equilibrium solution of a plate model using finite elements and stores the results.
+<a name="solveModel"></a>Computes the equilibrium solution of a plate model using finite elements and stores the results.
 '''
 #Basic modules
 import numpy as np

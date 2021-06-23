@@ -1,4 +1,4 @@
-'''Provide analytic plate bending solutions. Solutions stem from Timoshenko's book: "Plates and Shells" (1959).
+''' Provide analytic plate bending solutions. Solutions stem from Timoshenko's book: "Plates and Shells" (1959). 
 
 Copywrite Tobia Diggelmann (ETH Zurich) and Adrian Egger (Cubus AG), 11.06.2021
 '''

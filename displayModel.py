@@ -1,5 +1,5 @@
 '''
-Displays geometry and results of a plateModel class using `matplotlib`
+<a name="displayModel"></a> Displays geometry and results of a plateModel class using `matplotlib`
 
 Copywrite Tobia Diggelmann (ETH Zurich) 09.06.2021
 '''
