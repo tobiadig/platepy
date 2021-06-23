@@ -8,6 +8,7 @@ from scipy.interpolate import interp1d
 def AnalyticPlateSolutions(pOpts, lOpts, sOpts, inPos):
     '''
     Compute the analythical solution of a plate problem according to Timoshenko's book "Theory of plates and shells" (1959).
+
     ~~~~~~~~~~~~~~~~~~~
     INPUT
     ~~~~~~~~~~~~~~~~~~~
@@ -25,6 +26,7 @@ def AnalyticPlateSolutions(pOpts, lOpts, sOpts, inPos):
     * **sOpts** : solution options 
         - sOpts.nTerms = Integer, number of terms in the Taylor expantion.
     * **inPos** : Numpy arry with shape (n, 2) containing the positions at which output quantities are requested.
+
     ~~~~~~~~~~~~~~~~~~~
     RETURN
     ~~~~~~~~~~~~~~~~~~~
@@ -64,6 +66,24 @@ def AnalyticPlateSolutions(pOpts, lOpts, sOpts, inPos):
 
 class Material:
     def __init__(self, E, nu, h):
+        '''
+        Stores material properties for the pOpts class.
+
+        ~~~~~~~~~~~~~~~~~~~
+        INPUT
+        ~~~~~~~~~~~~~~~~~~~
+
+        * **E**: Young's modulus.
+        * **nu**: Poisson's ratio.
+        * **h**: Plate's thickness.
+
+        ~~~~~~~~~~~~~~~~~~~
+        ATTRIBUTES
+        ~~~~~~~~~~~~~~~~~~~
+
+        * **myLambda**: For analythical models containing beam stiffeners, ratio between beam and plate stiffenes (EI/aD).
+
+        '''
         self.E = E
         self.nu = nu
         self.h = h
@@ -72,6 +92,20 @@ class Material:
 
 class POpts:
     def __init__(self):
+        '''
+        Plate options.
+
+        ~~~~~~~~~~~~~~~~~~~
+        ATTRIBUTES
+        ~~~~~~~~~~~~~~~~~~~
+
+        * **pOpts.shape**    = "rectangular" or "circular".
+        * **pOpts.depth**    = "thick" or "thin".
+        * **pOpts.support**  = "simplySupported" or "clamped".
+        * **pOpts.geometry** = for rectangles: tuple with (a,b) dimensions, for circles: radius r.
+        * **pOpts.material** = material object. 
+
+        '''
         self.shape = None
         self.depth = None
         self.support = None
@@ -80,12 +114,34 @@ class POpts:
 
 class LOpts:
     def __init__(self):
+        '''
+        Load options.
+
+        ~~~~~~~~~~~~~~~~~~~
+        ATTRIBUTES
+        ~~~~~~~~~~~~~~~~~~~
+
+        * **lOpts.type**      = "concentrated" or "distributed"
+        * **lOpts.position**  = if the load is concentrated, tuple with (x,y) coordinates.
+        * **lOpts.magnitude** = magnitude of vertical force.
+        
+        '''
         self.type = None
         self.position = None
         self.magnitude = None
 
 class SOpts:
     def __init__(self, nTerms = 20):
+        '''
+        Solution options.
+
+        ~~~~~~~~~~~~~~~~~~~
+        ATTRIBUTES
+        ~~~~~~~~~~~~~~~~~~~
+
+        **sOpts.nTerms = 20** = number of terms of the Taylor's expantions, by default 20 (usually is enough)."
+        
+        '''
         self.nTerms = nTerms
 
 def _Rect_thin_sSupport_Distrib(pOpts, lOpts, sOpts, inPos):

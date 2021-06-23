@@ -1,7 +1,7 @@
-''' Define the classes and methods needed to initialize the model and define the geometry.
+''' Defines the classes and methods needed to initialize the model and define the geometry.
 
 
-- Copywrite Tobia Diggelmann (ETH Zurich) 29.05.2021
+Copywrite Tobia Diggelmann (ETH Zurich) 29.05.2021
 '''
 
 # basic modules
@@ -10,9 +10,7 @@ import gmsh # To create CAD model and mesh
 
 class PlateModel:   
     '''
-    A plateModel object is used as basis for the calculation of FE-model.
-    Is used to store struct
-    ural elements, mesh and results.
+    A PlateModel object is used as basis for the calculation of FE-model. Is used to store structural elements, mesh and results.
     '''
     def __init__(self):
         gmsh.initialize()
@@ -31,21 +29,14 @@ class PlateModel:
     def addPlate(self, newPlate):  
         '''
         Add a plate object to the plateModel.
+
         ~~~~~~~~~~~~~~~~~~~
         INPUT
         ~~~~~~~~~~~~~~~~~~~
 
-        **newPlate**: plate object to be added.
+        **newPlate**: `Plate` object to be added.
 
-        ~~~~~~~~~~~~~~~~~~~
-        RETURN
-        ~~~~~~~~~~~~~~~~~~~
         '''
-        # Initialize the model if not existent
-        # if not(self.isInitialized): 
-        #     gmsh.initialize()
-        #     gmsh.option.setNumber("General.Verbosity",0)
-        #     self.isInitialized =True
         self.plates.append(newPlate)
 
         # Create points in the Gmsh model
@@ -75,22 +66,15 @@ class PlateModel:
 
     def addWall(self, newWall):
         '''
-        Add a wall object to the plateModel. 
+        Add a wall to the plateModel. 
+
         ~~~~~~~~~~~~~~~~~~~
         INPUT
         ~~~~~~~~~~~~~~~~~~~
 
-        **newWall**: wall object to be added. 
+        **newWall**: `Wall` object to be added. 
 
-        ~~~~~~~~~~~~~~~~~~~
-        RETURN
-        ~~~~~~~~~~~~~~~~~~~
         '''
-        # Initialize the model if not existent
-        # if not(self.isInitialized):
-        #     gmsh.initialize()
-        #     gmsh.model.add(self.name)
-        #     self.isInitialized =True
         self.walls.append(newWall)
         
         # Create points in the Gmsh model
@@ -125,22 +109,14 @@ class PlateModel:
     def addDownStandBeam(self, newDSB):
         '''
         Add a downstand beam to the plateModel. 
+
         ~~~~~~~~~~~~~~~~~~~
         INPUT
         ~~~~~~~~~~~~~~~~~~~
 
-        **newDSB**: downStandBeam object to be added. 
+        **newDSB**: `DownStandBeam` object to be added. 
 
-        ~~~~~~~~~~~~~~~~~~~
-        RETURN
-        ~~~~~~~~~~~~~~~~~~~
         '''
-        # Initialize the model if not existent
-        # if not(self.isInitialized):
-        #     gmsh.initialize()
-        #     gmsh.model.add(self.name)
-        #     self.isInitialized =True
-
         self.downStandBeams.append(newDSB)
         
         # Create points in the Gmsh model
@@ -178,17 +154,9 @@ class PlateModel:
         INPUT
         ~~~~~~~~~~~~~~~~~~~
 
-        **newColumn**: column object to be added.
+        **newColumn**: `Column` object to be added.
 
-        ~~~~~~~~~~~~~~~~~~~
-        RETURN
-        ~~~~~~~~~~~~~~~~~~~
         '''
-        # Initialize the model if not existent
-        # if not(self.isInitialized):
-        #     gmsh.initialize()
-        #     gmsh.model.add(self.name)
-        #     self.isInitialized =True
         self.columns.append(newColumn)
 
         # Create points in the Gmsh model
@@ -219,15 +187,13 @@ class PlateModel:
     def addLoad(self, newLoad):
         '''
         Add a load to the plateModel.
+
         ~~~~~~~~~~~~~~~~~~~
         INPUT
         ~~~~~~~~~~~~~~~~~~~
 
-        **newLoad**: load object to be added.
+        **newLoad**: `Load` object to be added.
 
-        ~~~~~~~~~~~~~~~~~~~
-        RETURN
-        ~~~~~~~~~~~~~~~~~~~
         '''
         self.loads.append(newLoad)
         
@@ -273,7 +239,7 @@ class PlateModel:
             gmsh.model.geo.synchronize()
 
     def clearMesh(self):
-        '''Method which deletes the current mesh of the plateModel.'''
+        '''Method to delete the current mesh of the plateModel.'''
         self.mesh = None
 
 class Plate:
@@ -288,13 +254,10 @@ class Plate:
         * **inputDict**: dictionary with following entries:
             - "outlineCoords": n x 2 numpy array with n x-y couples, representing the boundaries of the plate  
             - "thickness": thickness of the plate 
-            - "body": concrete object 
+            - "body": `Concrete` object 
         * **isUnterZug = False**: Boolean, True if the plate aims to modell a downstand beam (default is False)
         * **t = 0**: If the plate aims to modell a downstand beam, thickness of the sorrounding plate (default is 0) 
 
-        ~~~~~~~~~~~~~~~~~~~
-        RETURN
-        ~~~~~~~~~~~~~~~~~~~
         '''
         self.outlineCoords = inputDict["outlineCoords"]
         self.thickness = inputDict["thickness"]
@@ -340,16 +303,16 @@ class Wall:
     def __init__(self, inputDict, verticalDisplacement = False):
         '''
         A wall object contains all characteristics regarding geometry and support conditions. 
+
         ~~~~~~~~~~~~~~~~~~~
         INPUT
         ~~~~~~~~~~~~~~~~~~~
+
         * **inputDict**: dictionary with following entries:
             - "outlineCoords": n x 2 numpy array with n x-y couples, representing the points defining the wall's outline.  
             - "thickness": thickness of the wall 
             - "support": Numpy array of length 3, each element is either 1 or 0 to block or leave free the relative degree of freedom. 
-        ~~~~~~~~~~~~~~~~~~~
-        RETURN
-        ~~~~~~~~~~~~~~~~~~~
+
         '''
         self.outlineCoords = inputDict["outlineCoords"]
         self.support = inputDict["support"]
@@ -401,19 +364,17 @@ class Column:
     def __init__(self, inputDict, isInPlate = False):
         '''
         A column object contains all characteristics regarding geometry and support conditions. 
+
         ~~~~~~~~~~~~~~~~~~~
         INPUT
         ~~~~~~~~~~~~~~~~~~~
 
-        * inputDict: dictionary with following entries:
+        * **inputDict**: dictionary with following entries:
             - "outlineCoords": 1 x 2 numpy array with the x and y coordinates of the column. 
             - "width": Width of the column (square-shaped). 
             - "support": Numpy array of length 3, each element is either 1 or 0 to block or leave free the relative degree of freedom. 
-        * isInPlate = False: Boolean, True if the columns is positioned inside a plate (default is False) 
+        * **isInPlate = False**: Boolean, True if the columns is positioned inside a plate (default is False) .
 
-        ~~~~~~~~~~~~~~~~~~~
-        RETURN
-        ~~~~~~~~~~~~~~~~~~~
         '''
         self.outlineCoords = inputDict["outlineCoords"]
         self.support = inputDict["support"]
@@ -449,18 +410,16 @@ class DownStandBeam:
     def __init__(self, inputDict):
         '''
         A downStandBeam object contains all characteristics regarding geometry and material. 
+
         ~~~~~~~~~~~~~~~~~~~
         INPUT
         ~~~~~~~~~~~~~~~~~~~
 
         * **inputDict**: dictionary with following entries: 
             - "outlineCoords": n x 2 numpy array with n x-y couples, representing the points defining the downstand beam's outline.  
-            - "body": concrete object.
-            - "crossSection": crossSection object. 
+            - "body": `Concrete` object.
+            - "crossSection": `CrossSection` object. 
 
-        ~~~~~~~~~~~~~~~~~~~
-        RETURN
-        ~~~~~~~~~~~~~~~~~~~
         '''
         self.outlineCoords = inputDict["outlineCoords"]
         self.body = inputDict["body"]
@@ -513,18 +472,16 @@ class Concrete:
     def __init__(self, inputDict):
         '''
         A concrete object contains all characteristics regarding the material used for plates and downstand beams.
+
         ~~~~~~~~~~~~~~~~~~~
         INPUT
         ~~~~~~~~~~~~~~~~~~~
 
-        * inputDict: dictionary with following entries:
+        * **inputDict**: dictionary with following entries:
             - "eModule": Elastic modulus E.  
             - "gModule": Shear modulus G. 
             - "nu": Poisson's ratio. 
 
-        ~~~~~~~~~~~~~~~~~~~
-        RETURN
-        ~~~~~~~~~~~~~~~~~~~
         '''
         self.eModule = inputDict["eModule"]
         self.gModule = inputDict["gModule"]
@@ -538,14 +495,12 @@ class StandardConcrete(Concrete):
         ~~~~~~~~~~~~~~~~~~~
         INPUT
         ~~~~~~~~~~~~~~~~~~~
-        * concreteType: string defining the standard concrete type. Possibilities are: 
+
+        * **concreteType**: string defining the standard concrete type. Possibilities are: 
             - "C25_30" 
             - "C30_37" 
             - "unit" 
 
-        ~~~~~~~~~~~~~~~~~~~
-        RETURN
-        ~~~~~~~~~~~~~~~~~~~
         '''
         dic = {}
         if concreteType == 'C25_30':
@@ -568,19 +523,17 @@ class CrossSection:
     def __init__(self, A, Iy, Iz, b,h):
         '''
         A crossSection object contains all the geometrical information used in downstand beams. 
+
         ~~~~~~~~~~~~~~~~~~~
         INPUT
         ~~~~~~~~~~~~~~~~~~~
 
-            * **A**: Area of the cross section. 
-            * **Iy**: Second moment of area in respect to the y-axis.
-            * **Iz**: Second moment of area in respect to the z-axis.
-            * **b**: Width of the structural element.
-            * **h** : high of the structural element.
+        * **A**: Area of the cross section. 
+        * **Iy**: Second moment of area in respect to the y-axis.
+        * **Iz**: Second moment of area in respect to the z-axis.
+        * **b**: Width of the structural element.
+        * **h** : High of the structural element.
 
-        ~~~~~~~~~~~~~~~~~~~
-        RETURN
-        ~~~~~~~~~~~~~~~~~~~
         '''        
         self.A = A
         self.Iy = Iy
@@ -597,15 +550,12 @@ class Load:
         INPUT
         ~~~~~~~~~~~~~~~~~~~
 
-        * case: String defining the type of load. Acceptable values are the following: 
+        * **case**: String defining the type of load. Acceptable values are: 
             - "line": Line load, outline is to be additionally defined. 
             - "area": Constant load distributed on the entire structure.
             - "point": Concentrated load, position is to be additionally defined. 
-        * magnitude: Numpy array of length 3, each element define the magnitude of the applied load for the relative degree of freedom.
-        
-    ~~~~~~~~~~~~~~~~~~~
-        RETURN
-        ~~~~~~~~~~~~~~~~~~~
+        * **magnitude**: Numpy array of length 3, each element define the magnitude of the applied load for the relative degree of freedom.
+
         '''        
         self.magnitude = magnitude
         self.case=case
