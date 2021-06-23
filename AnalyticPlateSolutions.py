@@ -1,58 +1,61 @@
-''' Module Information
------------------------------------------------------------
-Purpose of module: Provide analytic plate bending solutions
------------------------------------------------------------
-- Solutions stem from Timoshenko's book: "Plates and Shells"
-- Copywrite Tobia Diggelmann (ETH Zurich) and Adrian Egger (Cubus AG), 11.06.2021
+'''Provide analytic plate bending solutions. Solutions stem from Timoshenko's book: "Plates and Shells" (1959).
+
+Copywrite Tobia Diggelmann (ETH Zurich) and Adrian Egger (Cubus AG), 11.06.2021
 '''
 import numpy as np
 from scipy.interpolate import interp1d
 #test
 def AnalyticPlateSolutions(pOpts, lOpts, sOpts, inPos):
     '''
-    Compute the analythical solution of a plate problem according to Timoshenko's book "Theory of plates and shells" (1959).\n
-    Input:\n
-    * pOpts : object with following attributes \n
-        \t * pOpts.shape    = "rectangular" or "circular".\n
-        \t * pOpts.depth    = "thick" or "thin".\n
-        \t * pOpts.support  = "simplySupported" or "clamped".\n
-        \t * pOpts.geometry = for rectangles: tuple with (a,b) dimensions, for circles: radius r.\n
-        \t * pOpts.material = material object. \n
-    * lOpts : object with following attributes\n
-        \t * lOpts.type      = "concentrated" or "distributed"\n
-        \t * lOpts.position  = if the load is concentrated, tuple with (x,y) coordinates.\n
-        \t * lOpts.magnitude = magnitude of vertical force.\n
-    * sOpts : solution options \n
-        \t * sOpts.nTerms = Integer, number of terms in the Taylor expantion.\n
-    * inPos : Numpy arry with shape (n, 2) containing the positions at which output quantities are requested.\n
-    Returns: \n
-    * quantities = boolean list (of size 8) of calculated and therefore returned outputs (possible: Wz, Rx, Ry, Mx, Mx, Mxy, Vx, Vy). \n
-    * values     = Numpy array of size (length(inPos),nReturnedQuantities ) containing quanties calculated at inPos. \n
-    * outPos     = Numpy array of size (length(inPos), 2, nReturnedQuantities) containing positions where output quantities are calculated.
+    Compute the analythical solution of a plate problem according to Timoshenko's book "Theory of plates and shells" (1959).
+    ~~~~~~~~~~~~~~~~~~~
+    INPUT
+    ~~~~~~~~~~~~~~~~~~~
+
+    * **pOpts** : object with following attributes 
+        - pOpts.shape    = "rectangular" or "circular".
+        - pOpts.depth    = "thick" or "thin".
+        - pOpts.support  = "simplySupported" or "clamped".
+        - pOpts.geometry = for rectangles: tuple with (a,b) dimensions, for circles: radius r.
+        - pOpts.material = material object. 
+    * **lOpts** : object with following attributes
+        - lOpts.type      = "concentrated" or "distributed"
+        - lOpts.position  = if the load is concentrated, tuple with (x,y) coordinates.
+        - lOpts.magnitude = magnitude of vertical force.
+    * **sOpts** : solution options 
+        - sOpts.nTerms = Integer, number of terms in the Taylor expantion.
+    * **inPos** : Numpy arry with shape (n, 2) containing the positions at which output quantities are requested.
+    ~~~~~~~~~~~~~~~~~~~
+    RETURN
+    ~~~~~~~~~~~~~~~~~~~
+
+    * **quantities** = boolean list (of size 8) of calculated and therefore returned outputs (possible: Wz, Rx, Ry, Mx, Mx, Mxy, Vx, Vy). 
+    * **values**     = Numpy array of size (length(inPos),nReturnedQuantities ) containing quanties calculated at inPos. 
+    * **outPos**     = Numpy array of size (length(inPos), 2, nReturnedQuantities) containing positions where output quantities are calculated.
     '''
 
     if   pOpts.shape == "rectangular" and pOpts.depth == "thin"  and pOpts.support == "simplySupported" and lOpts.type == "concentrated":
-        quantities, values, outPos = Rect_thin_sSupport_Concntr(pOpts, lOpts, sOpts, inPos)
+        quantities, values, outPos = _Rect_thin_sSupport_Concntr(pOpts, lOpts, sOpts, inPos)
     elif pOpts.shape == "rectangular" and pOpts.depth == "thin"  and pOpts.support == "simplySupported" and lOpts.type == "distributed":
-        quantities, values, outPos = Rect_thin_sSupport_Distrib(pOpts, lOpts, sOpts, inPos)
+        quantities, values, outPos = _Rect_thin_sSupport_Distrib(pOpts, lOpts, sOpts, inPos)
 
     elif pOpts.shape == "rectangular" and pOpts.depth == "thin"  and pOpts.support == "clamped"         and lOpts.type == "distributed":
-        quantities, values, outPos = Rect_thin_cSupport_Distrib(pOpts, lOpts, sOpts, inPos)
+        quantities, values, outPos = _Rect_thin_cSupport_Distrib(pOpts, lOpts, sOpts, inPos)
     
     elif pOpts.shape == "circular"    and pOpts.depth == "thin"  and pOpts.support == "simplySupported" and lOpts.type == "concentrated":
-        quantities, values, outPos = Circ_thin_sSupport_Concntr(pOpts, lOpts, sOpts, inPos)
+        quantities, values, outPos = _Circ_thin_sSupport_Concntr(pOpts, lOpts, sOpts, inPos)
     elif pOpts.shape == "circular"    and pOpts.depth == "thin"  and pOpts.support == "simplySupported" and lOpts.type == "distributed":
-        quantities, values, outPos = Circ_thin_sSupport_Distrib(pOpts, lOpts, sOpts, inPos)
+        quantities, values, outPos = _Circ_thin_sSupport_Distrib(pOpts, lOpts, sOpts, inPos)
 
     elif pOpts.shape == "circular"    and pOpts.depth == "thin"  and pOpts.support == "clamped"         and lOpts.type == "concentrated":
-        quantities, values, outPos = Circ_thin_cSupport_Concntr(pOpts, lOpts, sOpts, inPos)
+        quantities, values, outPos = _Circ_thin_cSupport_Concntr(pOpts, lOpts, sOpts, inPos)
     elif pOpts.shape == "circular"    and pOpts.depth == "thin"  and pOpts.support == "clamped"         and lOpts.type == "distributed":
-        quantities, values, outPos = Circ_thin_cSupport_Distrib(pOpts, lOpts, sOpts, inPos)
+        quantities, values, outPos = _Circ_thin_cSupport_Distrib(pOpts, lOpts, sOpts, inPos)
 
     elif pOpts.shape == "rectangular"  and pOpts.depth == "thin"  and pOpts.support == "sSupportwBeams"  and lOpts.type == "distributed":
-        quantities, values, outPos = Rect_thin_sSupportwBeams_Distr(pOpts, lOpts, sOpts, inPos)
+        quantities, values, outPos = _Rect_thin_sSupportwBeams_Distr(pOpts, lOpts, sOpts, inPos)
     elif pOpts.shape == "rectangular"  and pOpts.depth == "thin"  and pOpts.support == "columnswBeams"  and lOpts.type == "distributed":
-        w = Rect_thin_columnswBeams_Distr(pOpts, lOpts, sOpts, inPos)
+        w = _Rect_thin_columnswBeams_Distr(pOpts, lOpts, sOpts, inPos)
         return w
     
     else:
@@ -85,7 +88,7 @@ class SOpts:
     def __init__(self, nTerms = 20):
         self.nTerms = nTerms
 
-def Rect_thin_sSupport_Distrib(pOpts, lOpts, sOpts, inPos):
+def _Rect_thin_sSupport_Distrib(pOpts, lOpts, sOpts, inPos):
     quantities=[True, True, True, False, True, True]
     #Actually: Wz, Mx, My, Mxy, Vx, Vy)
     nOutputs = 5
@@ -133,7 +136,7 @@ def Rect_thin_sSupport_Distrib(pOpts, lOpts, sOpts, inPos):
     outPos[:,:,4] = inPos
     return quantities, values, outPos
 
-def Rect_thin_sSupport_Concntr(pOpts, lOpts, sOpts, inPos):
+def _Rect_thin_sSupport_Concntr(pOpts, lOpts, sOpts, inPos):
     ##Actually: Wz, Mx, My, Mxy, Vx, Vy)
     nPoints = len(inPos[:,0])
     v1=np.ones(nPoints)
@@ -176,7 +179,7 @@ def Rect_thin_sSupport_Concntr(pOpts, lOpts, sOpts, inPos):
     outPos[:,:,3] = inPos
     return quantities, values, outPos
 
-def Rect_thin_cSupport_Distrib(pOpts, lOpts, sOpts, inPos):
+def _Rect_thin_cSupport_Distrib(pOpts, lOpts, sOpts, inPos):
     quantities=[True, True, True, False, False, False]
     #Actually: Wz, Mx, My, Mxy, Vx, Vy)
     nOutputs = 3
@@ -208,7 +211,7 @@ def Rect_thin_cSupport_Distrib(pOpts, lOpts, sOpts, inPos):
     values[0,2] = vals[5]
     return quantities, values, outPos
 
-def Rect_thin_sSupportwBeams_Distr(pOpts, lOpts, sOpts, inPos):
+def _Rect_thin_sSupportwBeams_Distr(pOpts, lOpts, sOpts, inPos):
     quantities=[True, False, False, False, False, False]
     #Actually: Wz, Mx, Mx, Mxy, Vx, Vy)
     nOutputs = 1
@@ -239,7 +242,7 @@ def Rect_thin_sSupportwBeams_Distr(pOpts, lOpts, sOpts, inPos):
     outPos[:,:,0] = inPos
     return quantities, values, outPos
 
-def Rect_thin_columnswBeams_Distr(pOpts, lOpts, sOpts, inPos):
+def _Rect_thin_columnswBeams_Distr(pOpts, lOpts, sOpts, inPos):
     quantities=[True, True, True, False, False, False]
     #Actually: Wz,  Mx, Mx, Mxy, Vx, Vy)
     nOutputs = 3
@@ -259,7 +262,7 @@ def Rect_thin_columnswBeams_Distr(pOpts, lOpts, sOpts, inPos):
 
     return quantities, values, outPos
 
-def Circ_thin_sSupport_Distrib(pOpts, lOpts, sOpts, inPos):
+def _Circ_thin_sSupport_Distrib(pOpts, lOpts, sOpts, inPos):
     quantities=[True, True, True, False, True, False]
     #Actually: Wz, Mx, My, Mxy, Vx, Vy)
     nOutputs = 4
@@ -282,7 +285,7 @@ def Circ_thin_sSupport_Distrib(pOpts, lOpts, sOpts, inPos):
     outPos[:,:,3] = inPos
     return quantities, values, outPos
 
-def Circ_thin_sSupport_Concntr(pOpts, lOpts, sOpts, inPos):
+def _Circ_thin_sSupport_Concntr(pOpts, lOpts, sOpts, inPos):
     quantities=[True, True, True, False, False, False]
     #Actually: Wz, Mx, My, Mxy, Vx, Vy)
     nOutputs = 3
@@ -303,7 +306,7 @@ def Circ_thin_sSupport_Concntr(pOpts, lOpts, sOpts, inPos):
     outPos[:,0,2] = inPos
     return quantities, values, outPos
 
-def Circ_thin_cSupport_Distrib(pOpts, lOpts, sOpts, inPos):
+def _Circ_thin_cSupport_Distrib(pOpts, lOpts, sOpts, inPos):
     quantities=[True, True, True, False, True, False]
     #Actually: Wz, Mx, My, Mxy, Vx, Vy)
     nOutputs = 4
@@ -326,7 +329,7 @@ def Circ_thin_cSupport_Distrib(pOpts, lOpts, sOpts, inPos):
     outPos[:,:,3] = inPos
     return quantities, values, outPos
 
-def Circ_thin_cSupport_Concntr(pOpts, lOpts, sOpts, inPos):
+def _Circ_thin_cSupport_Concntr(pOpts, lOpts, sOpts, inPos):
     quantities=[True, False, False, False, False, False]
     #Actually: Wz, Mx, My, Mxy, Vx, Vy)
     nOutputs = 1

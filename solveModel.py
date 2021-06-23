@@ -1,8 +1,5 @@
-''' Module Information
------------------------------------------------------------
-Purpose of module: Computes the equilibrium solution of a plate model using finite elements and stores the results.
------------------------------------------------------------
-- Copywrite Tobia Diggelmann (ETH Zurich) 30.05.2021
+'''
+Computes the equilibrium solution of a plate model using finite elements and stores the results.
 '''
 #Basic modules
 import numpy as np
@@ -25,19 +22,23 @@ from tqdm import tqdm
 def solveModel(self, resultsScales = (1, 1, 1),\
     internalForcePosition = 'center', smoothedValues = False, computeMoments=True, kBendingResistance = 1):
     ''' Given a plateModel object with an initialized mesh, this function computes displacements, rotations and internal forces at
-        each node.\n
-            Input: \n
-            * self: plateModel object. \n
-            * resultsScales = (1e-3, 1, 1): Before being displayed the computed displacements are multiplied by resultsScales[0], the computed beding moments are multiplied by resultsScales[1]
-                and the shear forces by resultsScales[2]. \n
-            * internalForcePosition = 'center': String defining the desired position where the internal forces should be computed.
-            Possible values are "center" (default), "nodes" and "intPoints" for the positions used in the Gauss quadrature.\n
-            * smoothedValues = False: Experimental. If True, the values of the shear forces by displacement based elements are smoothed according to
-            the values at the Gauss points. \n
-            * computeMoments = True: Deactivates the computation of internal forces. For debug purposes. \n
-            * kBendingResistance = 1: 1/tan(alpha), to compute the plate bending resistance according to the SIA 262 swiss norm. \n
-            Return: \n
-            * ResultsDictionary: Dictionary with Result objects.
+        each node.
+        ~~~~~~~~~~~~~~~~~~~
+        INPUT
+        ~~~~~~~~~~~~~~~~~~~
+        * **self**: plateModel object. 
+        * **resultsScales = (1e-3, 1, 1)**: Before being displayed the computed displacements are multiplied by resultsScales[0], the computed beding moments are multiplied by resultsScales[1]
+            and the shear forces by resultsScales[2]. 
+        * **internalForcePosition = 'center'**: String defining the desired position where the internal forces should be computed.
+        Possible values are "center" (default), "nodes" and "intPoints" for the positions used in the Gauss quadrature.
+        * **smoothedValues = False**: Experimental. If True, the values of the shear forces by displacement based elements are smoothed according to
+        the values at the Gauss points. 
+        * **computeMoments = True**: Deactivates the computation of internal forces. For debug purposes. 
+        * **kBendingResistance = 1**: 1/tan(alpha), to compute the plate bending resistance according to the SIA 262 swiss norm. 
+        ~~~~~~~~~~~~~~~~~~~
+        RETURN
+        ~~~~~~~~~~~~~~~~~~~
+        * ResultsDictionary: Dictionary with Result objects.
     '''
 
     # chose the right solving algorithm based on the presence or not of downstand beams
@@ -476,18 +477,22 @@ def _getBendingResistance(bendingMoments,kBendingResistance):
 
 def computeBeamComponents(self, startCoord, endCoord, nEvaluationPoints,resultsScales = (1,1, 1),integrationWidth = 0, nIntegrationPoints =0):
     '''
-    Computes the results over a custom-defined line. \n
-    Inputs: \n
-    * self: PlateModel object. \n
-    * startCoord: tuple with (x,y) coordinates defining the starting point of the line. \n
-    * endCoord: tuple with (x,y) coordinates defining the ending point of the line. \n
-    * resultsScales = (1e-3, 1, 1): Before being displayed the computed displacements are 
+    Computes the results over a custom-defined line.
+    ~~~~~~~~~~~~~~~~~~~
+    INPUT
+    ~~~~~~~~~~~~~~~~~~~
+    * **self**: PlateModel object.
+    * **startCoord**: tuple with (x,y) coordinates defining the starting point of the line.
+    * **endCoord**: tuple with (x,y) coordinates defining the ending point of the line. 
+    * **resultsScales = (1e-3, 1, 1)**: Before being displayed the computed displacements are 
     multiplied by resultsScales[0], the computed beding moments are multiplied by resultsScales[1]
-    and the shear forces by resultsScales[2]. \n
-    * integrationWidth = 0: if > 0, the values on a line normal to the main cut of length +-integrationWidth/2 are evaluated and 
-    integrated to a single value, which will then be displayed. \n
-    * nIntegrationPoint=0: number of point for the integration normal to the direction of the main cut.\n
-    Return: \n
+    and the shear forces by resultsScales[2]. 
+    * **integrationWidth = 0**: if > 0, the values on a line normal to the main cut of length +-integrationWidth/2 are evaluated and 
+    integrated to a single value, which will then be displayed. 
+    * **nIntegrationPoint=0**: number of point for the integration normal to the direction of the main cut.
+    ~~~~~~~~~~~~~~~~~~~
+    RETURN
+    ~~~~~~~~~~~~~~~~~~~
     * bendingMoments, shearForces, arrayEvaluationPoints
     '''
     uGlob = self.resultsInformation.uGlobPlate
@@ -592,12 +597,16 @@ def computeBeamComponents(self, startCoord, endCoord, nEvaluationPoints,resultsS
 
 def evaluateAtPoints(self, coords, displayPoints = False):
     '''
-    Computes the displacement, rotation and internal forces at the location contained in coord. \n
-    Inputs: \n
-    * coords: Numpy array of shape (nPoints, 2) with the x,y coordinates of the points to be evaluated. \n
-    * displayPoints = False: If True, plots the requested evaluation points on the inputGeometry. \n
-    Return: \n
-    * verticalDisplacements,bendingMoments, shearForces: length nPoints
+    Computes the displacement, rotation and internal forces at the location contained in coord.
+    ~~~~~~~~~~~~~~~~~~~
+    INPUT
+    ~~~~~~~~~~~~~~~~~~~
+    * **coords**: Numpy array of shape (nPoints, 2) with the x,y coordinates of the points to be evaluated. 
+    * **displayPoints = False**: If True, plots the requested evaluation points on the inputGeometry. 
+    ~~~~~~~~~~~~~~~~~~~
+    RETURN
+    ~~~~~~~~~~~~~~~~~~~
+    * **verticalDisplacements,bendingMoments, shearForces**: length nPoints
     '''
     uGlob = self.resultsInformation.uGlobPlate
     nEvaluationPoints = coords.shape[0]

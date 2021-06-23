@@ -16,7 +16,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     ''' Generates mesh and stores it in the plateModel object according to the selected options. Gmsh model has to be already 
         initialized and structural elements have to be added to the model.
         ~~~~~~~~~~~~~~~~~~~
-        Input:
+        INPUT
         ~~~~~~~~~~~~~~~~~~~
         * **self**: plateModel object. 
         * **showGmshMesh = False**: If True, the model is shown through the built-in fltk terminal (after the mesh generation). 
@@ -33,7 +33,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         * **meshDistortion = False**: Boolean, if True a mesh distortion function is applied. 
         * **distVal = 100**: Severeness of the mesh distortion function. 
         ~~~~~~~~~~~~~~~~~~~
-        Return:
+        RETURN
         ~~~~~~~~~~~~~~~~~~~
     '''
 
@@ -139,15 +139,18 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
     self.mesh = _Mesh(nodesArrayPd,nodesRotationsPd, elementsList, BCs, AmatList, plateElementsList, getElementByTagDictionary,elasticallySupportedNodes)
 
 def setMesh(self, nodesArray, elements, BCs,elementDefinition = None, load = None):
-    ''' Allows to manually define node positions, elements connectivity, boundary conditions and loads. \n
-        Input: \n
-            * self: plateModel object.\n
-            * nodesArray: nNodes x 3 numpy array. Columns are the x-y-z coordinates of each node.\n
-            * elements: (nElements x nElementNodes) connectivity matrix. Each row is an element, the columns contain the node tags which build the element. \n
-            * BCs: n x 4 numpy array. n is the number of restrained nodes, the first column is the node tag, the other column represent the condition of the three DOFs (1 is blocked, 0 is free). \n
-            * load = None: n x 4 numpy array. n is the number of loaded nodes, the first column is the node tag, the other column represent the magnitude of the load for the relative DOF. \n
-        Return: \n
-            * - \n
+    ''' Allows to manually define node positions, elements connectivity, boundary conditions and loads. 
+    ~~~~~~~~~~~~~~~~~~~
+    INPUT
+    ~~~~~~~~~~~~~~~~~~~
+    * **self**: plateModel object.
+    * **nodesArray**: nNodes x 3 numpy array. Columns are the x-y-z coordinates of each node.
+    * **elements**: (nElements x nElementNodes) connectivity matrix. Each row is an element, the columns contain the node tags which build the element. 
+    * **BCs**: n x 4 numpy array. n is the number of restrained nodes, the first column is the node tag, the other column represent the condition of the three DOFs (1 is blocked, 0 is free). 
+    * **load = None**: n x 4 numpy array. n is the number of loaded nodes, the first column is the node tag, the other column represent the magnitude of the load for the relative DOF. 
+    ~~~~~~~~~~~~~~~~~~~
+    RETURN
+    ~~~~~~~~~~~~~~~~~~~
     '''
     elementType, elementShape, elementIntegration = _getElementDefinition(elementDefinition)
     elementsList = []
