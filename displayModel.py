@@ -1,8 +1,7 @@
-''' Module Information
------------------------------------------------------------
-Purpose of module: Display given geometry and results of a plateModel class using matplotlib
------------------------------------------------------------
-- Copywrite Tobia Diggelmann (ETH Zurich) 09.06.2021
+'''
+Displays geometry and results of a plateModel class using `matplotlib`
+
+Copywrite Tobia Diggelmann (ETH Zurich) 09.06.2021
 '''
 # Basic modules
 import numpy as np
@@ -16,12 +15,18 @@ from tqdm import tqdm
 
 def plotInputGeometry(self, figaspect = 1):
     '''
-        Display the structural elements contained in a plateModel object. \n
-        Input: \n
-        *   self: plate object with initialized structural components. \n
-        *   figaspect = 1: aspect ratio of the output figure (width:high).\n
-        Return: \n
-        *   -
+    Display the structural elements contained in a `PlateModel` object.
+
+    ~~~~~~~~~~~~~~~~~~~
+    INPUT
+    ~~~~~~~~~~~~~~~~~~~
+
+    *   **self**: `PlateModel` object with initialized structural components.
+    *   **figaspect = 1**: aspect ratio of the output figure (width:high).
+
+    ~~~~~~~~~~~~~~~~~~~
+    RETURN
+    ~~~~~~~~~~~~~~~~~~~
     '''
     w, h = plt.figaspect(figaspect)
     mult = 1.5
@@ -44,31 +49,42 @@ def plotInputGeometry(self, figaspect = 1):
 
 def plotResults(self, valuesToPlotList, plotType = 'isolines',saveToSVG=False, saveImage=False):
     '''
-        Display the requested result over the model structural components. \n
-        Input: \n
-        * self: Solved plate object with results stored. \n
-        * valuesToPlotList: List of strings representing the requested output plots. Possible values are:
-            \t * "vDisp": Vertical displacements. \n
-            \t * "Mx": Bending moments in x-direction.\n
-            \t * "My": Bending moments in y-direction.\n
-            \t * "Mxy": Twisting moments.\n
-            \t * "Vx": Shear forces in x-direction.\n
-            \t * "Vy": Shear forces in y-direction.\n
-            \t * "Mx_Rd_+": Required positive bending resistance in x-direction. \n
-            \t * "My_Rd_+": Required positive bending resistance in y-direction.\n
-            \t * "Mx_Rd_-": Required negative bending resistance in x-direction.\n
-            \t * "My_Rd_-": Required negative bending resistance in y-direction.\n
-            \t * "Mx_Rd_max": Required maximum bending resistance in x-direction.\n
-            \t * "My_Rd_max": Required maximum bending resistance in y-direction.\n
-        * plotType = "isolines": String representing the type of plot. Possible values are:\n
-            \t * "isolines"(default): Lines with the same output-value are extrapolated and plotted. \n
-            \t * "3d": 3-dimensional plot.\n
-            \t * "text": The values at the data-points are printed as text near to the data-points.\n
-            \t * "text+mesh": The values at the data-points are printed as text near to the data-points on the model's mesh.\n
-        * saveToSVG = False: if True, saves the plot as SVG in the current folder. \n
-        * saveImage = False: Experimental. \n
-        Return: \n
-        *   outFig, outAxis
+        Displays the requested result over the model's structural components. 
+
+        ~~~~~~~~~~~~~~~~~~~
+        INPUT
+        ~~~~~~~~~~~~~~~~~~~
+
+        * **self**: Solved `PlateModel` object with results stored.
+        * **valuesToPlotList**: List of strings representing the requested output plots. Possible values are:
+            - "vDisp": Vertical displacements.
+            - "Mx": Bending moments in x-direction.
+            - "My": Bending moments in y-direction.
+            - "Mxy": Twisting moments.
+            - "Vx": Shear forces in x-direction.
+            - "Vy": Shear forces in y-direction.
+            - "Mx_Rd_+": Required positive bending resistance in x-direction. 
+            - "My_Rd_+": Required positive bending resistance in y-direction.
+            - "Mx_Rd_-": Required negative bending resistance in x-direction.
+            - "My_Rd_-": Required negative bending resistance in y-direction.
+            - "Mx_Rd_max": Required maximum bending resistance in x-direction.
+            - "My_Rd_max": Required maximum bending resistance in y-direction.
+
+        * **plotType = "isolines"**: String representing the type of plot. Possible values are:
+
+            - "isolines"(default): Lines with the same output-value are extrapolated and plotted. 
+            - "3d": 3-dimensional plot.
+            - "text": The values at the data-points are printed as text near to the data-points.
+            - "text+mesh": The values at the data-points are printed as text near to the data-points on the model's mesh.
+
+        * **saveToSVG = False**: if True, saves the plot as SVG in the current folder. 
+        * **saveImage = False**: Experimental. 
+
+        ~~~~~~~~~~~~~~~~~~~
+        RETURN
+        ~~~~~~~~~~~~~~~~~~~
+
+        *   **outFig**, **outAxis**
     '''
     outAxis = []
     outFig = []
@@ -87,14 +103,22 @@ def plotResults(self, valuesToPlotList, plotType = 'isolines',saveToSVG=False, s
 
 def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = False):
     '''
-        Plot nodes and elements given an initialized mesh. \n
-        Input: \n
-        * self: plateModel object with initialized mesh.\n
-        * plotNodes = True: If True, plots the nodes with nummeration. \n
-        * plotStrucElements = True: If True, also plots the underlying structural components. \n
-        * plotPoints = False: If True, plotes the nodes without nummeration.\n
-        Return: \n
-        * fig, outAx
+    Plot nodes and elements given an initialized mesh. 
+
+    ~~~~~~~~~~~~~~~~~~~
+    INPUT
+    ~~~~~~~~~~~~~~~~~~~
+
+    * **self**: `PlateModel` object with initialized mesh.
+    * **plotNodes = True**: If True, plots the nodes with nummeration. 
+    * **plotStrucElements = True**: If True, also plots the underlying structural components. 
+    * **plotPoints = False**: If True, plotes the nodes without nummeration.
+
+    ~~~~~~~~~~~~~~~~~~~
+    RETURN
+    ~~~~~~~~~~~~~~~~~~~
+
+    * **fig**, **outAx**
     '''
     if plotStrucElements:
         fig,outAx = plotInputGeometry(self)
@@ -141,20 +165,29 @@ def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = Fals
 
 def plotBeamComponent(self, valuesToPlotList, plotOnMesh=False, saveToSVG = False):
     '''
-        Display the requested line-results over the model structural components. \n
-        Input: \n
-        * self: Solved plate object with line-results stored. \n
-        * valuesToPlotList: List of strings representing the requested output plots. Possible values are:
-            \t * "vDisp_line": Vertical displacements on a line. \n
-            \t * "Mx_line": Bending moments in x-direction on a line.\n
-            \t * "My_line": Bending moments in y-direction on a line.\n
-            \t * "Mxy_line": Twisting moment on a lines.\n
-            \t * "Vx_line": Shear forces in x-direction on a line.\n
-            \t * "Vy_line": Shear forces in y-direction on a line.\n
-        * plotOnMesh = False: If True, the line results are plotted over the underlying mesh.\n
-        * saveToSVG = False: if True, saves the plot as SVG in the current folder. \n
-        Return: \n
-        *   outFig, outAxis
+    Display the requested line-results over the model structural components. 
+
+    ~~~~~~~~~~~~~~~~~~~
+    INPUT
+    ~~~~~~~~~~~~~~~~~~~
+
+    * **self**: Solved `PlateModel` object with line-results stored. 
+    * **valuesToPlotList**: List of strings representing the requested output plots. Possible values are:
+
+        - "vDisp_line": Vertical displacements on a line. 
+        - "Mx_line": Bending moments in x-direction on a line.
+        - "My_line": Bending moments in y-direction on a line.
+        - "Mxy_line": Twisting moment on a lines.
+        - "Vx_line": Shear forces in x-direction on a line.
+        - "Vy_line": Shear forces in y-direction on a line.
+
+    * **plotOnMesh = False**: If True, the line results are plotted over the underlying mesh.
+    * **saveToSVG = False**: if True, saves the plot as SVG in the current folder. 
+    ~~~~~~~~~~~~~~~~~~~
+    RETURN
+    ~~~~~~~~~~~~~~~~~~~
+    
+    *   **outFig**, **outAxis**
     '''
     outAxis = []
     outFig = []
