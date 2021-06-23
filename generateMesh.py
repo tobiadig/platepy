@@ -1,8 +1,7 @@
 '''
------------------------------------------------------------
 Generates and stores the mesh of a plate Model.
------------------------------------------------------------
-- Copywrite Tobia Diggelmann (ETH Zurich) 30.05.2021
+
+Copywrite Tobia Diggelmann (ETH Zurich) 30.05.2021
 '''
 #%% Basic modules
 import numpy as np

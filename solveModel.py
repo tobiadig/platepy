@@ -21,12 +21,12 @@ from tqdm import tqdm
 
 def solveModel(self, resultsScales = (1, 1, 1),\
     internalForcePosition = 'center', smoothedValues = False, computeMoments=True, kBendingResistance = 1):
-    ''' Given a plateModel object with an initialized mesh, this function computes displacements, rotations and internal forces at
+    ''' Given a `PlateModel` object with an initialized mesh, this function computes displacements, rotations and internal forces at
         each node.
         ~~~~~~~~~~~~~~~~~~~
         INPUT
         ~~~~~~~~~~~~~~~~~~~
-        * **self**: plateModel object. 
+        * **self**: `PlateModel` object. 
         * **resultsScales = (1e-3, 1, 1)**: Before being displayed the computed displacements are multiplied by resultsScales[0], the computed beding moments are multiplied by resultsScales[1]
             and the shear forces by resultsScales[2]. 
         * **internalForcePosition = 'center'**: String defining the desired position where the internal forces should be computed.
@@ -38,7 +38,7 @@ def solveModel(self, resultsScales = (1, 1, 1),\
         ~~~~~~~~~~~~~~~~~~~
         RETURN
         ~~~~~~~~~~~~~~~~~~~
-        * ResultsDictionary: Dictionary with Result objects.
+        * **ResultsDictionary**: Dictionary with `Result` objects.
     '''
 
     # chose the right solving algorithm based on the presence or not of downstand beams
@@ -476,12 +476,13 @@ def _getBendingResistance(bendingMoments,kBendingResistance):
     return bendingResistance
 
 def computeBeamComponents(self, startCoord, endCoord, nEvaluationPoints,resultsScales = (1,1, 1),integrationWidth = 0, nIntegrationPoints =0):
-    '''
-    Computes the results over a custom-defined line.
+    '''Computes the results over a custom-defined line.
+
     ~~~~~~~~~~~~~~~~~~~
     INPUT
     ~~~~~~~~~~~~~~~~~~~
-    * **self**: PlateModel object.
+
+    * **self**: `PlateModel` object.
     * **startCoord**: tuple with (x,y) coordinates defining the starting point of the line.
     * **endCoord**: tuple with (x,y) coordinates defining the ending point of the line. 
     * **resultsScales = (1e-3, 1, 1)**: Before being displayed the computed displacements are 
@@ -490,10 +491,14 @@ def computeBeamComponents(self, startCoord, endCoord, nEvaluationPoints,resultsS
     * **integrationWidth = 0**: if > 0, the values on a line normal to the main cut of length +-integrationWidth/2 are evaluated and 
     integrated to a single value, which will then be displayed. 
     * **nIntegrationPoint=0**: number of point for the integration normal to the direction of the main cut.
+
     ~~~~~~~~~~~~~~~~~~~
     RETURN
     ~~~~~~~~~~~~~~~~~~~
-    * bendingMoments, shearForces, arrayEvaluationPoints
+
+    * **bendingMoments**: (nPoints, 3) Numpy array containing Mx, My and Mxy for each evaluation point.
+    * **shearForces**: (nPoints, 2) Numpy array containing Vx and Vy for each evaluation point.
+    * **arrayEvaluationPoints**: (nPoints, 2) Numpy array containing x and y coordinates of each evaluation point.
     '''
     uGlob = self.resultsInformation.uGlobPlate
     elementsList = self.mesh.elementsList
@@ -597,16 +602,22 @@ def computeBeamComponents(self, startCoord, endCoord, nEvaluationPoints,resultsS
 
 def evaluateAtPoints(self, coords, displayPoints = False):
     '''
-    Computes the displacement, rotation and internal forces at the location contained in coord.
+    Computes the displacement, rotation and internal forces at the location contained in coords.
+
     ~~~~~~~~~~~~~~~~~~~
     INPUT
     ~~~~~~~~~~~~~~~~~~~
+
     * **coords**: Numpy array of shape (nPoints, 2) with the x,y coordinates of the points to be evaluated. 
     * **displayPoints = False**: If True, plots the requested evaluation points on the inputGeometry. 
+
     ~~~~~~~~~~~~~~~~~~~
     RETURN
     ~~~~~~~~~~~~~~~~~~~
-    * **verticalDisplacements,bendingMoments, shearForces**: length nPoints
+
+    * **vericalDisplacements**: (nPoints, 1) Numpy array containing vertical displacements of each evaluation point.
+    * **bendingMoments**: (nPoints, 3) Numpy array containing Mx, My and Mxy for each evaluation point.
+    * **shearForces**: (nPoints, 2) Numpy array containing Vx and Vy for each evaluation point.
     '''
     uGlob = self.resultsInformation.uGlobPlate
     nEvaluationPoints = coords.shape[0]
