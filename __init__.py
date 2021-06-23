@@ -1,5 +1,5 @@
 '''
-*Copywrite Tobia Diggelmann (ETH Zurich) 23.06.2021.*
+*Made with ❤️ by Tobia Diggelmann (ETH Zurich), June 2021*
 
 Provides
 
@@ -22,11 +22,11 @@ The purpose of the present package, developed during a master thesis at the ETH 
 2. Getting started
 ====================
 
-Platepy is available on https://pypi.org/project/platepy/, and can therefore be obtained through the terminal with the command (without the $ sign):
+Platepy is available on https://pypi.org/project/platepy/ , and can therefore be obtained through the terminal with the command (without the $ sign):
 
 `$ pip install platepy`
 
-Alternatively, if problems with accessing to the package through the global path are encountered, the packages can be acessed on the Github repository: https://github.com/tobiadig/platepy. All downloaded module should be in a folder named "platepy" and located in the working directory.
+Alternatively, if problems with accessing to the package through the global path are encountered, the packages can be acessed on the Github repository: https://github.com/tobiadig/platepy . All downloaded modules should be in a folder named "platepy" and located in the working directory.
 
 When the platepy package has been downloaded (via pip or via Github, and located in the working directory) the functions in the package can be accessed in a Python script with the command `from platepy import *`. Then you are ready to go.
 
