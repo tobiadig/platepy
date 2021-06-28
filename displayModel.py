@@ -33,7 +33,7 @@ def plotInputGeometry(self, figaspect = 1):
     fig, axGeometry = plt.subplots(figsize=(w*mult, h*mult))
 
     for plate in self.plates:
-        plate._plot(axGeometry)  
+        plate._plot(axGeometry)
 
     for wall in self.walls:
         wall._plot(axGeometry)
@@ -49,7 +49,7 @@ def plotInputGeometry(self, figaspect = 1):
 
 def plotResults(self, valuesToPlotList, plotType = 'isolines',saveToSVG=False, saveImage=False):
     '''
-        Displays the requested result over the model's structural components. 
+        Displays the requested result over the model's structural components.
 
         ~~~~~~~~~~~~~~~~~~~
         INPUT
@@ -63,7 +63,7 @@ def plotResults(self, valuesToPlotList, plotType = 'isolines',saveToSVG=False, s
             - "Mxy": Twisting moments.
             - "Vx": Shear forces in x-direction.
             - "Vy": Shear forces in y-direction.
-            - "Mx_Rd_+": Required positive bending resistance in x-direction. 
+            - "Mx_Rd_+": Required positive bending resistance in x-direction.
             - "My_Rd_+": Required positive bending resistance in y-direction.
             - "Mx_Rd_-": Required negative bending resistance in x-direction.
             - "My_Rd_-": Required negative bending resistance in y-direction.
@@ -72,13 +72,13 @@ def plotResults(self, valuesToPlotList, plotType = 'isolines',saveToSVG=False, s
 
         * **plotType = "isolines"**: String representing the type of plot. Possible values are:
 
-            - "isolines"(default): Lines with the same output-value are extrapolated and plotted. 
+            - "isolines"(default): Lines with the same output-value are extrapolated and plotted.
             - "3d": 3-dimensional plot.
             - "text": The values at the data-points are printed as text near to the data-points.
             - "text+mesh": The values at the data-points are printed as text near to the data-points on the model's mesh.
 
-        * **saveToSVG = False**: if True, saves the plot as SVG in the current folder. 
-        * **saveImage = False**: Experimental. 
+        * **saveToSVG = False**: if True, saves the plot as SVG in the current folder.
+        * **saveImage = False**: Experimental.
 
         ~~~~~~~~~~~~~~~~~~~
         RETURN
@@ -93,7 +93,7 @@ def plotResults(self, valuesToPlotList, plotType = 'isolines',saveToSVG=False, s
         theTitle=valueToPlot
         resultToPlot = resultsDictionary[valueToPlot]
         myZ = resultToPlot.z*resultToPlot.resultScale
-        
+
         fig, axOut = _plotInternalForce(self,plotType,theTitle, resultToPlot.x,resultToPlot.y,myZ,saveImage)
         self.axes[theTitle] = valueToPlot
         outAxis.append(axOut)
@@ -103,15 +103,15 @@ def plotResults(self, valuesToPlotList, plotType = 'isolines',saveToSVG=False, s
 
 def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = False):
     '''
-    Plot nodes and elements given an initialized mesh. 
+    Plot nodes and elements given an initialized mesh.
 
     ~~~~~~~~~~~~~~~~~~~
     INPUT
     ~~~~~~~~~~~~~~~~~~~
 
     * **self**: `PlateModel` object with initialized mesh.
-    * **plotNodes = True**: If True, plots the nodes with nummeration. 
-    * **plotStrucElements = True**: If True, also plots the underlying structural components. 
+    * **plotNodes = True**: If True, plots the nodes with nummeration.
+    * **plotStrucElements = True**: If True, also plots the underlying structural components.
     * **plotPoints = False**: If True, plotes the nodes without nummeration.
 
     ~~~~~~~~~~~~~~~~~~~
@@ -133,7 +133,7 @@ def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = Fals
         elemNodes = element.coherentConnectivity.to_numpy()[:,0]
         # nEdges = element.shape
         nEdges = 4
-        
+
         elemCoords = element.coordinates
         if len(elemCoords)<nEdges:
             continue
@@ -161,20 +161,20 @@ def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = Fals
             k+=1
     outAx.set_xticks([])
     outAx.set_yticks([])
-    return fig, outAx 
+    return fig, outAx
 
 def plotBeamComponent(self, valuesToPlotList, plotOnMesh=False, saveToSVG = False):
     '''
-    Display the requested line-results over the model structural components. 
+    Display the requested line-results over the model structural components.
 
     ~~~~~~~~~~~~~~~~~~~
     INPUT
     ~~~~~~~~~~~~~~~~~~~
 
-    * **self**: Solved `PlateModel` object with line-results stored. 
+    * **self**: Solved `PlateModel` object with line-results stored.
     * **valuesToPlotList**: List of strings representing the requested output plots. Possible values are:
 
-        - "vDisp_line": Vertical displacements on a line. 
+        - "vDisp_line": Vertical displacements on a line.
         - "Mx_line": Bending moments in x-direction on a line.
         - "My_line": Bending moments in y-direction on a line.
         - "Mxy_line": Twisting moment on a lines.
@@ -182,11 +182,11 @@ def plotBeamComponent(self, valuesToPlotList, plotOnMesh=False, saveToSVG = Fals
         - "Vy_line": Shear forces in y-direction on a line.
 
     * **plotOnMesh = False**: If True, the line results are plotted over the underlying mesh.
-    * **saveToSVG = False**: if True, saves the plot as SVG in the current folder. 
+    * **saveToSVG = False**: if True, saves the plot as SVG in the current folder.
     ~~~~~~~~~~~~~~~~~~~
     RETURN
     ~~~~~~~~~~~~~~~~~~~
-    
+
     *   **outFig**, **outAxis**
     '''
     outAxis = []
@@ -233,11 +233,13 @@ def _plotInternalForce(self,plotType,theTitle, x,y,z,saveImage):
             # outFig.append(data5)
     elif plotType == '3d':
         fig=plt.figure()
-        percentageTrianglesToMantain = 98
+        percentageTrianglesToMantain = 99
         triang = _removeTrianglesOutsidePlate(x,y,percentageTrianglesToMantain)
         axOut = fig.gca(projection='3d')
         axOut.plot_trisurf(triang,z,cmap=plt.get_cmap('jet'))
-        # axOut.plot_trisurf(triang,z,cmap=plt.get_cmap('winter'))
+        # axOut.plot_trisurf(triang,z,cmap=plt.get_cmap('winter_r'))
+        # axOut.plot_trisurf(triang,z,cmap=plt.get_cmap('viridis'))
+        axOut.pbaspect = [1, 1, 0.5]
         axOut.grid(False)
         # Hide axes ticks
         axOut.set_xticks([])
@@ -310,7 +312,7 @@ def _myIsoPlot(self,x,y,z, theTitle = ''):
     bounds = np.array([-1e70, -0.00001,0.000001, 1e70])
 
     norm = matplotlib.colors.BoundaryNorm(bounds, 3)
-    percentageTrianglesToMantain = 98    
+    percentageTrianglesToMantain = 98
     triang = _removeTrianglesOutsidePlate(x,y,percentageTrianglesToMantain)
     cs = plt.tricontour(triang,z,cmap=mycmp, norm=norm)
 
