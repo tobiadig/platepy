@@ -412,6 +412,7 @@ The created images can be manually saved through the plt.show() interface, or au
     plt.show()
 
 <a name="t4"></a>A.4. Compute analytical solutions
+------------------------------------------------------------------------
 
     # ------------------------------------------------------------------------------
     #
