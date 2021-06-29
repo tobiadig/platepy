@@ -110,9 +110,9 @@ def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = Fals
     ~~~~~~~~~~~~~~~~~~~
 
     * **self**: `PlateModel` object with initialized mesh.
-    * **plotNodes = True**: If True, plots the nodes with nummeration.
+    * **plotNodes = True**: If True, plots the nodes with numeration.
     * **plotStrucElements = True**: If True, also plots the underlying structural components.
-    * **plotPoints = False**: If True, plotes the nodes without nummeration.
+    * **plotPoints = False**: If True, plots the nodes without numeration.
 
     ~~~~~~~~~~~~~~~~~~~
     RETURN

@@ -30,7 +30,7 @@ def generateMesh(self,showGmshMesh=False,showGmshGeometryBeforeMeshing = False, 
         * **nEdgeNodes = 0**: Prescribes the number of nodes on each edge. Plate must be rectangular.
         * **order = "linear"**: Prescribes the order of the elements. "linear for first order elements (default) and "quadratic" for second order elements. 
         * **meshDistortion = False**: Boolean, if True a mesh distortion function is applied. 
-        * **distVal = 100**: Severeness of the mesh distortion function. 
+        * **distVal = 100**: Sereneness of the mesh distortion function. 
         ~~~~~~~~~~~~~~~~~~~
         RETURN
         ~~~~~~~~~~~~~~~~~~~

@@ -166,10 +166,10 @@ def solveModel(self, resultsScales = (1, 1, 1),\
     return resultsDictionary
 
 def _getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodesRotations, modelMesh,p,nNodesTotal, elasticallySupportedNodes,wallStiffness):
-    ''' Computes global stifness matrix and global force matrixes in sparse form.\n
+    ''' Computes global stiffness matrix and global force matrixes in sparse form.\n
         Input: \n
             * elementsList: List of element objects. \n
-            * platesList: List of plate obkects. \n
+            * platesList: List of plate objects. \n
             * downStandBeamsList: List of downStandBeam objects. \n
             * nodesRotations: Pandas dataframe where indexes are node tags (assigned by gmsh), values are the rotations in radians. \n
             * modelMesh: mesh object of the plateModel object. \n
@@ -273,11 +273,11 @@ def _getGlobalStiffnesAndForce(elementsList,platesList,downStandBeamsList, nodes
     return sparseGlobalMatrix, sparseForceGlobal, discartedDOFs
 
 def _getLineLoadForceVector(p,nSparseData,elemNodesRotations):
-    ''' Computes informations required to create the sparse force vector in case of line loads. \n
+    ''' Computes information required to create the sparse force vector in case of line loads. \n
         Input: \n
             * p: Load object. \n
             * nSparseData: Total number of the non-zero entries in the global stiffness matrix. = len(elementsList)*(9*3)**2. \n
-            * elemNodesRotations: Rotation of the node appartaineng at the element. \n
+            * elemNodesRotations: Rotation of the node appertaining at the element. \n
         Return: \n
             * rowsForForceSparseMatrix: numpy vector with the indexes of the entries in dataForForceSparseMatrix. \n
             * dataForForceSparseMatrix: numpy vector with the values of the entries in the global sparse force vector. \n
@@ -329,7 +329,7 @@ def _getLineLoadForceVector(p,nSparseData,elemNodesRotations):
     return rowsForForceSparseMatrix,dataForForceSparseMatrix
 
 def _getNodesLoadForceVector(p, nSparseData):
-    ''' Computes informations required to create the sparse force vector in case the user manually defines the node loads. \n
+    ''' Computes information required to create the sparse force vector in case the user manually defines the node loads. \n
         Input: \n
             * p: Load object. \n
             * nSparseData: Total number of the non-zero entries in the global stiffness matrix. = len(elementsList)*(9*3)**2. \n
@@ -353,7 +353,7 @@ def _getNodesLoadForceVector(p, nSparseData):
     return rowsForForceSparseMatrix,dataForForceSparseMatrix 
 
 def _getPointLoadForceVector(p,nSparseData):
-    ''' Computes informations required to create the sparse force vector in case of line loads. \n
+    ''' Computes information required to create the sparse force vector in case of line loads. \n
         Input: \n
             * p: Load object. \n
             * nSparseData: Total number of the non-zero entries in the global stiffness matrix. = len(elementsList)*(9*3)**2. \n
@@ -486,7 +486,7 @@ def computeBeamComponents(self, startCoord, endCoord, nEvaluationPoints,resultsS
     * **startCoord**: tuple with (x,y) coordinates defining the starting point of the line.
     * **endCoord**: tuple with (x,y) coordinates defining the ending point of the line. 
     * **resultsScales = (1e-3, 1, 1)**: Before being displayed the computed displacements are 
-    multiplied by resultsScales[0], the computed beding moments are multiplied by resultsScales[1]
+    multiplied by resultsScales[0], the computed bending moments are multiplied by resultsScales[1]
     and the shear forces by resultsScales[2]. 
     * **integrationWidth = 0**: if > 0, the values on a line normal to the main cut of length +-integrationWidth/2 are evaluated and 
     integrated to a single value, which will then be displayed. 

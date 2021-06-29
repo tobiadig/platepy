@@ -3,32 +3,32 @@
 
 Provides
 
-* Methods to easily model structural components for plates via the gmsh API (see https://gmsh.info/).
-* Mesh generation via gmsh API.
+* Methods to easily model structural components for plates via the Gmsh API (see https://gmsh.info/).
+* Mesh generation via Gmsh API.
 * FEM calculation of displacements, rotations, bending moments, shear forces and required bending moment resistance according to SIA262.
-* Results visualization.
-* Analythical solutions according to Kirchhoff plate theory.
+* Results visualization with isolines and 3D plots.
+* Analytical solutions according to Kirchhoff plate theory.
 
 
 
-The present documentation provides the user with an overview of the package and its functioning. For a more *hands-on* approach to getting started, refer to the two tutorials in appendix [A. Tutorials](#A. Tutorials).
+The present documentation provides the user with an overview of the package and its functioning. For a more *hands-on* approach to getting started, refer to the tutorials in appendix [A. Tutorials](#A. Tutorials). The tutorial are also already available in the package distribution in the *tutorials* folder.
 
 
 1. Introduction
 ====================
 
-The purpose of the present package, developed during a master thesis at the ETH Zurich, is to provide a simple set of tools to model and compute plate models using Finite Elements. The package is based on the `Gmsh API`, used to create geometrical models and to discretize the system into elements. The package has been developed for users with knowledge about civil engineering, while every aspect regarding finite elements has been automatizated as much as possible. This allows for a basic FE-modelling without direct knowledge of FEM. However, all kind of parameters regarding meshing and computation can be custoimized. 
+The purpose of the present package, developed during a master thesis at the ETH Zurich, is to provide a simple set of tools to model and compute plate models using Finite Elements. The package is based on the `Gmsh API`, used to create geometrical models and to discretize the system into elements. The package has been developed for users with knowledge about civil engineering, while every aspect regarding finite elements has been automatized as much as possible. This allows for a basic FE-modelling without direct knowledge of FEM. However, all kind of parameters regarding meshing and computation can be customized. 
 
-2. Getting started
-====================
+2. How to get platepy
+========================
 
 Platepy is available on https://pypi.org/project/platepy/ , and can therefore be obtained through the terminal with the command (without the $ sign):
 
 `$ pip install platepy`
 
-Alternatively, if problems with accessing to the package through the global path are encountered, the packages can be acessed on the Github repository: https://github.com/tobiadig/platepy . All downloaded modules should be in a folder named "platepy" and located in the working directory.
+Alternatively, if problems with accessing the package through the global path are encountered, the packages can be accessed on the GitHub repository: https://github.com/tobiadig/platepy . All downloaded modules should be in a folder named "platepy" and located in the working directory.
 
-When the platepy package has been downloaded (via pip or via Github, and located in the working directory) the functions in the package can be accessed in a Python script with the command `from platepy import *`. Then you are ready to go.
+When the platepy package has been downloaded (via pip, or via GitHub and located in the working directory) the functions in the package can be accessed in a Python script with the command `from platepy import *`.
 
 Following packages are required for the correct functioning of platepy:
 
@@ -36,14 +36,14 @@ Following packages are required for the correct functioning of platepy:
 * scipy
 * matplotlib
 * pandas
-* gmsh
+* Gmsh
 * tqdm
 
 All these packages can be installed through pip with the command (without the $ sign)
 
 `$ pip install numpy, scipy, matplotlib, pandas, gmsh, tqdm`
 
-Note: On windows, in order to access the packages, the system has to be restarted after installation (to update the global path to the packages).
+NOTE: On windows, in order to access the packages, the system has to be restarted after installation (to update the global path to the packages).
 
 
 3. How to use platepy
@@ -51,12 +51,12 @@ Note: On windows, in order to access the packages, the system has to be restarte
 
 Once the functions of platepy are accessible, the workflow is as follows:
 
-1. Create a model where structural components (slabs, walls, columns etc.) and loads are difined.
+1. Create a model with structural components (slabs, walls, columns etc.) and loads.
 2. Generate a mesh.
 3. Solve the system using FEM.
 4. Display the results.
 
-Each steps is presented in the following steps, exemples are provided in [A. Tutorials](#A. Tutorials)
+Each steps is presented in the following sections, examples are provided in [A. Tutorials](#A. Tutorials).
 
 
 3.1. Create a model
@@ -65,12 +65,12 @@ Each steps is presented in the following steps, exemples are provided in [A. Tut
 ** Create model with the Gmsh API **
 
 
-The package can be used to model a plate static system. The plate model is represented by a `PlateModel` class. A model can be instantiated as follows:
-::
+The package can be used to model a plate static system. The plate model is represented by a `PlateModel` class. A model can be inizialized as follows:
+
 
     exampleModel = PlateModel()
 
-The user has then to define all the components which compose the static system toghether with their properties, and the loads acting on the system. The components have then to be added to the `PlateModel` object. The available structural components are:
+The user has then to define all the components which compose the static system together with their properties, and the loads acting on the system. The components have then to be added to the `PlateModel` object. The available structural components are:
 
 * plates
 * walls
@@ -79,11 +79,11 @@ The user has then to define all the components which compose the static system t
 
 The procedure to add a structural component is:
 
-1. Create a dictionary. Create the required entries, these are documented in the submodel [platepy.createModel](#create).
+1. Create a dictionary. Create the required entries, which are documented in the submodule [platepy.createModel](#create).
 2. Instantiate the structural component's class with the created dictionary.
 3. Add the object to the `PlateModel` with the specific method of the component.
 
-The general strucutre is therefore as follows: ::
+The general structure is therefore as follows: ::
 
     inputDic = {}
     inputDic['entry1'] = value1
@@ -93,13 +93,13 @@ The general strucutre is therefore as follows: ::
 
 The loads are defined similarly with the `Load` class.
 
-NOTE: It is advisable to check if the geometry has been correctely defined before moving to the next steps of the analysis. To inspect the geometry call the `plotInputGeometry function` defined in [displayModel](#displayModel).
+NOTE: It is advisable to check if the geometry has been correctly defined before moving to the next steps of the analysis. To inspect the geometry call the `plotInputGeometry function` defined in [displayModel](#displayModel).
 
-NOTE: Plate outline has to be a closed polygon, points defining walls and downstand beams **have** to lie inside the plate or to coincide with corners of the plate. ** Walls and downstand beams startin or ending on a plate's edge will raise an error**. In this cases, add points to the plate's outline coordinates accordingly.
+NOTE: Plate outline has to be a closed polygon, points defining walls and downstand beams **have** to lie inside the plate or to coincide with corners of the plate. ** Walls and downstand beams starting or ending on a plate's edge will raise an error**. In this cases, add points to the plate's outline coordinates accordingly.
 
 ** Create model manually **
 
-It is also possible for the user to manually define the nodes positions, the element connectivity, blocked DOFs and nodal forces. See [Manually generate mesh](#Manually generate mesh)
+It is also possible for the user to manually define the nodes positions, the element connectivity, blocked DOFs and nodal forces. See the tutorial [Manually generate mesh](#Manually generate mesh)
 
 
 3.2. Generate mesh
@@ -107,22 +107,22 @@ It is also possible for the user to manually define the nodes positions, the ele
 
 ** Generate mesh automatically with Gmsh**
 
-The mesh of the created model can be automatically generated with the Gmsh API. Call the `generateMesh` function defined in [generateMesh](#generateMesh). The most critical parameter is the mesh size. By default the meshSize is 0.6m, which works OK for plates with a size in the range of 8-12m. It is therefore important to inspect the mesh before the next steps of the analysis and to check if the mesh size is too coarse (risk of inaccurate results) or too fine (risk of the calculation taking too long). On an normal laptop, a model with up to 4'000 elements is generally sufficiently fast (ca. 400 elements/s).
+The mesh of the created model can be automatically generated with the Gmsh API. Call the `generateMesh` function defined in [generateMesh](#generateMesh). The most critical parameter is the mesh size. By default the meshSize is 0.6m, which works fine for plates with a size in the range of 8-12m. It is therefore important to inspect the mesh before the next steps of the analysis and to check if the mesh size is too coarse (risk of inaccurate results) or too fine (risk of the calculation taking too long). On an normal laptop, a model with up to 4'000 elements is generally sufficiently fast (ca. 400 elements/s on standard laptops).
 
-The mesh can be expected by setting the parameter `showGmshMesh` to True.
+The mesh can be inspected by setting the parameter `showGmshMesh` to True.
 
-NOTE: The automatic generation of the mesh is generally a critical step, since not always the Gmsh library is able to generate the elements and the errors raised are cryptic. If a mesh cannot be generated, try following steps:
+NOTE: The automatic generation of the mesh is generally a critical step, since not always the Gmsh library is able to generate the elements and the errors raised are quite cryptic. If a mesh cannot be generated, try following steps:
 
-1. Check if the geometry has been correctely defined. The geometry can also be inspected with by setting the `showGmshGeometryBeforeMeshing` option of the generateMesh function to True. 
+1. Check if the geometry has been correctly defined. The geometry can also be inspected with by setting the `showGmshGeometryBeforeMeshing` option of the generateMesh function to True. 
 
     a. Plate outline has to be a closed polygon.
 
     b. Points defining walls and downstand beams **have** to lie inside the plate or to coincide with corners of the plate. ** Walls and downstand beams starting or ending on a plate's edge will raise an error**. In this cases, add points to the plate's outline coordinates accordingly.
 
-    c. Columns have either to lie inside the plate (with the `isInPlate` option setted to True), or to lie on a plate's corner. ** Columns lying on a plate's edge will raise an error**.
+    c. Columns have either to lie inside the plate (with the `isInPlate` option set to True), or to lie on a plate's corner. ** Columns lying on a plate's edge will raise an error**.
 
 2. By very sharp angles or very close structural elements, it is possible that Gmsh fails to generate a mesh. Try a finer mesh or simplify the model.
-3. If the meshSize is too large compared to the model's size, an error will rise.
+3. If the meshSize is too coarse compared to the model's size, an error will rise. 
 
 
 <a name="Generate mesh manually"></a>**Generate mesh manually**
@@ -132,7 +132,7 @@ It is also possible for the user to manually define the nodes positions, the ele
 
 3.3. Solve
 ----------------------------
-Once the mesh has been successfully generated, the system can be solved by calling the `solveModel` function of the submodule [solveModel](#solveModel). The results have to be scaled accor5ding to the dimensions used in the input value. It is advised to use dimensions consistently in order to get the right results (for example meters and kN). To get displacements in mm, moments in kNm and shear forces in kN, the result scale tuple will be (0.001,1,1). The user can also choose the position where the internal forces should be evauated with the `internalForcePosition` parameter. By default internal forces are evaluated at the center of each element.
+Once the mesh has been successfully generated, the system can be solved by calling the `solveModel` function of the submodule [solveModel](#solveModel). The results have to be scaled according to the dimensions used in the input value. It is advised to use dimensions consistently in order to get the right results (for example meters and kN). To get displacements in mm, moments in kNm and shear forces in kN, the result scale tuple will be (0.001,1,1). The user can also choose the position where the internal forces should be evaluated with the `internalForcePosition` parameter. By default internal forces are evaluated at the centre of each element.
 
 After the calculation, the user can also compute the values along an arbitrary line using the `computeBeamComponents` function. Single or multiple specific points can be evaluated with the `evaluateAtPoints` function.
 
@@ -166,7 +166,7 @@ The created images can be manually saved through the plt.show() interface, or au
     # ------------------------------------------------------------------------------
 
     # The program is entirely defined in the `platepy.py' module (which contains the
-    # full documentation of all the function). The easier way is to directely import
+    # full documentation of all the function). The easier way is to directly import
     # all function with the * command:
     from platepy import *
     import numpy as np
@@ -223,7 +223,7 @@ The created images can be manually saved through the plt.show() interface, or au
     tutorialModel.addWall(wall1)
     tutorialModel.addWall(wall2)
 
-    # add a column in the center:
+    # add a column in the centre:
     columnDict = {}
     columnDict["outlineCoords"] = np.array([[5,5]])
     columnDict["support"] = np.array([1, 0, 0])
@@ -235,8 +235,8 @@ The created images can be manually saved through the plt.show() interface, or au
     load = Load('area', np.array([-10,0,0]))
     tutorialModel.addLoad(load)
 
-    # The model is ready! Let's check the geomety and then 
-    # generate the mesh and see if the finess is
+    # The model is ready! Let's check the geometry and then 
+    # generate the mesh and see if the fineness is
     # appropriate or has the be adjusted
     plotInputGeometry(tutorialModel)
     plt.show()
@@ -340,7 +340,7 @@ The created images can be manually saved through the plt.show() interface, or au
 
     # The present tutorial shows how to manually define nodes, element, boundary conditions
     # and nodal loads. This can be useful when a simple, yet precise defined mesh is required
-    # For exampl for a patch test.
+    # For example for a patch test.
 
     # Let's prepare the model and the material
     import numpy as np
@@ -379,8 +379,8 @@ The created images can be manually saved through the plt.show() interface, or au
                         [1,5,8,4],  # Element 4
                         [5,6,7,8]]) # Element 5
 
-    #Then, the boundary condition. The first column is the node of referenc, the other columns
-    # define if ther relative DOF is blocked or free (vDisp/xRot/yRot). 
+    #Then, the boundary condition. The first column is the node of reference, the other columns
+    # define if their relative DOF is blocked or free (vDisp/xRot/yRot). 
     # Let's clamp the left-hand side and block all rotations.
     BCs = np.array([[1, 1, 1, 1],
                     [4, 1, 1, 1],
@@ -407,7 +407,7 @@ The created images can be manually saved through the plt.show() interface, or au
 
     solveModel(tutorialModel, resultsScales=(1e6,1,1))
 
-    # Let's now look at the displacement in the individual nodes with the "tect+mesh" plot type
+    # Let's now look at the displacement in the individual nodes with the "text+mesh" plot type
     plotResults(tutorialModel,plotType='text+mesh',valuesToPlotList=['vDisp'])
     plt.show()
 

@@ -255,8 +255,8 @@ class Plate:
             - "outlineCoords": n x 2 numpy array with n x-y couples, representing the boundaries of the plate  
             - "thickness": thickness of the plate 
             - "body": `Concrete` object 
-        * **isUnterZug = False**: Boolean, True if the plate aims to modell a downstand beam (default is False)
-        * **t = 0**: If the plate aims to modell a downstand beam, thickness of the sorrounding plate (default is 0) 
+        * **isUnterZug = False**: Boolean, True if the plate aims to model a downstand beam (default is False)
+        * **t = 0**: If the plate aims to model a downstand beam, thickness of the surrounding plate (default is 0) 
 
         '''
         self.outlineCoords = inputDict["outlineCoords"]

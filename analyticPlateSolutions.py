@@ -7,7 +7,7 @@ from scipy.interpolate import interp1d
 #test
 def AnalyticPlateSolutions(pOpts, lOpts, sOpts, inPos):
     '''
-    Compute the analythical solution of a plate problem according to Timoshenko's book "Theory of plates and shells" (1959).
+    Compute the analytical solution of a plate problem according to Timoshenko's book "Theory of plates and shells" (1959).
 
     ~~~~~~~~~~~~~~~~~~~
     INPUT
@@ -24,15 +24,15 @@ def AnalyticPlateSolutions(pOpts, lOpts, sOpts, inPos):
         - lOpts.position  = if the load is concentrated, tuple with (x,y) coordinates.
         - lOpts.magnitude = magnitude of vertical force.
     * **sOpts** : solution options 
-        - sOpts.nTerms = Integer, number of terms in the Taylor expantion.
-    * **inPos** : Numpy arry with shape (n, 2) containing the positions at which output quantities are requested.
+        - sOpts.nTerms = Integer, number of terms in the Taylor expansion.
+    * **inPos** : Numpy array with shape (n, 2) containing the positions at which output quantities are requested.
 
     ~~~~~~~~~~~~~~~~~~~
     RETURN
     ~~~~~~~~~~~~~~~~~~~
 
     * **quantities** = boolean list (of size 8) of calculated and therefore returned outputs (possible: Wz, Rx, Ry, Mx, Mx, Mxy, Vx, Vy). 
-    * **values**     = Numpy array of size (length(inPos),nReturnedQuantities ) containing quanties calculated at inPos. 
+    * **values**     = Numpy array of size (length(inPos),nReturnedQuantities ) containing quantities calculated at inPos. 
     * **outPos**     = Numpy array of size (length(inPos), 2, nReturnedQuantities) containing positions where output quantities are calculated.
     '''
 
@@ -81,7 +81,7 @@ class Material:
         ATTRIBUTES
         ~~~~~~~~~~~~~~~~~~~
 
-        * **myLambda**: For analythical models containing beam stiffeners, ratio between beam and plate stiffenes (EI/aD).
+        * **myLambda**: For analytical models containing beam stiffeners, ratio between beam and plate stiffness (EI/aD).
 
         '''
         self.E = E
@@ -139,7 +139,7 @@ class SOpts:
         ATTRIBUTES
         ~~~~~~~~~~~~~~~~~~~
 
-        **sOpts.nTerms = 20** = number of terms of the Taylor's expantions, by default 20 (usually is enough)."
+        **sOpts.nTerms = 20** = number of terms of the Taylor's expansions, by default 20 (usually is enough)."
         
         '''
         self.nTerms = nTerms
