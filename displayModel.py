@@ -8,7 +8,6 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.tri as tri
-
 import base64
 from io import BytesIO
 from tqdm import tqdm
@@ -30,6 +29,8 @@ def plotInputGeometry(self, figaspect = 1):
     '''
     w, h = plt.figaspect(figaspect)
     mult = 1.5
+    # fig = plt.figure()
+    # axGeometry = plt.axes()
     fig, axGeometry = plt.subplots(figsize=(w*mult, h*mult))
 
     for plate in self.plates:
@@ -47,7 +48,7 @@ def plotInputGeometry(self, figaspect = 1):
     self.axes['InputGeometry'] = axGeometry
     return fig,axGeometry
 
-def plotResults(self, valuesToPlotList, plotType = 'isolines',saveToSVG=False, saveImage=False):
+def plotResults(self, valuesToPlotList, plotType = 'isolines',saveToSVG=False, saveBase64=False):
     '''
         Displays the requested result over the model's structural components.
 
@@ -78,7 +79,7 @@ def plotResults(self, valuesToPlotList, plotType = 'isolines',saveToSVG=False, s
             - "text+mesh": The values at the data-points are printed as text near to the data-points on the model's mesh.
 
         * **saveToSVG = False**: if True, saves the plot as SVG in the current folder.
-        * **saveImage = False**: Experimental.
+        * **saveBase64 = False**: Experimental.
 
         ~~~~~~~~~~~~~~~~~~~
         RETURN
@@ -94,14 +95,15 @@ def plotResults(self, valuesToPlotList, plotType = 'isolines',saveToSVG=False, s
         resultToPlot = resultsDictionary[valueToPlot]
         myZ = resultToPlot.z*resultToPlot.resultScale
 
-        fig, axOut = _plotInternalForce(self,plotType,theTitle, resultToPlot.x,resultToPlot.y,myZ,saveImage)
+        fig, axOut = _plotInternalForce(self,plotType,theTitle, resultToPlot.x,resultToPlot.y,myZ,saveBase64)
         self.axes[theTitle] = valueToPlot
         outAxis.append(axOut)
+        outFig.append(fig)
         if saveToSVG:
             fig.savefig(theTitle+'.svg')
     return outFig, outAxis
 
-def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = False):
+def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = False, saveBase64=False):
     '''
     Plot nodes and elements given an initialized mesh.
 
@@ -161,6 +163,13 @@ def plotMesh(self, plotNodes = True, plotStrucElements = True, plotPoints = Fals
             k+=1
     outAx.set_xticks([])
     outAx.set_yticks([])
+
+    if saveBase64:
+        buf = BytesIO()
+        fig.savefig(buf, format="png")
+        data5 = base64.b64encode(buf.getbuffer()).decode("ascii")
+        fig = data5
+
     return fig, outAx
 
 def plotBeamComponent(self, valuesToPlotList, plotOnMesh=False, saveToSVG = False):
@@ -210,7 +219,7 @@ def plotBeamComponent(self, valuesToPlotList, plotOnMesh=False, saveToSVG = Fals
 
     return outFig, outAxis
 
-def _plotInternalForce(self,plotType,theTitle, x,y,z,saveImage):
+def _plotInternalForce(self,plotType,theTitle, x,y,z,saveBase64):
     '''
         Plot the given z values at the x-y coordinates. \n
         Input: \n
@@ -219,16 +228,17 @@ def _plotInternalForce(self,plotType,theTitle, x,y,z,saveImage):
         * theTitle: String to be displayed as title, by default is the same string as in plotType. \n
         * x, y: Coordinates of the data points. \n
         * z: Values at the data points. \n
-        * saveImage: experimental.\n
+        * saveBase64: experimental.\n
         Return: \n
         * fig, axOut: Figure and axis with the requested plot.
     '''
     if plotType == 'isolines':
         fig,axOut = _myIsoPlot(self,x,y,z,theTitle=theTitle)
-        if saveImage:
+        if saveBase64:
             buf = BytesIO()
             fig.savefig(buf, format="png")
             data5 = base64.b64encode(buf.getbuffer()).decode("ascii")
+            fig = data5
             # plt.savefig(r'C:\Users\Diggelmann\Desktop\FEMFlask\static\images\new_plot.png')
             # outFig.append(data5)
     elif plotType == '3d':
